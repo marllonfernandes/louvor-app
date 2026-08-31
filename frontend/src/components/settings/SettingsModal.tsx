@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
-import { Cloud, Server, Smartphone, RefreshCw, Sun, Moon, Palette } from 'lucide-react';
-import { firebaseConfig } from '../../config/firebase';
+import { Cloud, Server, Smartphone, RefreshCw, Sun, Moon, Palette, Database, AlertTriangle, CheckCircle2, UploadCloud } from 'lucide-react';
+import { firebaseConfig, isFirestoreAvailable, isRealApiKeyFormat } from '../../config/firebase';
 import { INITIAL_EVENTS, INITIAL_SONGS, INITIAL_MEMBERS, INITIAL_TEAMS } from '../../services/mockData';
+import { seedFirestoreWithInitialData } from '../../services/firestoreService';
 import { useTheme } from '../../context/ThemeContext';
 
 interface SettingsModalProps {
@@ -18,17 +19,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onShowToast
 }) => {
   const { theme, setTheme } = useTheme();
+  const [isSeeding, setIsSeeding] = useState(false);
 
   const handleResetData = () => {
-    if (confirm('Deseja restaurar os dados de demonstração originais?')) {
+    if (confirm('Deseja restaurar os dados de demonstração no armazenamento local do navegador?')) {
       localStorage.setItem('louvor_app_events', JSON.stringify(INITIAL_EVENTS));
       localStorage.setItem('louvor_app_songs', JSON.stringify(INITIAL_SONGS));
       localStorage.setItem('louvor_app_members', JSON.stringify(INITIAL_MEMBERS));
       localStorage.setItem('louvor_app_teams', JSON.stringify(INITIAL_TEAMS));
-      onShowToast('Dados Restaurados', 'O banco local foi reinicializado com sucesso.', 'success');
+      onShowToast('Dados Locais Restaurados', 'O armazenamento local foi reinicializado com os dados padrão.', 'success');
       setTimeout(() => window.location.reload(), 600);
     }
   };
+
+  const handleSeedFirestore = async () => {
+    if (!confirm('Deseja gravar as músicas, escalas, membros e equipes padrão diretamente no Google Cloud Firestore?')) {
+      return;
+    }
+
+    setIsSeeding(true);
+    try {
+      const result = await seedFirestoreWithInitialData();
+      if (result.success) {
+        onShowToast('Firestore Sincronizado! 🎉', result.message, 'success');
+      } else {
+        onShowToast('Falha na Gravação Firestore', result.message, 'error');
+      }
+    } catch (err: any) {
+      onShowToast('Erro de Conexão', err?.message || 'Falha ao se comunicar com o Firestore.', 'error');
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  const currentApiKey = firebaseConfig.apiKey || '';
+  const maskedApiKey = currentApiKey.length > 8 
+    ? `${currentApiKey.substring(0, 6)}...${currentApiKey.substring(currentApiKey.length - 4)}`
+    : (currentApiKey || 'Não configurada');
 
   return (
     <BottomSheet
@@ -75,14 +102,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </div>
 
-        {/* Card do Firestore */}
+        {/* Card do Firestore com Diagnóstico */}
         <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Cloud className="text-blue-600 dark:text-blue-400" size={18} />
               <div>
-                <h4 className="font-bold text-slate-100 text-xs">Cloud Firestore / MongoDB</h4>
-                <p className="text-[10px] text-slate-400">Projeto Google Cloud</p>
+                <h4 className="font-bold text-slate-100 text-xs">Google Cloud Firestore</h4>
+                <p className="text-[10px] text-slate-400">Banco de Dados em Tempo Real</p>
               </div>
             </div>
             <span className="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold px-2 py-0.5 rounded-full border border-blue-500/20">
@@ -92,13 +119,53 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-slate-800/80">
             <div>
-              <span className="text-slate-500 block">Database:</span>
-              <span className="font-semibold text-slate-300">app-unida (Enterprise)</span>
+              <span className="text-slate-500 block">Status Conexão:</span>
+              <span className="font-semibold flex items-center gap-1 text-slate-300">
+                {isFirestoreAvailable ? (
+                  <>
+                    <CheckCircle2 size={12} className="text-emerald-400" />
+                    SDK Inicializado
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle size={12} className="text-amber-400" />
+                    Modo Local / Offline
+                  </>
+                )}
+              </span>
             </div>
             <div>
-              <span className="text-slate-500 block">Região:</span>
-              <span className="font-semibold text-slate-300">nam5 (United States)</span>
+              <span className="text-slate-500 block">API Key Injetada:</span>
+              <span className="font-semibold text-slate-300 font-mono text-[10px]">
+                {maskedApiKey}
+              </span>
             </div>
+          </div>
+
+          {/* Alerta de formato de chave de API */}
+          {currentApiKey && !isRealApiKeyFormat && (
+            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] flex gap-2 items-start">
+              <AlertTriangle size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-bold">Formato de Chave Detectado: Service Account Key</p>
+                <p className="text-[10px] text-amber-200/90 leading-tight">
+                  A chave configurada parece ser um Private Key ID de conta de serviço. Para o Firestore no navegador, é necessária uma <strong>Web API Key</strong> (inicia com <code className="bg-amber-950/60 px-1 py-0.5 rounded">AIzaSy...</code>).
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Ação de Semear o Firestore */}
+          <div className="pt-1">
+            <Button
+              variant="secondary"
+              fullWidth
+              disabled={isSeeding}
+              onClick={handleSeedFirestore}
+              icon={isSeeding ? <RefreshCw size={14} className="animate-spin text-blue-400" /> : <UploadCloud size={14} className="text-blue-400" />}
+            >
+              {isSeeding ? 'Gravando no Firestore...' : 'Gravar Dados Iniciais no Firestore'}
+            </Button>
           </div>
         </div>
 
@@ -112,7 +179,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
           <p className="text-[11px] text-slate-300 leading-relaxed">
-            O aplicativo possui container Docker multi-stage e backend Node.js integrado, pronto para ser publicado com <code className="text-blue-600 dark:text-blue-400 bg-slate-900 px-1 py-0.5 rounded">make deploy-gcp</code>.
+            Container Docker multi-stage com deploy automático via <code className="text-blue-600 dark:text-blue-400 bg-slate-900 px-1 py-0.5 rounded">make deploy-gcp</code>.
           </p>
         </div>
 
@@ -130,18 +197,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </p>
         </div>
 
-        {/* Ações de Manutenção */}
-        <div className="pt-2">
+        {/* Ações de Manutenção Local */}
+        <div className="pt-1">
           <Button
             variant="secondary"
             fullWidth
             onClick={handleResetData}
             icon={<RefreshCw size={15} />}
           >
-            Restaurar Dados Padrão de Demonstração
+            Restaurar Demonstração (Local Storage)
           </Button>
         </div>
       </div>
     </BottomSheet>
   );
 };
+

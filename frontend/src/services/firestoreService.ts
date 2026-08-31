@@ -50,6 +50,16 @@ function setLocal<T>(key: string, data: T): void {
   }
 }
 
+// Variável para garantir log de conexão apenas uma vez ao inicializar
+let hasLoggedFirestoreConnection = false;
+
+function logFirestoreConnectionOnce(collectionName: string, docCount: number) {
+  if (!hasLoggedFirestoreConnection) {
+    hasLoggedFirestoreConnection = true;
+    console.log(`✅ [Firestore Conectado] Conexão em tempo real ativa! (${collectionName}: ${docCount} documentos recebidos do banco de dados)`);
+  }
+}
+
 // ----------------- EVENTOS -----------------
 
 export function subscribeToEvents(callback: (events: WorshipEvent[]) => void): () => void {
@@ -59,17 +69,20 @@ export function subscribeToEvents(callback: (events: WorshipEvent[]) => void): (
       const unsubscribe = onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
           const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as WorshipEvent));
+          logFirestoreConnectionOnce('events', list.length);
           callback(list);
         } else {
+          console.info('ℹ️ [Firestore Events] Coleção "events" conectada, mas vazia no Firestore (usando fallback local).');
           const initial = getLocal<WorshipEvent[]>(STORAGE_KEYS.EVENTS, INITIAL_EVENTS);
           callback(initial);
         }
-      }, () => {
+      }, (error) => {
+        console.warn('❌ [Firestore Events] Erro ao sincronizar eventos em tempo real:', error.message, error);
         callback(getLocal<WorshipEvent[]>(STORAGE_KEYS.EVENTS, INITIAL_EVENTS));
       });
       return unsubscribe;
-    } catch {
-      // Fallback
+    } catch (err) {
+      console.warn('❌ [Firestore Events] Erro ao registrar listener:', err);
     }
   }
 
@@ -154,15 +167,18 @@ export function subscribeToSongs(callback: (songs: Song[]) => void): () => void 
       return onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
           const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Song));
+          logFirestoreConnectionOnce('songs', list.length);
           callback(list);
         } else {
+          console.info('ℹ️ [Firestore Songs] Coleção "songs" conectada, mas vazia no Firestore (usando fallback local).');
           callback(getLocal<Song[]>(STORAGE_KEYS.SONGS, INITIAL_SONGS));
         }
-      }, () => {
+      }, (error) => {
+        console.warn('❌ [Firestore Songs] Erro ao sincronizar músicas:', error.message, error);
         callback(getLocal<Song[]>(STORAGE_KEYS.SONGS, INITIAL_SONGS));
       });
-    } catch {
-      // Fallback
+    } catch (err) {
+      console.warn('❌ [Firestore Songs] Erro ao registrar listener:', err);
     }
   }
 
@@ -227,15 +243,17 @@ export function subscribeToAdoptionSongs(callback: (songs: AdoptionSong[]) => vo
       return onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
           const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AdoptionSong));
+          logFirestoreConnectionOnce('adoption_songs', list.length);
           callback(list);
         } else {
           callback(getLocal<AdoptionSong[]>(STORAGE_KEYS.ADOPTION_SONGS, INITIAL_ADOPTION_SONGS));
         }
-      }, () => {
+      }, (error) => {
+        console.warn('❌ [Firestore Adoption] Erro ao sincronizar músicas de adoção:', error.message, error);
         callback(getLocal<AdoptionSong[]>(STORAGE_KEYS.ADOPTION_SONGS, INITIAL_ADOPTION_SONGS));
       });
-    } catch {
-      // Fallback
+    } catch (err) {
+      console.warn('❌ [Firestore Adoption] Erro ao registrar listener:', err);
     }
   }
 
@@ -387,11 +405,12 @@ export function subscribeToMembers(callback: (members: Member[]) => void): () =>
         } else {
           callback(getLocal<Member[]>(STORAGE_KEYS.MEMBERS, INITIAL_MEMBERS));
         }
-      }, () => {
+      }, (error) => {
+        console.warn('[Firestore Members] Erro ao sincronizar membros:', error.message, error);
         callback(getLocal<Member[]>(STORAGE_KEYS.MEMBERS, INITIAL_MEMBERS));
       });
-    } catch {
-      // Fallback
+    } catch (err) {
+      console.warn('[Firestore Members] Erro ao registrar listener:', err);
     }
   }
 
@@ -451,11 +470,12 @@ export function subscribeToTeams(callback: (teams: Team[]) => void): () => void 
         } else {
           callback(getLocal<Team[]>(STORAGE_KEYS.TEAMS, INITIAL_TEAMS));
         }
-      }, () => {
+      }, (error) => {
+        console.warn('[Firestore Teams] Erro ao sincronizar equipes:', error.message, error);
         callback(getLocal<Team[]>(STORAGE_KEYS.TEAMS, INITIAL_TEAMS));
       });
-    } catch {
-      // Fallback
+    } catch (err) {
+      console.warn('[Firestore Teams] Erro ao registrar listener:', err);
     }
   }
 
@@ -501,3 +521,60 @@ export async function deleteTeam(teamId: string): Promise<void> {
   setLocal(STORAGE_KEYS.TEAMS, updated);
   localListeners.teams.forEach(l => l(updated));
 }
+
+// ----------------- SEMEADOR INICIAL DO FIRESTORE (SEED) -----------------
+
+export async function seedFirestoreWithInitialData(): Promise<{ success: boolean; message: string; counts?: any }> {
+  if (!isFirestoreAvailable || !db) {
+    return {
+      success: false,
+      message: 'Firestore não está disponível. Verifique se a VITE_FIREBASE_API_KEY (formato AIzaSy...) foi configurada no build.'
+    };
+  }
+
+  try {
+    let eventsCount = 0;
+    let songsCount = 0;
+    let membersCount = 0;
+    let teamsCount = 0;
+    let adoptionCount = 0;
+
+    for (const ev of INITIAL_EVENTS) {
+      await setDoc(doc(db, 'events', ev.id), { ...ev, createdAt: Date.now() });
+      eventsCount++;
+    }
+
+    for (const s of INITIAL_SONGS) {
+      await setDoc(doc(db, 'songs', s.id), { ...s, createdAt: Date.now() });
+      songsCount++;
+    }
+
+    for (const m of INITIAL_MEMBERS) {
+      await setDoc(doc(db, 'members', m.id), m);
+      membersCount++;
+    }
+
+    for (const t of INITIAL_TEAMS) {
+      await setDoc(doc(db, 'teams', t.id), t);
+      teamsCount++;
+    }
+
+    for (const a of INITIAL_ADOPTION_SONGS) {
+      await setDoc(doc(db, 'adoption_songs', a.id), a);
+      adoptionCount++;
+    }
+
+    return {
+      success: true,
+      message: `Sucesso: ${eventsCount} eventos, ${songsCount} músicas, ${membersCount} membros e ${teamsCount} equipes gravados no Cloud Firestore!`,
+      counts: { eventsCount, songsCount, membersCount, teamsCount, adoptionCount }
+    };
+  } catch (error: any) {
+    console.error('[Firestore Seed Error]:', error);
+    return {
+      success: false,
+      message: `Erro ao gravar no Firestore: ${error?.message || 'Falha desconhecida. Verifique se as regras de segurança permitem escrita.'}`
+    };
+  }
+}
+

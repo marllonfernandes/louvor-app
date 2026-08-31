@@ -124,15 +124,78 @@ app-louvor/
 
 ---
 
-## ☁️ Deploy no Google Cloud Run
+## ☁️ Deploy no Google Cloud Run & Arquitetura Firestore
 
-O projeto conta com containerização `Dockerfile` multi-stage otimizada. Para realizar o build e deploy no Google Cloud Run:
+### 🏗️ Arquitetura de Autenticação e Acesso ao Banco (Opção 1: Conexão Direta)
 
-```bash
-# Build e Deploy via gcloud CLI
-gcloud run deploy louvor-app \
-  --source . \
-  --region southamerica-east1 \
-  --allow-unauthenticated \
-  --port 8080
+O Louvor App utiliza uma arquitetura híbrida de alta performance e reatividade em tempo real:
+
+```mermaid
+flowchart TD
+    subgraph Browser [Navegador / App PWA no Celular]
+        Frontend[Frontend React 18 / Vite]
+        SDK[Firebase Web SDK]
+        Frontend --> SDK
+    end
+
+    subgraph GCP [Google Cloud Platform]
+        subgraph CloudRun [Cloud Run Container]
+            Backend[Backend Node.js]
+            SA[Service Account: sa-louvor-app]
+        end
+
+        Firestore[(Cloud Firestore)]
+        Rules[firestore.rules]
+    end
+
+    SDK ==>|1. Conexão Direta em Tempo Real com Web API Key| Firestore
+    Rules -.->|2. Valida Permissões de Leitura e Escrita| Firestore
+    Backend -.->|Identidade do Servidor no GCP| SA
 ```
+
+1. **Frontend (Navegador do Usuário / PWA):**
+   - O aplicativo executa o SDK Web do Firebase (`firebase/firestore`) diretamente no navegador do cliente para suportar sincronização reativa em tempo real (`onSnapshot`) e funcionamento offline resiliente via `localStorage`.
+   - **Web API Key (`AIzaSy...`)**: É injetada no bundle JavaScript durante a etapa de build (`VITE_FIREBASE_API_KEY`). Ela serve como identificador de projeto para direcionar o tráfego do navegador aos servidores do Firestore.
+   - **Segurança**: As permissões de acesso e integridade dos documentos são controladas diretamente pelas regras em [firestore.rules](file:///Users/marllonfernandes/Desenvolvimento/pessoal/app-louvor/firestore.rules).
+
+2. **Backend (Google Cloud Run):**
+   - O servidor Node.js/Express roda no Cloud Run sob a Service Account `sa-louvor-app@lab-resources.iam.gserviceaccount.com`.
+   - O backend é responsável por servir a aplicação compilada (SPA Fallback), realizar healthchecks de infraestrutura e processar APIs auxiliares (como extração e importação de playlists do YouTube).
+
+---
+
+### 🔒 Restrições da Chave Web de API (Google Cloud Console)
+
+Para manter o Princípio do Menor Privilégio e garantir a segurança da Web API Key pública:
+
+- **Restrições de API (API Restrictions)**:
+  - ✅ **Cloud Firestore API** *(Obrigatória para leitura, gravação e WebSockets)*
+  - ✅ **Firebase Installations API** *(Recomendada para ciclo de vida do SDK)*
+
+> [!NOTE]
+> **Restrições de Aplicativo (Referenciadores HTTP)**:
+> As restrições de referenciador HTTP (como `http://localhost:*` ou `https://*.run.app/*`) **não foram adicionadas**, permitindo que a chave opere de forma flexível em qualquer ambiente de desenvolvimento, preview ou produção.
+
+---
+
+### 🚀 Passo a Passo de Deploy e Inicialização
+
+#### 1. Publicar as Regras de Segurança do Firestore
+Publique as regras do arquivo `firestore.rules` no seu banco de dados:
+```bash
+make deploy-rules
+```
+*(Ou copie o conteúdo de `firestore.rules` e cole na aba **Regras** do Cloud Firestore no Firebase/GCP Console).*
+
+#### 2. Executar o Deploy no Cloud Run
+Submeta o build e deploy para o Google Cloud Run injetando a sua Web API Key:
+```bash
+make deploy-gcp VITE_FIREBASE_API_KEY=AIzaSySuaChaveWebAqui
+```
+
+#### 3. Gravar os Dados Iniciais no Cloud Firestore (Seed)
+1. Abra a URL gerada pelo Cloud Run no navegador.
+2. Clique no ícone de **Configurações** (sliders/engrenagem no cabeçalho superior).
+3. Clique em **"Gravar Dados Iniciais no Firestore"**.
+4. O app criará automaticamente os registros iniciais de músicas, escalas, equipes e membros no Firestore, passando a sincronizar instantaneamente entre todos os integrantes!
+

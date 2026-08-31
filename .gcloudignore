@@ -1,0 +1,16 @@
+# ==============================================================================
+# .gcloudignore - Louvor App
+# Define os arquivos que o gcloud CLI envia para o Google Cloud Build
+# ==============================================================================
+
+.gcloudignore
+.git
+.gitignore
+node_modules/
+*/node_modules/
+dist/
+*/dist/
+
+# Permite explicitamente o envio do .env para o Cloud Build injetar no bundle
+!frontend/.env
+!frontend/.env.*

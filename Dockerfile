@@ -4,12 +4,9 @@
 FROM node:22-alpine AS frontend-builder
 WORKDIR /app/frontend
 
-# Argumentos de Build para injeção das variáveis no bundle JavaScript
-ARG VITE_FIREBASE_PROJECT_ID
-ARG VITE_FIREBASE_API_KEY
+# Usaremos o arquivo frontend/.env (copiado localmente) para as variáveis
+# Não definimos ENV VITE_FIREBASE_* vazios aqui para não sobrescrever o .env
 
-ENV VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID
-ENV VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY
 
 COPY frontend/package*.json ./
 RUN npm ci
