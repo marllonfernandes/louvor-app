@@ -1,0 +1,90 @@
+# ==============================================================================
+# .gitignore - Louvor App
+# ==============================================================================
+
+# Arquivos explicitamente solicitados para não serem versionados
+Makefile
+Makefile.*
+
+# Variáveis de Ambiente & Arquivos de Configuração Local
+.env
+.env.*
+!.env.example
+*.env
+backend/.env*
+!backend/.env.example
+frontend/.env*
+!frontend/.env.example
+
+# Credenciais, Chaves de API e Contas de Serviço
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!tsconfig.*.json
+!manifest.webmanifest
+*credentials*.json
+*service-account*.json
+*secret*.json
+google-services.json
+GoogleService-Info.plist
+
+# Dependências
+node_modules/
+*/node_modules/
+.pnp
+.pnp.js
+
+# Builds e Arquivos Gerados
+dist/
+*/dist/
+build/
+*/build/
+out/
+.next/
+backend/public/assets/
+backend/public/index.html
+backend/public/manifest.webmanifest
+backend/public/sw.js
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Sistema Operacional & Arquivos de Cache
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs e Editores
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.sublime-workspace
+*.sublime-project
+*.swp
+*.swo
+
+# Cobertura de Testes e Relatórios
+coverage/
+.nyc_output/
+
+# Arquivos Temporários
+tmp/
+temp/
+*.tmp
