@@ -1,0 +1,128 @@
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut, User as FirebaseUser } from 'firebase/auth';
+import { doc, getDoc, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
+import { auth, googleProvider, db, isFirestoreAvailable } from '../config/firebase';
+import { User } from '../types';
+
+interface AuthContextType {
+  currentUser: FirebaseUser | null;
+  userProfile: User | null;
+  loading: boolean;
+  error: string | null;
+  loginWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+  const [userProfile, setUserProfile] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
+      
+      if (user && isFirestoreAvailable && db) {
+        try {
+          // 1. Primeiro checa na nova coleção `users` se já existe
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          
+          if (userDocSnap.exists()) {
+            setUserProfile({ id: userDocSnap.id, ...userDocSnap.data() } as User);
+          } else {
+            // 2. Se não existir pelo UID, tenta achar pelo email (Convite criado pelo Líder)
+            if (user.email) {
+              const inviteRef = doc(db, 'users', user.email);
+              const inviteSnap = await getDoc(inviteRef);
+              
+              if (inviteSnap.exists()) {
+                // Migrar o convite para o UID definitivo
+                const inviteData = inviteSnap.data();
+                
+                const newUserProfile: User = {
+                  id: user.uid,
+                  name: inviteData.name || user.displayName || 'Sem Nome',
+                  email: user.email,
+                  phone: inviteData.phone || '',
+                  role: inviteData.role || 'Membro',
+                  roles: inviteData.roles || [],
+                  systemRole: inviteData.systemRole || 'Member',
+                  active: true,
+                  avatar: user.photoURL || undefined
+                };
+                
+                // Cria na coleção users com o UID
+                await setDoc(userDocRef, newUserProfile);
+                setUserProfile(newUserProfile);
+                
+                // Opcional: deletar o documento de convite original? Sim, para limpar.
+                // await deleteDoc(inviteRef); // Para simplificar as regras, deixaremos o admin limpar ou deixamos como está.
+              } else {
+                // Usuário não foi convidado
+                setError('Você não tem permissão para acessar o aplicativo. Solicite ao líder que o convide pelo seu email.');
+                if (auth) await firebaseSignOut(auth);
+                setCurrentUser(null);
+                setUserProfile(null);
+              }
+            } else {
+              setError('Seu login não forneceu um email válido.');
+              if (auth) await firebaseSignOut(auth);
+            }
+          }
+        } catch (err) {
+          console.error("Erro ao buscar perfil do usuário", err);
+          setError('Erro ao carregar seu perfil.');
+        }
+      } else {
+        setUserProfile(null);
+      }
+      
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const loginWithGoogle = async () => {
+    setError(null);
+    if (!auth) {
+      setError('Autenticação não configurada.');
+      return;
+    }
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Falha no login com Google.');
+    }
+  };
+
+  const logout = async () => {
+    if (auth) {
+      await firebaseSignOut(auth);
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{ currentUser, userProfile, loading, error, loginWithGoogle, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
+  }
+  return context;
+};

@@ -2,7 +2,24 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Funções utilitárias de validação
+    // Funções utilitárias de validação e IAM
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isUserDocAdmin(uid) {
+      // Checa se o usuário atual tem systemRole == 'Admin' no cadastro de users
+      return get(/databases/$(database)/documents/users/$(uid)).data.systemRole == 'Admin';
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && isUserDocAdmin(request.auth.uid);
+    }
+
+    function isSelf(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
     function isValidString(str, minLen, maxLen) {
       return str is string && str.size() >= minLen && str.size() <= maxLen;
     }
@@ -12,57 +29,82 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // 0. Coleção: users (Membros e permissões)
+    // ==========================================
+    match /users/{userId} {
+      // Qualquer pessoa autenticada pode ler os dados de outros membros (para listar equipe)
+      allow read: if isAuthenticated();
+      
+      // Apenas o próprio usuário pode editar seu perfil (ou o Admin)
+      // Nota: Não pode se auto-promover a Admin se não for Admin
+      allow update: if (isSelf(userId) && request.resource.data.systemRole == resource.data.systemRole) || isAdmin();
+      
+      // Criação inicial por um Admin (convite) ou pelo usuário aceitando o convite
+      allow create: if isAdmin() || (
+        isSelf(userId) && 
+        request.resource.data.systemRole == get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.systemRole
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Compatibilidade com coleção antiga 'members' - Migrar dados para 'users'
+    match /members/{memberId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin(); // Congelada para edições comuns, migrar aos poucos
+    }
+
+    // ==========================================
     // 1. Coleção: events (Escalas e Cultos)
     // ==========================================
     match /events/{eventId} {
-      allow read: if true;
-      allow create, update: if isValidString(request.resource.data.title, 1, 150)
-                            && request.resource.data.date is string
-                            && request.resource.data.time is string
-                            && isNonEmptyMap(request.resource.data.confirmed);
-      allow delete: if true;
+      allow read: if isAuthenticated();
+      
+      // Criar e deletar apenas admin
+      allow create, delete: if isAdmin();
+
+      // Update: Admin pode tudo. Membro pode apenas atualizar sua própria presença.
+      // Para saber se ele está mudando SÓ a presença dele, verificamos se os diffs são apenas no seu ID dentro do mapa 'confirmed'
+      allow update: if isAdmin() 
+        || (
+          isAuthenticated() 
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmed'])
+          // Idealmente checaríamos a key dentro do mapa, mas o hasOnly na raiz garante que o resto do evento não mudou.
+        );
     }
 
     // ==========================================
     // 2. Coleção: songs (Repertório de Músicas)
     // ==========================================
     match /songs/{songId} {
-      allow read: if true;
-      allow create, update: if isValidString(request.resource.data.title, 1, 150)
-                            && isValidString(request.resource.data.artist, 1, 100)
-                            && isValidString(request.resource.data.key, 1, 10);
-      allow delete: if true;
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
     }
 
     // ==========================================
-    // 3. Coleção: members (Integrantes e Músicos)
-    // ==========================================
-    match /members/{memberId} {
-      allow read: if true;
-      allow create, update: if isValidString(request.resource.data.name, 1, 100)
-                            && isValidString(request.resource.data.role, 1, 80);
-      allow delete: if true;
-    }
-
-    // ==========================================
-    // 4. Coleção: teams (Equipes de Louvor)
+    // 3. Coleção: teams (Equipes de Louvor)
     // ==========================================
     match /teams/{teamId} {
-      allow read: if true;
-      allow create, update: if isValidString(request.resource.data.name, 1, 100)
-                            && request.resource.data.members is list;
-      allow delete: if true;
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
     }
 
     // ==========================================
-    // 5. Coleção: adoption_songs (Sugestões & Votação)
+    // 4. Coleção: adoption_songs (Sugestões & Votação)
     // ==========================================
     match /adoption_songs/{songId} {
-      allow read: if true;
-      allow create, update: if isValidString(request.resource.data.title, 1, 150)
-                            && isValidString(request.resource.data.artist, 1, 100)
-                            && request.resource.data.votes is list;
-      allow delete: if true;
+      allow read: if isAuthenticated();
+      
+      // Qualquer um autenticado pode sugerir música
+      allow create: if isAuthenticated() && isValidString(request.resource.data.title, 1, 150);
+      
+      allow delete: if isAdmin();
+
+      // Update: Admin pode alterar status/aprovar. Membros podem apenas votar.
+      allow update: if isAdmin()
+        || (
+          isAuthenticated()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes'])
+        );
     }
   }
 }

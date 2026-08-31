@@ -8,6 +8,7 @@ import { TeamDetailModal } from './TeamDetailModal';
 import { AddMemberBottomSheet } from './AddMemberBottomSheet';
 import { AddTeamBottomSheet } from './AddTeamBottomSheet';
 import { Button } from '../ui/Button';
+import { useAuth } from '../../context/AuthContext';
 
 interface TeamViewProps {
   members: Member[];
@@ -47,6 +48,9 @@ export const TeamView: React.FC<TeamViewProps> = ({
     t.members.some(m => m.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const { userProfile } = useAuth();
+  const isLeader = userProfile?.role === 'Líder';
+
   const handleOpenCreateTeam = () => {
     setTeamToEdit(null);
     setIsAddTeamOpen(true);
@@ -78,23 +82,27 @@ export const TeamView: React.FC<TeamViewProps> = ({
 
         <div className="flex-shrink-0">
           {subTab === 'teams' ? (
-            <Button
-              onClick={handleOpenCreateTeam}
-              size="sm"
-              className="flex-shrink-0 whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm"
-              icon={<Plus size={16} />}
-            >
-              Novo Time
-            </Button>
+            isLeader && (
+              <Button
+                onClick={handleOpenCreateTeam}
+                size="sm"
+                className="flex-shrink-0 whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm"
+                icon={<Plus size={16} />}
+              >
+                Novo Time
+              </Button>
+            )
           ) : (
-            <Button
-              onClick={handleOpenCreateMember}
-              size="sm"
-              className="flex-shrink-0 whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm"
-              icon={<UserPlus size={16} />}
-            >
-              Novo Membro
-            </Button>
+            isLeader && (
+              <Button
+                onClick={handleOpenCreateMember}
+                size="sm"
+                className="flex-shrink-0 whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm"
+                icon={<UserPlus size={16} />}
+              >
+                Novo Membro
+              </Button>
+            )
           )}
         </div>
       </div>
@@ -147,9 +155,11 @@ export const TeamView: React.FC<TeamViewProps> = ({
               </div>
               <p className="text-sm font-bold text-slate-200">Nenhum time de louvor criado</p>
               <p className="text-xs text-slate-400">Crie times para facilitar a escala automática dos cultos.</p>
-              <Button size="sm" onClick={handleOpenCreateTeam} icon={<Plus size={16} />}>
-                Criar Primeiro Time
-              </Button>
+              {isLeader && (
+                <Button size="sm" onClick={handleOpenCreateTeam} icon={<Plus size={16} />}>
+                  Criar Primeiro Time
+                </Button>
+              )}
             </div>
           ) : (
             filteredTeams.map(team => (
@@ -172,9 +182,11 @@ export const TeamView: React.FC<TeamViewProps> = ({
                 <UserPlus size={24} />
               </div>
               <p className="text-sm font-bold text-slate-200">Nenhum membro encontrado</p>
-              <Button size="sm" onClick={handleOpenCreateMember} icon={<UserPlus size={16} />}>
-                Adicionar Membro
-              </Button>
+              {isLeader && (
+                <Button size="sm" onClick={handleOpenCreateMember} icon={<UserPlus size={16} />}>
+                  Adicionar Membro
+                </Button>
+              )}
             </div>
           ) : (
             filteredMembers.map(member => (

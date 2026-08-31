@@ -6,6 +6,7 @@ import { Button } from '../ui/Button';
 import { YoutubeIcon } from '../ui/YoutubeIcon';
 import { getYoutubeEmbedUrl, getYoutubeThumbnail } from '../../utils/youtube';
 import { transposeKey } from '../../utils/chordTransposer';
+import { useAuth } from '../../context/AuthContext';
 
 interface SongDetailModalProps {
   isOpen: boolean;
@@ -23,6 +24,8 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   onDeleteSong
 }) => {
   const [transposeOffset, setTransposeOffset] = useState(0);
+  const { userProfile } = useAuth();
+  const isLeader = userProfile?.role === 'Líder';
 
   if (!song) return null;
 
@@ -157,33 +160,37 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
               </a>
             )}
 
-            <Button
-              variant="secondary"
-              size="sm"
-              className="flex-1 min-h-[42px] px-3.5 text-xs font-bold"
-              onClick={() => {
-                onClose();
-                onEditSong(song);
-              }}
-              icon={<Pencil size={15} />}
-            >
-              Editar
-            </Button>
+            {isLeader && (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="flex-1 min-h-[42px] px-3.5 text-xs font-bold"
+                  onClick={() => {
+                    onClose();
+                    onEditSong(song);
+                  }}
+                  icon={<Pencil size={15} />}
+                >
+                  Editar
+                </Button>
 
-            <Button
-              variant="danger"
-              size="sm"
-              className="min-h-[42px] px-3.5 text-xs font-bold flex-shrink-0"
-              onClick={() => {
-                if (confirm(`Deseja realmente remover "${song.title}" do repertório?`)) {
-                  onDeleteSong(song.id);
-                  onClose();
-                }
-              }}
-              icon={<Trash2 size={15} />}
-            >
-              Excluir
-            </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  className="min-h-[42px] px-3.5 text-xs font-bold flex-shrink-0"
+                  onClick={() => {
+                    if (confirm(`Deseja realmente remover "${song.title}" do repertório?`)) {
+                      onDeleteSong(song.id);
+                      onClose();
+                    }
+                  }}
+                  icon={<Trash2 size={15} />}
+                >
+                  Excluir
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

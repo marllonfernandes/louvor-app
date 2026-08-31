@@ -8,6 +8,8 @@ import { TeamView } from './components/team/TeamView';
 import { MetricsView } from './components/metrics/MetricsView';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { ToastContainer, ToastMessage } from './components/ui/Toast';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { LoginView } from './components/auth/LoginView';
 import { 
   subscribeToEvents, 
   saveEvent, 
@@ -32,7 +34,8 @@ import {
 } from './services/firestoreService';
 import { WorshipEvent, Song, Member, Team, TabType, ConfirmationStatus, AdoptionSong } from './types';
 
-export function App() {
+export function AppContent() {
+  const { currentUser, userProfile, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('agenda');
   const [events, setEvents] = useState<WorshipEvent[]>([]);
   const [songs, setSongs] = useState<Song[]>([]);
@@ -251,6 +254,18 @@ export function App() {
     setActiveTab('playlist');
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (!currentUser || !userProfile) {
+    return <LoginView />;
+  }
+
   return (
     <MobileContainer>
       {/* Notificações Toast */}
@@ -334,6 +349,14 @@ export function App() {
         onShowToast={addToast}
       />
     </MobileContainer>
+  );
+}
+
+export function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

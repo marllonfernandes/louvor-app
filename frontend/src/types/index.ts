@@ -10,7 +10,7 @@ export interface WorshipEvent {
   time: string; // HH:mm
   location?: string;
   team?: string;
-  confirmed: Record<string, ConfirmationStatus>; // { [memberName]: 'accepted' | 'declined' | 'pending' }
+  confirmed: Record<string, ConfirmationStatus>; // { [userId]: 'accepted' | 'declined' | 'pending' }
   songIds?: string[]; // IDs das músicas escaladas para este culto
   notes?: string;
   createdAt?: number;
@@ -40,11 +40,13 @@ export interface AdoptionSong {
   suggestedKey?: string;
   suggestedCategory?: SongCategory;
   notes?: string;
+  suggestedByUserId?: string;
   suggestedByMemberName?: string;
   createdAt: number;
-  votes: string[]; // Nomes dos membros que votaram
+  votes: string[]; // IDs dos usuários que votaram
   status: 'voting' | 'approved' | 'rejected';
   approvedAt?: number;
+  approvedByUserId?: string;
   approvedByMemberName?: string;
 }
 
@@ -64,7 +66,8 @@ export type MemberRole =
   | 'Outro';
 
 export interface Member {
-  id: string;
+  id: string; // Auth UID
+  systemRole?: 'Admin' | 'Member';
   name: string;
   role: string; // Formato amigável (ex: "Líder, Violão")
   roles?: string[]; // Múltiplas funções selecionadas
@@ -74,10 +77,12 @@ export interface Member {
   avatar?: string;
 }
 
+export type User = Member;
+
 export interface Team {
   id: string;
   name: string;
-  members: string[]; // nomes ou IDs dos membros
+  members: string[]; // IDs dos membros
   color?: string;
   description?: string;
 }

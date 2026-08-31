@@ -174,18 +174,8 @@ export const AddAdoptionSongModal: React.FC<AddAdoptionSongModalProps> = ({
           <label className="block text-xs font-semibold text-slate-300 mb-1.5">
             Quem está sugerindo?
           </label>
-          <div className="relative">
-            <select
-              value={suggestedBy}
-              onChange={e => setSuggestedBy(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-blue-500 font-medium"
-            >
-              {members.map(m => (
-                <option key={m.id} value={m.name}>
-                  {m.name} ({m.role})
-                </option>
-              ))}
-            </select>
+          <div className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 font-medium">
+            {suggestedBy || 'Membro do Ministério'}
           </div>
         </div>
 

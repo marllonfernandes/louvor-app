@@ -1,6 +1,7 @@
 import React from 'react';
 import { Team, Member } from '../../types';
 import { Users, Pencil, ChevronRight } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface TeamCardProps {
   team: Team;
@@ -16,6 +17,9 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   onSelectTeam, 
   onEditTeam 
 }) => {
+  const { userProfile } = useAuth();
+  const isLeader = userProfile?.role === 'Líder';
+
   return (
     <div 
       onClick={() => onSelectTeam(team)}
@@ -34,16 +38,18 @@ export const TeamCard: React.FC<TeamCardProps> = ({
 
         {/* Ações de Edição e Indicador de Detalhes */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEditTeam(team);
-            }}
-            className="p-2 rounded-xl bg-slate-900 text-slate-300 hover:text-blue-600 dark:text-blue-400 hover:bg-slate-700 border border-slate-700/80 text-xs font-semibold active:scale-95 transition-all"
-            title="Editar Integrantes do Time"
-          >
-            <Pencil size={14} />
-          </button>
+          {isLeader && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditTeam(team);
+              }}
+              className="p-2 rounded-xl bg-slate-900 text-slate-300 hover:text-blue-600 dark:text-blue-400 hover:bg-slate-700 border border-slate-700/80 text-xs font-semibold active:scale-95 transition-all"
+              title="Editar Integrantes do Time"
+            >
+              <Pencil size={14} />
+            </button>
+          )}
 
           <span className="text-slate-400 group-hover:text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-all p-1">
             <ChevronRight size={16} />

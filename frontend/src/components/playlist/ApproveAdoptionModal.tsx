@@ -6,6 +6,7 @@ import { Input } from '../ui/Input';
 import { Crown, CheckCircle2, Music, Disc3, Sparkles } from 'lucide-react';
 import { ALL_KEYS } from '../../utils/chordTransposer';
 import { getYoutubeThumbnail } from '../../utils/youtube';
+import { useAuth } from '../../context/AuthContext';
 
 interface ApproveAdoptionModalProps {
   isOpen: boolean;
@@ -28,8 +29,10 @@ export const ApproveAdoptionModal: React.FC<ApproveAdoptionModalProps> = ({
   const [artist, setArtist] = useState('');
   const [finalKey, setFinalKey] = useState('C');
   const [finalCategory, setFinalCategory] = useState<SongCategory>('Adoração');
-  const [leaderName, setLeaderName] = useState(leaders[0]?.name || 'Líder de Louvor');
   const [notes, setNotes] = useState('');
+
+  const { userProfile } = useAuth();
+  const leaderName = userProfile?.name || 'Líder de Louvor';
 
   useEffect(() => {
     if (adoptionSong) {
@@ -38,9 +41,8 @@ export const ApproveAdoptionModal: React.FC<ApproveAdoptionModalProps> = ({
       setFinalKey(adoptionSong.suggestedKey || 'C');
       setFinalCategory(adoptionSong.suggestedCategory || 'Adoração');
       setNotes(adoptionSong.notes || '');
-      setLeaderName(leaders[0]?.name || 'Líder de Louvor');
     }
-  }, [adoptionSong, leaders]);
+  }, [adoptionSong]);
 
   if (!adoptionSong) return null;
 
@@ -147,24 +149,14 @@ export const ApproveAdoptionModal: React.FC<ApproveAdoptionModalProps> = ({
         </div>
 
         {/* Líder que está aprovando */}
-        {leaders.length > 0 && (
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">
-              Líder Responsável pela Aprovação
-            </label>
-            <select
-              value={leaderName}
-              onChange={e => setLeaderName(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 font-medium focus:outline-none focus:border-blue-500"
-            >
-              {leaders.map(l => (
-                <option key={l.id} value={l.name}>
-                  {l.name} (Líder)
-                </option>
-              ))}
-            </select>
+        <div>
+          <label className="block text-xs font-semibold text-slate-300 mb-1">
+            Líder Responsável pela Aprovação
+          </label>
+          <div className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 font-medium">
+            {leaderName} (Líder)
           </div>
-        )}
+        </div>
 
         {/* Instruções de Arranjo ou Dinâmica */}
         <div>

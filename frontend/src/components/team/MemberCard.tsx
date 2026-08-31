@@ -2,6 +2,7 @@ import React from 'react';
 import { Member } from '../../types';
 import { MessageCircle, ChevronRight, Pencil, Crown } from 'lucide-react';
 import { formatPhoneNumberForWhatsApp } from '../../utils/whatsapp';
+import { useAuth } from '../../context/AuthContext';
 
 interface MemberCardProps {
   member: Member;
@@ -29,7 +30,10 @@ export const MemberCard: React.FC<MemberCardProps> = ({
     ? member.roles
     : (member.role ? member.role.split(/[,/]/).map(r => r.trim()).filter(Boolean) : ['Vocal']);
 
-  const isLeader = rolesList.includes('Líder');
+  const isRoleLeader = rolesList.includes('Líder');
+  const { userProfile } = useAuth();
+  const isLeader = userProfile?.role === 'Líder';
+  const isSelf = userProfile?.id === member.id;
 
   return (
     <div 
@@ -39,7 +43,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
       <div className="flex items-center gap-3.5 min-w-0 flex-1">
         {/* Avatar com Iniciais e Borda Especial de Líder */}
         <div className={`w-11 h-11 rounded-2xl font-extrabold text-sm flex items-center justify-center flex-shrink-0 shadow-inner ${
-          isLeader 
+          isRoleLeader 
             ? 'bg-gradient-to-br from-amber-900/60 to-slate-900 text-amber-400 border border-amber-500/50' 
             : 'bg-gradient-to-br from-slate-700 to-slate-800 text-blue-400 border border-slate-700'
         }`}>
@@ -51,7 +55,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
             <h4 className="font-bold text-slate-100 text-base group-hover:text-blue-300 transition-colors truncate">
               {member.name}
             </h4>
-            {isLeader && (
+            {isRoleLeader && (
               <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md flex-shrink-0">
                 <Crown size={11} className="text-amber-400" />
                 Líder
@@ -89,16 +93,18 @@ export const MemberCard: React.FC<MemberCardProps> = ({
           </a>
         )}
 
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onEditMember(member);
-          }}
-          className="p-2 rounded-xl text-slate-400 hover:text-blue-400 hover:bg-slate-700/80 active:scale-95 transition-all bg-slate-900 border border-slate-700/60"
-          title="Editar Integrante"
-        >
-          <Pencil size={15} />
-        </button>
+        {(isLeader || isSelf) && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditMember(member);
+            }}
+            className="p-2 rounded-xl text-slate-400 hover:text-blue-400 hover:bg-slate-700/80 active:scale-95 transition-all bg-slate-900 border border-slate-700/60"
+            title="Editar Integrante"
+          >
+            <Pencil size={15} />
+          </button>
+        )}
 
         <span className="text-slate-400 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all p-1">
           <ChevronRight size={16} />

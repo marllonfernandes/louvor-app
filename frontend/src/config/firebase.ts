@@ -1,5 +1,6 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
+import { getAuth, GoogleAuthProvider, Auth } from 'firebase/auth';
 
 const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
 const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
@@ -8,11 +9,14 @@ const databaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID;
 // Configuração mínima e essencial para conexão direta com o Google Cloud Firestore
 const firebaseConfig = {
   apiKey,
-  projectId
+  projectId,
+  authDomain: `${projectId}.firebaseapp.com`
 };
 
 let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
+let auth: Auth | null = null;
+const googleProvider = new GoogleAuthProvider();
 let isFirestoreAvailable = false;
 const isRealApiKeyFormat = typeof apiKey === 'string' && apiKey.startsWith('AIza');
 
@@ -33,6 +37,7 @@ try {
     }
     // Conecta explicitamente ao database 'app-unida'
     db = getFirestore(app, databaseId);
+    auth = getAuth(app);
     isFirestoreAvailable = true;
     
     if (import.meta.env.DEV) {
@@ -46,6 +51,6 @@ try {
   isFirestoreAvailable = false;
 }
 
-export { app, db, isFirestoreAvailable, isRealApiKeyFormat, firebaseConfig, databaseId };
+export { app, db, auth, googleProvider, isFirestoreAvailable, isRealApiKeyFormat, firebaseConfig, databaseId };
 
 

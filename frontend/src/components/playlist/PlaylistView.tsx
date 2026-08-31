@@ -10,6 +10,7 @@ import { AddAdoptionSongModal } from './AddAdoptionSongModal';
 import { ApproveAdoptionModal } from './ApproveAdoptionModal';
 import { ImportPlaylistModal } from './ImportPlaylistModal';
 import { Button } from '../ui/Button';
+import { useAuth } from '../../context/AuthContext';
 
 interface PlaylistViewProps {
   songs: Song[];
@@ -48,8 +49,11 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
   const [selectedKey, setSelectedKey] = useState<string>('all');
   const [adoptionFilter, setAdoptionFilter] = useState<'all' | 'voting' | 'approved' | 'rejected'>('all');
 
+  const { userProfile } = useAuth();
+  
   // Identificação do Usuário / Votante Atual
-  const [currentVoterName, setCurrentVoterName] = useState<string>(members[0]?.name || 'Membro do Ministério');
+  const currentVoterName = userProfile?.name || 'Membro do Ministério';
+  const isCurrentUserLeader = userProfile?.role === 'Líder';
 
   // Modais
   const [isAddSongOpen, setIsAddSongOpen] = useState(false);
@@ -64,11 +68,6 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
     const r = [m.role, ...(m.roles || [])].join(' ').toLowerCase();
     return r.includes('líder') || r.includes('lider');
   });
-
-  const currentMemberObj = members.find(m => m.name === currentVoterName);
-  const isCurrentUserLeader = Boolean(
-    currentMemberObj && [currentMemberObj.role, ...(currentMemberObj.roles || [])].join(' ').toLowerCase().includes('lider')
-  );
 
   // Filtros do Repertório Principal
   const filteredSongs = songs.filter(song => {
@@ -111,29 +110,31 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
 
         <div className="flex items-center gap-2 flex-shrink-0">
           {subTab === 'repertoire' ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setIsImportPlaylistOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all text-xs font-bold border border-rose-500/30 shadow-sm"
-                title="Importar playlist completa do YouTube"
-              >
-                <YoutubeIcon size={15} />
-                <span className="hidden sm:inline">Importar</span> Playlist
-              </button>
+            isCurrentUserLeader && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsImportPlaylistOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all text-xs font-bold border border-rose-500/30 shadow-sm"
+                  title="Importar playlist completa do YouTube"
+                >
+                  <YoutubeIcon size={15} />
+                  <span className="hidden sm:inline">Importar</span> Playlist
+                </button>
 
-              <Button
-                onClick={() => {
-                  setSongToEdit(null);
-                  setIsAddSongOpen(true);
-                }}
-                size="sm"
-                className="flex-shrink-0 whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm"
-                icon={<Plus size={16} />}
-              >
-                Nova Música
-              </Button>
-            </>
+                <Button
+                  onClick={() => {
+                    setSongToEdit(null);
+                    setIsAddSongOpen(true);
+                  }}
+                  size="sm"
+                  className="flex-shrink-0 whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm"
+                  icon={<Plus size={16} />}
+                >
+                  Nova Música
+                </Button>
+              </>
+            )
           ) : (
             <Button
               onClick={() => setIsAddAdoptionOpen(true)}
@@ -232,14 +233,16 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
               </div>
               <p className="text-sm font-bold text-slate-200">Nenhuma música encontrada</p>
               <p className="text-xs text-slate-400">Cadastre músicas ou importe uma playlist do YouTube.</p>
-              <div className="flex justify-center gap-2 pt-1">
-                <Button size="sm" onClick={() => setIsImportPlaylistOpen(true)} icon={<YoutubeIcon size={15} />}>
-                  Importar Playlist
-                </Button>
-                <Button size="sm" variant="secondary" onClick={() => setIsAddSongOpen(true)} icon={<Plus size={16} />}>
-                  Nova Música
-                </Button>
-              </div>
+              {isCurrentUserLeader && (
+                <div className="flex justify-center gap-2 pt-1">
+                  <Button size="sm" onClick={() => setIsImportPlaylistOpen(true)} icon={<YoutubeIcon size={15} />}>
+                    Importar Playlist
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => setIsAddSongOpen(true)} icon={<Plus size={16} />}>
+                    Nova Música
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
@@ -265,18 +268,10 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
           {/* Seletor de Votante / Líder Ativo */}
           <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Votando como:</span>
-              <select
-                value={currentVoterName}
-                onChange={e => setCurrentVoterName(e.target.value)}
-                className="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-100 focus:outline-none focus:border-blue-500"
-              >
-                {members.map(m => (
-                  <option key={m.id} value={m.name}>
-                    {m.name} ({m.role})
-                  </option>
-                ))}
-              </select>
+              <span className="text-xs text-slate-400">Conectado como:</span>
+              <span className="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-100">
+                {currentVoterName} {isCurrentUserLeader ? '(Líder)' : ''}
+              </span>
             </div>
 
             {isCurrentUserLeader && (

@@ -397,7 +397,7 @@ export async function deleteAdoptionSong(songId: string): Promise<void> {
 export function subscribeToMembers(callback: (members: Member[]) => void): () => void {
   if (isFirestoreAvailable && db) {
     try {
-      const q = collection(db, 'members');
+      const q = collection(db, 'users');
       return onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
           const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Member));
@@ -422,12 +422,12 @@ export function subscribeToMembers(callback: (members: Member[]) => void): () =>
 }
 
 export async function saveMember(member: Omit<Member, 'id'> & { id?: string }): Promise<string> {
-  const id = member.id || `mem_${Date.now()}`;
+  const id = member.id || (member.email ? member.email.trim().toLowerCase() : `mem_${Date.now()}`);
   const newMember: Member = { ...member, id, active: member.active ?? true };
 
   if (isFirestoreAvailable && db) {
     try {
-      await setDoc(doc(db, 'members', id), newMember);
+      await setDoc(doc(db, 'users', id), newMember);
     } catch (e) {
       console.warn('Erro no Firestore ao salvar membro:', e);
     }
@@ -445,7 +445,7 @@ export async function saveMember(member: Omit<Member, 'id'> & { id?: string }): 
 export async function deleteMember(memberId: string): Promise<void> {
   if (isFirestoreAvailable && db) {
     try {
-      await deleteDoc(doc(db, 'members', memberId));
+      await deleteDoc(doc(db, 'users', memberId));
     } catch (e) {
       console.warn('Erro ao deletar membro:', e);
     }

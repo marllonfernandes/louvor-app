@@ -4,6 +4,7 @@ import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
 import { Users, Pencil, Trash2, MessageCircle } from 'lucide-react';
 import { formatPhoneNumberForWhatsApp } from '../../utils/whatsapp';
+import { useAuth } from '../../context/AuthContext';
 
 interface TeamDetailModalProps {
   isOpen: boolean;
@@ -27,6 +28,9 @@ export const TeamDetailModal: React.FC<TeamDetailModalProps> = ({
   const teamMembers = team.members
     .map(name => allMembers.find(m => m.name === name || m.id === name))
     .filter(Boolean) as Member[];
+
+  const { userProfile } = useAuth();
+  const isLeader = userProfile?.role === 'Líder';
 
   return (
     <BottomSheet
@@ -102,35 +106,37 @@ export const TeamDetailModal: React.FC<TeamDetailModalProps> = ({
         </div>
 
         {/* Rodapé de Ações */}
-        <div className="pt-3 border-t border-slate-800 flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            className="flex-1 min-h-[42px] px-3.5 text-xs font-bold"
-            onClick={() => {
-              onClose();
-              onEditTeam(team);
-            }}
-            icon={<Pencil size={15} />}
-          >
-            Editar Equipe
-          </Button>
-
-          <Button
-            variant="danger"
-            size="sm"
-            className="min-h-[42px] px-3.5 text-xs font-bold flex-shrink-0"
-            onClick={() => {
-              if (confirm(`Deseja realmente remover o time "${team.name}"?`)) {
-                onDeleteTeam(team.id);
+        {isLeader && (
+          <div className="pt-3 border-t border-slate-800 flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-1 min-h-[42px] px-3.5 text-xs font-bold"
+              onClick={() => {
                 onClose();
-              }
-            }}
-            icon={<Trash2 size={15} />}
-          >
-            Excluir
-          </Button>
-        </div>
+                onEditTeam(team);
+              }}
+              icon={<Pencil size={15} />}
+            >
+              Editar Equipe
+            </Button>
+
+            <Button
+              variant="danger"
+              size="sm"
+              className="min-h-[42px] px-3.5 text-xs font-bold flex-shrink-0"
+              onClick={() => {
+                if (confirm(`Deseja realmente remover o time "${team.name}"?`)) {
+                  onDeleteTeam(team.id);
+                  onClose();
+                }
+              }}
+              icon={<Trash2 size={15} />}
+            >
+              Excluir
+            </Button>
+          </div>
+        )}
       </div>
     </BottomSheet>
   );

@@ -4,6 +4,7 @@ import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
 import { MessageCircle, Pencil, Trash2, Users, Phone, Crown } from 'lucide-react';
 import { formatPhoneNumberForWhatsApp } from '../../utils/whatsapp';
+import { useAuth } from '../../context/AuthContext';
 
 interface MemberDetailModalProps {
   isOpen: boolean;
@@ -38,8 +39,12 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
     ? member.roles
     : (member.role ? member.role.split(/[,/]/).map(r => r.trim()).filter(Boolean) : ['Vocal']);
 
-  const isLeader = rolesList.includes('Líder');
+  const isRoleLeader = rolesList.includes('Líder');
   const memberTeams = teams.filter(t => t.members.includes(member.name));
+
+  const { userProfile } = useAuth();
+  const isLeader = userProfile?.role === 'Líder';
+  const isSelf = userProfile?.id === member.id;
 
   return (
     <BottomSheet
@@ -61,7 +66,7 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
           <div className="min-w-0 flex-1">
             <h3 className="font-bold text-slate-100 text-base truncate">{member.name}</h3>
             <div className="flex flex-wrap gap-1.5 mt-1.5">
-              {isLeader && (
+              {isRoleLeader && (
                 <span className="inline-flex items-center gap-1 text-xs font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-0.5 rounded-lg">
                   <Crown size={12} className="text-amber-400" />
                   Líder de Louvor
@@ -125,35 +130,39 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
         </div>
 
         {/* Rodapé de Ações */}
-        <div className="pt-3 border-t border-slate-800 flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            className="flex-1 min-h-[42px] px-3.5 text-xs font-bold"
-            onClick={() => {
-              onClose();
-              onEditMember(member);
-            }}
-            icon={<Pencil size={15} />}
-          >
-            Editar Integrante
-          </Button>
-
-          <Button
-            variant="danger"
-            size="sm"
-            className="min-h-[42px] px-3.5 text-xs font-bold flex-shrink-0"
-            onClick={() => {
-              if (confirm(`Deseja remover "${member.name}" da equipe?`)) {
-                onDeleteMember(member.id);
+        {(isLeader || isSelf) && (
+          <div className="pt-3 border-t border-slate-800 flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-1 min-h-[42px] px-3.5 text-xs font-bold"
+              onClick={() => {
                 onClose();
-              }
-            }}
-            icon={<Trash2 size={15} />}
-          >
-            Excluir
-          </Button>
-        </div>
+                onEditMember(member);
+              }}
+              icon={<Pencil size={15} />}
+            >
+              Editar Integrante
+            </Button>
+
+            {isLeader && (
+              <Button
+                variant="danger"
+                size="sm"
+                className="min-h-[42px] px-3.5 text-xs font-bold flex-shrink-0"
+                onClick={() => {
+                  if (confirm(`Deseja remover "${member.name}" da equipe?`)) {
+                    onDeleteMember(member.id);
+                    onClose();
+                  }
+                }}
+                icon={<Trash2 size={15} />}
+              >
+                Excluir
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </BottomSheet>
   );

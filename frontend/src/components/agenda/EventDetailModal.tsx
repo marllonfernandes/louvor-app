@@ -7,6 +7,7 @@ import { Badge } from '../ui/Badge';
 import { PresenceSelector } from './PresenceSelector';
 import { createMemberReminderLink } from '../../utils/whatsapp';
 import { getYoutubeThumbnail } from '../../utils/youtube';
+import { useAuth } from '../../context/AuthContext';
 
 interface EventDetailModalProps {
   isOpen: boolean;
@@ -38,6 +39,9 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const eventSongs = (event.songIds || []).map(id => songs.find(s => s.id === id)).filter(Boolean) as Song[];
   const confirmedEntries = Object.entries(event.confirmed || {});
 
+  const { userProfile } = useAuth();
+  const isLeader = userProfile?.role === 'Líder';
+
   return (
     <BottomSheet
       isOpen={isOpen}
@@ -59,17 +63,19 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </Badge>
           </div>
 
-          <button
-            onClick={() => {
-              onClose();
-              onEditEvent(event);
-            }}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 text-xs font-bold transition-all active:scale-95"
-            title="Editar este evento"
-          >
-            <Edit3 size={13} />
-            <span>Editar</span>
-          </button>
+          {isLeader && (
+            <button
+              onClick={() => {
+                onClose();
+                onEditEvent(event);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 text-xs font-bold transition-all active:scale-95"
+              title="Editar este evento"
+            >
+              <Edit3 size={13} />
+              <span>Editar</span>
+            </button>
+          )}
         </div>
 
         {/* Metadados */}
@@ -222,11 +228,17 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     </div>
 
                     {/* Seletor Amplo de Presença */}
-                    <PresenceSelector
-                      status={status}
-                      onChange={(newStatus) => onStatusChange(event.id, memberName, newStatus)}
-                      size="sm"
-                    />
+                    {(isLeader || userProfile?.name === memberName) ? (
+                      <PresenceSelector
+                        status={status}
+                        onChange={(newStatus) => onStatusChange(event.id, memberName, newStatus)}
+                        size="sm"
+                      />
+                    ) : (
+                      <div className="pt-2 text-xs font-bold text-slate-400">
+                        Status: {status === 'accepted' ? 'Confirmado' : status === 'declined' ? 'Não vai' : 'Pendente'}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -250,33 +262,37 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               WhatsApp
             </Button>
 
-            <Button
-              variant="primary"
-              size="sm"
-              className="min-h-[42px] text-xs font-bold shadow-md"
-              onClick={() => {
-                onClose();
-                onEditEvent(event);
-              }}
-              icon={<Edit3 size={15} />}
-            >
-              Editar Escala
-            </Button>
+            {isLeader && (
+              <Button
+                variant="primary"
+                size="sm"
+                className="min-h-[42px] text-xs font-bold shadow-md"
+                onClick={() => {
+                  onClose();
+                  onEditEvent(event);
+                }}
+                icon={<Edit3 size={15} />}
+              >
+                Editar Escala
+              </Button>
+            )}
           </div>
 
-          <button
-            type="button"
-            className="w-full text-center text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 p-2 rounded-xl transition-all flex items-center justify-center gap-1.5"
-            onClick={() => {
-              if (confirm('Deseja realmente excluir este evento da escala?')) {
-                onDeleteEvent(event.id);
-                onClose();
-              }
-            }}
-          >
-            <Trash2 size={13} />
-            <span>Excluir Evento</span>
-          </button>
+          {isLeader && (
+            <button
+              type="button"
+              className="w-full text-center text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 p-2 rounded-xl transition-all flex items-center justify-center gap-1.5"
+              onClick={() => {
+                if (confirm('Deseja realmente excluir este evento da escala?')) {
+                  onDeleteEvent(event.id);
+                  onClose();
+                }
+              }}
+            >
+              <Trash2 size={13} />
+              <span>Excluir Evento</span>
+            </button>
+          )}
         </div>
       </div>
     </BottomSheet>

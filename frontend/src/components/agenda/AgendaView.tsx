@@ -6,6 +6,7 @@ import { EventDetailModal } from './EventDetailModal';
 import { WhatsAppShareModal } from './WhatsAppShareModal';
 import { AddEventBottomSheet } from './AddEventBottomSheet';
 import { Button } from '../ui/Button';
+import { useAuth } from '../../context/AuthContext';
 
 interface AgendaViewProps {
   events: WorshipEvent[];
@@ -37,6 +38,9 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   const [shareEvent, setShareEvent] = useState<WorshipEvent | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<WorshipEvent | null>(null);
+
+  const { userProfile } = useAuth();
+  const isLeader = userProfile?.role === 'Líder';
 
   // Determina se o evento já passou
   const isEventPast = (ev: WorshipEvent) => {
@@ -92,14 +96,16 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
           <h2 className="text-lg sm:text-xl font-black text-slate-100 tracking-tight truncate">Escalas</h2>
           <p className="text-xs text-slate-400 truncate">Cultos, ensaios e presença</p>
         </div>
-        <Button
-          onClick={handleOpenCreateEvent}
-          size="sm"
-          className="flex-shrink-0 whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm"
-          icon={<Plus size={16} />}
-        >
-          Novo Evento
-        </Button>
+        {isLeader && (
+          <Button
+            onClick={handleOpenCreateEvent}
+            size="sm"
+            className="flex-shrink-0 whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm"
+            icon={<Plus size={16} />}
+          >
+            Novo Evento
+          </Button>
+        )}
       </div>
 
       {/* Segmented Control: Próximos vs Realizados */}
@@ -184,7 +190,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                 : 'Os eventos realizados aparecerão aqui.'}
             </p>
           </div>
-          {timelineTab === 'upcoming' && (
+          {(timelineTab === 'upcoming' && isLeader) && (
             <Button size="sm" onClick={handleOpenCreateEvent} icon={<Plus size={16} />}>
               Criar Nova Escala
             </Button>
