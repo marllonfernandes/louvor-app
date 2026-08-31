@@ -1,103 +1,138 @@
 # 🎵 Louvor App - Ministério de Música (Mobile Native & Google Cloud Run)
 
-Aplicativo moderno de alta performance para **Gestão do Ministério de Louvor**, com experiência 100% **Mobile Nativa (PWA)**, backend **Node.js** para hospedagem estática com SPA fallback, persistência integrada ao **Cloud Firestore** (`app-unida`) e automação completa via **Makefile** para deploy no **Google Cloud Run**.
+Aplicativo moderno e completo para **Gestão do Ministério de Louvor**, com experiência 100% **Mobile Nativa (PWA)**, backend **Node.js** para hospedagem estática com SPA fallback e endpoints de API, persistência integrada ao **Cloud Firestore** e fallback local reativo.
 
 ---
 
-## 📱 Destaques da Experiência Mobile Nativa
+## 📱 Funcionalidades e Destaques
 
-- **Navegação Inferior Nativa (Bottom Nav Bar)**: Abas rápidas para Agenda, Repertório e Equipe com safe area e feedback tátil.
-- **Gavetas Inferiores Deslizantes (Bottom Sheets)**: No lugar de popups desktop tradicionais, modais abrem suavemente de baixo para cima com puxador superior (handle) e animação fluida.
-- **Integração Instantânea com WhatsApp**:
-  - Confirmação individual de presença para integrantes da escala em 1 clique (`wa.me`).
-  - Compartilhamento formatado da escala completa (com horários, integrantes e setlist) para o grupo do louvor.
-- **Repertório Interativo**:
-  - Player embutido do YouTube responsivo.
-  - Ferramenta de **Transposição de Tom (+/- semitons)** para vocalistas e instrumentistas.
-  - Filtros instantâneos por Tom, Momento do Culto (Adoração, Celebração, etc.) e BPM.
-- **Gestão de Escalas e Equipes**:
-  - Controle de presença em tempo real (Confirmado ✅, Recusado ❌, Pendente ⏳).
-  - Times fixos (ex: Time Alfa, Jovens) e escalas avulsas.
-- **Sincronização Cloud Firestore + Fallback Offline**:
-  - Conexão configurada para o banco Firestore do projeto `app-unida`.
-  - Fallback transparente e instantâneo com armazenamento local reativo caso esteja offline.
+### 1. 📅 Gestão de Escalas & Agenda
+- **Edição Completa de Eventos**: Edite títulos, datas, horários, locais, setlist e integrantes de qualquer evento já criado.
+- **Controle Individual de Presença com Cores Padrão**:
+  - `✅ Confirmado / Vou`: Verde Esmeralda (`bg-emerald-600`) com anel de destaque.
+  - `❌ Não vou`: Vermelho Rose (`bg-rose-600`) com anel de destaque.
+  - `⏳ Pendente`: Âmbar / Laranja (`bg-amber-500`) com anel de destaque.
+- **Configuração de Presença na Criação/Edição**: Ajuste o status de cada integrante diretamente na tela de edição com ações rápidas de lote (*Todos Confirmados* / *Todos Pendentes*).
+- **Integração com WhatsApp**:
+  - Envio individual de lembretes e escala no WhatsApp (`wa.me`) em 1 clique.
+  - Compartilhamento formatado da escala completa para o grupo da igreja.
 
----
+### 2. 🎵 Repertório Oficial & Importação do YouTube
+- **Importação de Playlists do YouTube em Lote**: Cole o link de qualquer playlist pública do YouTube para importar dezenas de músicas automaticamente, com detecção de título, artista e capas.
+- **Configuração em Lote**: Defina tom e estilo padrão para todas as faixas da playlist ou ajuste individualmente.
+- **Cifra & Transposição de Tom**: Ferramenta interativa de **Transposição de Tom (+/- semitons)** para vocalistas e instrumentistas.
+- **Player Embutido**: Vídeos e áudios do YouTube integrados de forma responsiva.
+- **Filtros Inteligentes**: Filtros rápidos por Momento Litúrgico (Adoração, Celebração, Ministração, Abertura, Santa Ceia) e por Tom musical.
 
-## 🛠️ Comandos do Makefile
+### 3. 🗳️ Músicas para Adoção & Aprovação do Líder
+- **Sugestão de Canções**: Integrantes podem sugerir novas músicas com link do YouTube, tom sugerido, categoria e justificativa.
+- **Votação Democrática**: Sistema de votos em tempo real (`❤️ Votar na Música`) com ordenação automática das mais votadas no topo.
+- **Aprovação Exclusiva do Líder**: Canções sugeridas só entram no Repertório Oficial após aprovação de um membro com perfil de **Líder de Louvor**.
+- **Painel do Líder**: Modal de homologação onde o líder define o tom oficial final, momento litúrgico e instruções de arranjo.
 
-Todos os processos do projeto estão centralizados no `Makefile`:
+### 4. 👥 Gestão de Equipe & Múltiplas Funções
+- **Múltipla Escolha de Funções**: Cada integrante pode desempenhar múltiplos papéis (ex: *Líder de Louvor*, *Violão*, *Vocal*, *Ministro de Louvor*).
+- **Destaque Especial para Líderes**: Badge dourado com coroa 👑 (`Líder de Louvor`), borda destacada e avatar exclusivo.
+- **Times Fixos & Escalas Avulsas**: Crie equipes pré-definidas (ex: *Time Alfa*, *Time Jovens*) para preenchimento rápido de escalas.
 
-| Comando | Descrição |
-|---|---|
-| `make install` | Instala todas as dependências do Frontend e Backend |
-| `make dev-front` | Executa o frontend em modo Dev com Vite (porta `5173`) |
-| `make dev-back` | Executa o backend Express em modo Dev com hot-reload |
-| `make build-front` | Compila o frontend React + TypeScript (`frontend/dist`) |
-| `make copy-front` | Copia os arquivos compilados do frontend para `backend/public` |
-| `make build-back` | Compila o backend TypeScript para JavaScript (`backend/dist`) |
-| `make build` | **Executa o pipeline completo**: `build-front` ➔ `copy-front` ➔ `build-back` |
-| `make run-local` | Executa o build e roda o servidor em produção localmente na porta `8080` |
-| `make docker-build`| Constrói a imagem Docker multi-stage localmente |
-| `make docker-run` | Executa o container Docker localmente na porta `8080` |
-| `make deploy-gcp` | Realiza o deploy direto no **Google Cloud Run** usando `gcloud` |
+### 5. 📊 Métricas & Estatísticas do Ministério
+- **Top Músicas Mais Tocadas**: Gráfico das canções mais executadas nos cultos.
+- **Top Integrantes Escalados**: Ranking de participação dos voluntários e músicos.
+- **Distribuição de Tons**: Visualização da variedade de tonalidades utilizadas nas ministrações.
+
+### 6. ⚡ Arquitetura Resiliente & Modo Offline
+- **Sincronização Cloud Firestore**: Conexão em tempo real com o banco de dados.
+- **Fallback Local Automático**: Funcionamento offline transparente via `localStorage` com reatividade total se o Firestore não estiver acessível.
 
 ---
 
 ## 🚀 Como Executar Localmente
 
-### 1. Instalar Dependências
+### Pré-requisitos
+- **Node.js** v18+ e **npm**
+
+### 1. Instalação das Dependências
 ```bash
-make install
+# Na raiz do projeto:
+npm --prefix frontend install && npm --prefix backend install
 ```
 
-### 2. Desenvolvimento com Hot-Reload
-Em um terminal:
+### 2. Executar o Frontend (Modo Dev com Hot-Reload)
 ```bash
-make dev-front
+npm --prefix frontend run dev
 ```
-Acesse `http://localhost:5173` no navegador ou inspecione com a visualização mobile do DevTools.
+Acesse `http://localhost:5173` no navegador (recomendado inspecionar em modo Mobile no DevTools).
 
-### 3. Teste em Produção Local (Servido pelo Backend Node.js)
+### 3. Executar o Backend
 ```bash
-make run-local
+npm --prefix backend run dev
 ```
-Acesse `http://localhost:8080`.
+O servidor inicializa em `http://localhost:8080` (API com endpoints `/api/health`, `/api/info` e `/api/youtube/playlist`).
+
+---
+
+## 🛠️ Build para Produção
+
+Para gerar o bundle compilado do frontend e backend:
+
+```bash
+# 1. Compilar Frontend
+npm --prefix frontend run build
+
+# 2. Copiar build do Frontend para a pasta pública do Backend
+rm -rf backend/public && cp -r frontend/dist backend/public
+
+# 3. Compilar Backend
+npm --prefix backend run build
+
+# 4. Executar em Produção
+NODE_ENV=production npm --prefix backend start
+```
+
+---
+
+## 📁 Estrutura do Projeto
+
+```
+app-louvor/
+├── Dockerfile                    # Container multi-stage pronto para Cloud Run
+├── .dockerignore                 # Ignora node_modules e arquivos temporários no Docker
+├── .gitignore                    # Bloqueia .env, credenciais, builds e Makefile
+├── .env.example                  # Modelo de variáveis de ambiente
+├── README.md                     # Documentação completa do projeto
+├── firestore.rules               # Regras de segurança do Firestore
+├── frontend/                     # Aplicação React 18 + Vite + TypeScript + Tailwind CSS
+│   ├── public/                   # Manifest PWA e ícones
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── agenda/           # Escalas, detalhes, seletores de músicos e músicas
+│   │   │   ├── playlist/         # Repertório, adoção de canções, importador do YouTube
+│   │   │   ├── team/             # Integrantes, múltiplas funções, times
+│   │   │   ├── metrics/          # Dashboard e estatísticas do ministério
+│   │   │   ├── layout/           # BottomNav, Header e container mobile
+│   │   │   └── ui/               # Botões, BottomSheet, Badges, Toasts
+│   │   ├── config/               # Inicialização do Firebase Firestore
+│   │   ├── services/             # Sincronização reativa e mockData
+│   │   ├── types/                # Interfaces TypeScript do sistema
+│   │   └── utils/                # WhatsApp, YouTube e Transpositor de Tom
+│   └── vite.config.ts
+└── backend/                      # Servidor Node.js / Express
+    ├── src/
+    │   └── server.ts             # Servidor SPA Fallback, /api/health e /api/youtube/playlist
+    └── public/                   # Build estático do frontend servido em produção
+```
 
 ---
 
 ## ☁️ Deploy no Google Cloud Run
 
-O projeto possui um `Dockerfile` multi-stage otimizado que compila tanto o frontend quanto o backend em uma imagem leve Node.js Alpine que escuta na porta dinâmica `$PORT` do Cloud Run.
+O projeto conta com containerização `Dockerfile` multi-stage otimizada. Para realizar o build e deploy no Google Cloud Run:
 
-### Deploy direto via gcloud:
 ```bash
-make deploy-gcp
-```
-*(Você pode sobrescrever variáveis caso necessário: `make deploy-gcp GCP_PROJECT=app-unida GCP_REGION=us-central1`)*
-
----
-
-## 📁 Estrutura de Pastas
-
-```
-app-louvor/
-├── Makefile                      # Automação de processos (build, copy, deploy)
-├── Dockerfile                    # Container multi-stage pronto para Cloud Run
-├── .dockerignore
-├── .env.example
-├── README.md
-├── frontend/                     # React 18 + Vite + TypeScript + Tailwind CSS
-│   ├── public/                   # Manifest PWA e ícones
-│   ├── src/
-│   │   ├── components/           # Componentes modulares (Agenda, Playlist, Team, UI)
-│   │   ├── config/               # Configuração do Firebase/Firestore
-│   │   ├── services/             # Camada Firestore com reatividade e mock
-│   │   ├── types/                # Definições TypeScript
-│   │   └── utils/                # WhatsApp, YouTube, Transpositor de Tom
-│   └── vite.config.ts
-└── backend/                      # Servidor Node.js / Express
-    ├── src/
-    │   └── server.ts             # Servidor com SPA Fallback, /api/health e static host
-    └── public/                   # Destino dos arquivos de build do frontend
+# Build e Deploy via gcloud CLI
+gcloud run deploy louvor-app \
+  --source . \
+  --region southamerica-east1 \
+  --allow-unauthenticated \
+  --port 8080
 ```
