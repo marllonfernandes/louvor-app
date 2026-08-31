@@ -3,7 +3,8 @@ import { WorshipEvent, Member, Song } from '../types';
 /**
  * Limpa o número de telefone e garante o formato internacional para o WhatsApp
  */
-export function formatPhoneNumberForWhatsApp(phone: string): string {
+export function formatPhoneNumberForWhatsApp(phone: string | undefined | null): string {
+  if (!phone) return '';
   const digitsOnly = phone.replace(/\D/g, '');
   if (!digitsOnly) return '';
   
