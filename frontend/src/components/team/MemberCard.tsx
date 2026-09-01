@@ -32,7 +32,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
 
   const isRoleLeader = rolesList.includes('Líder');
   const { userProfile } = useAuth();
-  const isLeader = userProfile?.role === 'Líder';
+  const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
   const isSelf = userProfile?.id === member.id;
 
   return (

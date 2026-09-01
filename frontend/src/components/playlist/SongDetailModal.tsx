@@ -25,7 +25,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
 }) => {
   const [transposeOffset, setTransposeOffset] = useState(0);
   const { userProfile } = useAuth();
-  const isLeader = userProfile?.role === 'Líder';
+  const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
 
   if (!song) return null;
 

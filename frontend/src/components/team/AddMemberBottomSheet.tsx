@@ -3,7 +3,7 @@ import { Member, MemberRole } from '../../types';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { User, Phone, Check, Crown, Sparkles, Mail } from 'lucide-react';
+import { User, Phone, Check, Crown, Sparkles, Mail, Shield, Eye, Edit2 } from 'lucide-react';
 
 interface AddMemberBottomSheetProps {
   isOpen: boolean;
@@ -38,6 +38,7 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
   const [email, setEmail] = useState('');
   const [selectedRoles, setSelectedRoles] = useState<string[]>(['Vocal']);
   const [phone, setPhone] = useState('');
+  const [systemRole, setSystemRole] = useState<'Admin' | 'Editor' | 'Viewer'>('Viewer');
 
   useEffect(() => {
     if (memberToEdit) {
@@ -53,11 +54,13 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
         setSelectedRoles(['Vocal']);
       }
       setPhone(memberToEdit.phone || '');
+      setSystemRole(memberToEdit.systemRole || (memberToEdit.roles?.includes('Líder') || memberToEdit.role?.includes('Líder') ? 'Editor' : 'Viewer'));
     } else {
       setName('');
       setEmail('');
       setSelectedRoles(['Vocal']);
       setPhone('');
+      setSystemRole('Viewer');
     }
   }, [memberToEdit, isOpen]);
 
@@ -83,6 +86,7 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
       email: email.trim(),
       role: selectedRoles.join(', '),
       roles: selectedRoles,
+      systemRole,
       phone: phone.trim(),
       active: true
     });
@@ -173,6 +177,46 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
           icon={<Phone size={15} />}
           helperText="Usado para envio de escala e lembretes no WhatsApp."
         />
+
+        {/* Seleção de Permissão / Nível de Acesso */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5 mt-2">
+            <label className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+              Nível de Acesso (Permissões)
+            </label>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {[
+              { id: 'Admin', label: 'Administrador', desc: 'Acesso total', icon: <Shield size={14} /> },
+              { id: 'Editor', label: 'Editor', desc: 'Gerencia eventos e repertório', icon: <Edit2 size={14} /> },
+              { id: 'Viewer', label: 'Visualizador', desc: 'Apenas visualiza e confirma', icon: <Eye size={14} /> }
+            ].map(roleOption => (
+              <button
+                key={roleOption.id}
+                type="button"
+                onClick={() => setSystemRole(roleOption.id as any)}
+                className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition-all active:scale-95 ${
+                  systemRole === roleOption.id
+                    ? 'bg-blue-600/20 border-blue-500 text-blue-300 shadow-md shadow-blue-950/30'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-300'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <div className={systemRole === roleOption.id ? 'text-blue-400' : 'text-slate-500'}>
+                    {roleOption.icon}
+                  </div>
+                  <span className={`text-xs font-bold ${systemRole === roleOption.id ? 'text-blue-300' : 'text-slate-300'}`}>
+                    {roleOption.label}
+                  </span>
+                </div>
+                <span className="text-[10px] leading-tight text-slate-500">
+                  {roleOption.desc}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="flex gap-2 pt-2 border-t border-slate-800">
           <Button type="button" variant="secondary" fullWidth onClick={onClose}>

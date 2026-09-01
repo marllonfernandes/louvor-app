@@ -40,7 +40,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   const [eventToEdit, setEventToEdit] = useState<WorshipEvent | null>(null);
 
   const { userProfile } = useAuth();
-  const isLeader = userProfile?.role === 'Líder';
+  const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
 
   // Determina se o evento já passou
   const isEventPast = (ev: WorshipEvent) => {

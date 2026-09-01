@@ -67,7 +67,7 @@ export type MemberRole =
 
 export interface Member {
   id: string; // Auth UID
-  systemRole?: 'Admin' | 'Member';
+  systemRole?: 'Admin' | 'Editor' | 'Viewer';
   name: string;
   role: string; // Formato amigável (ex: "Líder, Violão")
   roles?: string[]; // Múltiplas funções selecionadas

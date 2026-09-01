@@ -53,7 +53,7 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
   
   // Identificação do Usuário / Votante Atual
   const currentVoterName = userProfile?.name || 'Membro do Ministério';
-  const isCurrentUserLeader = userProfile?.role === 'Líder';
+  const isCurrentUserLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
 
   // Modais
   const [isAddSongOpen, setIsAddSongOpen] = useState(false);

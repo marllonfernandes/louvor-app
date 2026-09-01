@@ -30,7 +30,7 @@ export const TeamDetailModal: React.FC<TeamDetailModalProps> = ({
     .filter(Boolean) as Member[];
 
   const { userProfile } = useAuth();
-  const isLeader = userProfile?.role === 'Líder';
+  const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
 
   return (
     <BottomSheet

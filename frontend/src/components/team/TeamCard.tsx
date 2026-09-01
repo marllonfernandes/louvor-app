@@ -18,7 +18,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   onEditTeam 
 }) => {
   const { userProfile } = useAuth();
-  const isLeader = userProfile?.role === 'Líder';
+  const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
 
   return (
     <div 

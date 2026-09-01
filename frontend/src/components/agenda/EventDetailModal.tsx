@@ -40,7 +40,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const confirmedEntries = Object.entries(event.confirmed || {});
 
   const { userProfile } = useAuth();
-  const isLeader = userProfile?.role === 'Líder';
+  const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
 
   return (
     <BottomSheet

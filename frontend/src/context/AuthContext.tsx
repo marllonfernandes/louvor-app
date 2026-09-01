@@ -32,21 +32,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (user && isFirestoreAvailable && db) {
         try {
-          // 1. Primeiro checa na nova coleção `users` se já existe
+          // Realiza as consultas no banco de dados em paralelo para agilizar a verificação
           const userDocRef = doc(db, 'users', user.uid);
-          const userDocSnap = await getDoc(userDocRef);
+          const usersRef = collection(db, 'users');
+          const emailQuery = user.email ? query(usersRef, where('email', '==', user.email)) : null;
+
+          const [userDocSnap, querySnapshot] = await Promise.all([
+            getDoc(userDocRef),
+            emailQuery ? getDocs(emailQuery) : Promise.resolve({ empty: true, docs: [] })
+          ]);
           
           if (userDocSnap.exists()) {
-            setUserProfile({ id: userDocSnap.id, ...userDocSnap.data() } as User);
+            const data = userDocSnap.data();
+            let systemRole = data.systemRole;
+            
+            // Migração em memória para usuários antigos
+            if (systemRole === 'Member' || !systemRole) {
+              if (data.roles?.includes('Líder') || data.role?.includes('Líder')) {
+                systemRole = 'Editor';
+              } else {
+                systemRole = 'Viewer';
+              }
+            }
+            
+            setUserProfile({ id: userDocSnap.id, ...data, systemRole } as User);
           } else {
-            // 2. Se não existir pelo UID, tenta achar pelo email (Convite criado pelo Líder)
+            // 2. Se não existir pelo UID, checa o resultado da busca por email (Convite criado pelo Líder)
             if (user.email) {
-              const inviteRef = doc(db, 'users', user.email);
-              const inviteSnap = await getDoc(inviteRef);
-              
-              if (inviteSnap.exists()) {
+              if (!querySnapshot.empty) {
                 // Migrar o convite para o UID definitivo
-                const inviteData = inviteSnap.data();
+                const inviteDoc = (querySnapshot as any).docs[0];
+                const inviteData = inviteDoc.data();
                 
                 const newUserProfile: User = {
                   id: user.uid,
@@ -55,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   phone: inviteData.phone || '',
                   role: inviteData.role || 'Membro',
                   roles: inviteData.roles || [],
-                  systemRole: inviteData.systemRole || 'Member',
+                  systemRole: inviteData.systemRole === 'Member' ? 'Viewer' : (inviteData.systemRole || 'Viewer'),
                   active: true,
                   avatar: user.photoURL || undefined
                 };
@@ -64,8 +80,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 await setDoc(userDocRef, newUserProfile);
                 setUserProfile(newUserProfile);
                 
-                // Opcional: deletar o documento de convite original? Sim, para limpar.
-                // await deleteDoc(inviteRef); // Para simplificar as regras, deixaremos o admin limpar ou deixamos como está.
+                // Opcional: deletar o documento de convite original?
+                // await deleteDoc(inviteDoc.ref);
               } else {
                 // Usuário não foi convidado
                 setError('Você não tem permissão para acessar o aplicativo. Solicite ao líder que o convide pelo seu email.');

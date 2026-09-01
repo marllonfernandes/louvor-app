@@ -49,7 +49,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
   );
 
   const { userProfile } = useAuth();
-  const isLeader = userProfile?.role === 'Líder';
+  const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
 
   const handleOpenCreateTeam = () => {
     setTeamToEdit(null);
