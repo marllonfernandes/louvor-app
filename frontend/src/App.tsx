@@ -58,6 +58,8 @@ export function AppContent() {
 
   // Assinatura reativa aos dados (Firestore / Local fallback)
   useEffect(() => {
+    if (!currentUser) return; // Só tenta buscar dados do Firestore após estar autenticado
+
     const unsubEvents = subscribeToEvents(data => setEvents(data));
     const unsubSongs = subscribeToSongs(data => setSongs(data));
     const unsubAdoptionSongs = subscribeToAdoptionSongs(data => setAdoptionSongs(data));
@@ -71,7 +73,7 @@ export function AppContent() {
       unsubMembers();
       unsubTeams();
     };
-  }, []);
+  }, [currentUser]);
 
   // Handlers para Agenda
   const handleSaveEvent = async (newEvent: Omit<WorshipEvent, 'id'> & { id?: string }) => {

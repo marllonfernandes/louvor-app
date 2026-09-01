@@ -1,7 +1,8 @@
 import React from 'react';
-import { Music, Cloud, Database, Sliders, Sun, Moon } from 'lucide-react';
+import { Music, Cloud, Database, Sliders, Sun, Moon, User as UserIcon } from 'lucide-react';
 import { isFirestoreAvailable } from '../../config/firebase';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 interface HeaderProps {
   onOpenSettings: () => void;
@@ -9,6 +10,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   const { theme, toggleTheme } = useTheme();
+  const { userProfile } = useAuth();
 
   return (
     <header 
@@ -28,37 +30,47 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
               PRO
             </span>
           </h1>
-          <p className="text-[11px] text-slate-400">Ministério de Música • UNIDA</p>
+          <p className="text-[11px] text-slate-400 truncate max-w-[120px] xs:max-w-[200px]">
+            {userProfile ? `Olá, ${userProfile.name.split(' ')[0]}` : 'Ministério de Música'}
+          </p>
         </div>
       </div>
 
       <div className="flex items-center gap-1.5">
+        {/* Avatar do Usuário */}
+        {userProfile && (
+          <div className="hidden xs:flex items-center justify-center w-8 h-8 rounded-full bg-slate-800 border border-slate-700 overflow-hidden shrink-0">
+            {userProfile.avatar ? (
+              <img src={userProfile.avatar} alt={userProfile.name} className="w-full h-full object-cover" />
+            ) : (
+              <UserIcon size={16} className="text-slate-400" />
+            )}
+          </div>
+        )}
+
         {/* Status de Conexão Firestore */}
         <div 
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/90 border border-slate-700/80 text-[11px] font-medium text-slate-300 shadow-sm"
+          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/90 border border-slate-700/80 text-[11px] font-medium text-slate-300 shadow-sm"
           title={isFirestoreAvailable ? "Conectado ao Cloud Firestore (app-unida)" : "Modo Local / Offline Ativo"}
         >
           {isFirestoreAvailable ? (
             <>
               <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
               <Cloud size={12} className="text-blue-600 dark:text-blue-400" />
-              <span className="hidden xs:inline text-blue-700 dark:text-blue-300">Nuvem</span>
             </>
           ) : (
             <>
               <span className="w-2 h-2 rounded-full bg-cyan-400" />
               <Database size={12} className="text-cyan-400" />
-              <span className="hidden xs:inline text-slate-300">Local</span>
             </>
           )}
         </div>
 
-        {/* Botão de Alternância de Tema (Light / Dark) */}
+        {/* Botão de Alternância de Tema */}
         <button
           onClick={toggleTheme}
-          className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 text-slate-300 hover:text-blue-600 dark:text-blue-400 flex items-center justify-center active:scale-95 transition-all shadow-sm"
+          className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 text-slate-300 hover:text-blue-600 dark:text-blue-400 flex items-center justify-center active:scale-95 transition-all shadow-sm shrink-0"
           aria-label={theme === 'dark' ? 'Mudar para Tema Claro' : 'Mudar para Tema Escuro'}
-          title={theme === 'dark' ? 'Mudar para Tema Claro' : 'Mudar para Tema Escuro'}
         >
           {theme === 'dark' ? (
             <Sun size={15} className="text-amber-400" />
@@ -70,11 +82,19 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
         {/* Botão de Configurações */}
         <button
           onClick={onOpenSettings}
-          className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 text-slate-300 hover:text-slate-100 flex items-center justify-center active:scale-95 transition-all shadow-sm"
-          aria-label="Configurações e Nuvem"
-          title="Configurações e Nuvem"
+          className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 text-slate-300 hover:text-slate-100 flex items-center justify-center active:scale-95 transition-all shadow-sm shrink-0 relative"
+          aria-label="Configurações"
         >
-          <Sliders size={15} />
+          {/* Se estiver no mobile e tiver avatar, podemos mostrar o avatar aqui no lugar das configurações, mas vamos manter o botão separado */}
+          {!userProfile?.avatar && <Sliders size={15} />}
+          {userProfile?.avatar && (
+            <div className="xs:hidden w-full h-full rounded-full overflow-hidden">
+              <img src={userProfile.avatar} alt="Config" className="w-full h-full object-cover opacity-80 hover:opacity-100" />
+            </div>
+          )}
+          {userProfile?.avatar && (
+             <Sliders size={12} className="absolute -bottom-1 -right-1 text-slate-400 xs:block hidden" />
+          )}
         </button>
       </div>
     </header>
