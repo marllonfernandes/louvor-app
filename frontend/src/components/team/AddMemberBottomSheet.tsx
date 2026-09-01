@@ -3,7 +3,7 @@ import { Member, MemberRole } from '../../types';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { User, Phone, Check, Crown, Sparkles } from 'lucide-react';
+import { User, Phone, Check, Crown, Sparkles, Mail } from 'lucide-react';
 
 interface AddMemberBottomSheetProps {
   isOpen: boolean;
@@ -35,12 +35,14 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
   memberToEdit
 }) => {
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [selectedRoles, setSelectedRoles] = useState<string[]>(['Vocal']);
   const [phone, setPhone] = useState('');
 
   useEffect(() => {
     if (memberToEdit) {
       setName(memberToEdit.name || '');
+      setEmail(memberToEdit.email || '');
       if (memberToEdit.roles && memberToEdit.roles.length > 0) {
         setSelectedRoles(memberToEdit.roles);
       } else if (memberToEdit.role) {
@@ -53,6 +55,7 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
       setPhone(memberToEdit.phone || '');
     } else {
       setName('');
+      setEmail('');
       setSelectedRoles(['Vocal']);
       setPhone('');
     }
@@ -77,6 +80,7 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
     onSaveMember({
       ...(memberToEdit?.id ? { id: memberToEdit.id } : {}),
       name: name.trim(),
+      email: email.trim(),
       role: selectedRoles.join(', '),
       roles: selectedRoles,
       phone: phone.trim(),
@@ -104,6 +108,16 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
           onChange={e => setName(e.target.value)}
           required
           icon={<User size={15} />}
+        />
+
+        <Input
+          label="E-mail (Convite de Acesso)"
+          type="email"
+          placeholder="joao@email.com"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          icon={<Mail size={15} />}
+          helperText="Necessário para o integrante conseguir fazer login no aplicativo."
         />
 
         {/* Múltipla Escolha de Funções */}
@@ -138,9 +152,9 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
                     <span className="text-xs font-bold truncate">{r}</span>
                   </div>
                   {isSelected && (
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      isLeader ? 'bg-amber-400 text-slate-950' : 'bg-white text-blue-600'
-                    }`}>
+                     <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
+                       isLeader ? 'bg-amber-400 text-slate-950' : 'bg-white text-blue-600'
+                     }`}>
                       <Check size={11} className="stroke-[3]" />
                     </div>
                   )}
