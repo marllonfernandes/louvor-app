@@ -66,7 +66,9 @@ export type MemberRole =
   | 'Outro';
 
 export interface Member {
-  id: string; // Auth UID
+  id: string; // Document ID (anteriormente tratado apenas como Auth UID, mas agora pode ser mem_xxx)
+  uid?: string; // Auth UID real, após o usuário aceitar o convite e se cadastrar
+  inviteToken?: string; // Token gerado para o link mágico de convite
   systemRole?: 'Admin' | 'Editor' | 'Viewer';
   name: string;
   role: string; // Formato amigável (ex: "Líder, Violão")

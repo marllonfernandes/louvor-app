@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
 import { auth, googleProvider, db, isFirestoreAvailable } from '../config/firebase';
 import { User } from '../types';
 
@@ -37,6 +37,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const usersRef = collection(db, 'users');
           const emailQuery = user.email ? query(usersRef, where('email', '==', user.email)) : null;
 
+          const urlParams = new URLSearchParams(window.location.search);
+          const inviteToken = urlParams.get('inviteToken');
+          
+          if (inviteToken) {
+            // Process invite token
+            const tokenQuery = query(usersRef, where('inviteToken', '==', inviteToken));
+            const tokenSnap = await getDocs(tokenQuery);
+            if (!tokenSnap.empty) {
+              const inviteDoc = tokenSnap.docs[0];
+              const inviteData = inviteDoc.data();
+              
+              const newUserProfile: User = {
+                id: user.uid,
+                uid: user.uid,
+                name: inviteData.name || user.displayName || 'Sem Nome',
+                email: user.email || inviteData.email || '',
+                phone: inviteData.phone || '',
+                role: inviteData.role || 'Membro',
+                roles: inviteData.roles || [],
+                systemRole: inviteData.systemRole === 'Member' ? 'Viewer' : (inviteData.systemRole || 'Viewer'),
+                active: true,
+                avatar: user.photoURL || undefined
+              };
+              
+              // Move data to new UID and delete old invite document
+              await setDoc(userDocRef, newUserProfile);
+              await deleteDoc(inviteDoc.ref);
+              
+              setUserProfile(newUserProfile);
+              window.history.replaceState({}, document.title, window.location.pathname);
+              setLoading(false);
+              return; // Done processing invite
+            }
+          }
+
           const [userDocSnap, querySnapshot] = await Promise.all([
             getDoc(userDocRef),
             emailQuery ? getDocs(emailQuery) : Promise.resolve({ empty: true, docs: [] })
@@ -55,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
             }
             
-            setUserProfile({ id: userDocSnap.id, ...data, systemRole } as User);
+            setUserProfile({ id: userDocSnap.id, uid: user.uid, ...data, systemRole } as User);
           } else {
             // 2. Se não existir pelo UID, checa o resultado da busca por email (Convite criado pelo Líder)
             if (user.email) {
@@ -66,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 
                 const newUserProfile: User = {
                   id: user.uid,
+                  uid: user.uid,
                   name: inviteData.name || user.displayName || 'Sem Nome',
                   email: user.email,
                   phone: inviteData.phone || '',

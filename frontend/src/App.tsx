@@ -219,10 +219,32 @@ export function AppContent() {
     }
   };
 
-  const handleDeleteMember = async (memberId: string) => {
+  const handleDeleteMember = async (memberId: string, memberName?: string) => {
     try {
       await deleteMember(memberId);
-      addToast('Membro Removido', 'Integrante removido da equipe.', 'info');
+      
+      if (memberName) {
+        // Remover o integrante de todas as sub-equipes
+        const affectedTeams = teams.filter(t => t.members.includes(memberName));
+        for (const team of affectedTeams) {
+          await saveTeam({
+            ...team,
+            members: team.members.filter(m => m !== memberName)
+          });
+        }
+
+        // Remover o integrante de todos os eventos/escalas
+        const affectedEvents = events.filter(e => e.confirmed && e.confirmed[memberName] !== undefined);
+        for (const event of affectedEvents) {
+          const { [memberName]: _, ...restConfirmed } = event.confirmed || {};
+          await saveEvent({
+            ...event,
+            confirmed: restConfirmed
+          });
+        }
+      }
+
+      addToast('Membro Removido', 'Integrante removido da equipe com sucesso.', 'info');
     } catch (err) {
       addToast('Erro', 'Falha ao remover membro.', 'error');
     }

@@ -4,7 +4,10 @@ import {
   doc, 
   setDoc, 
   deleteDoc, 
-  updateDoc 
+  updateDoc,
+  query,
+  where,
+  getDocs
 } from 'firebase/firestore';
 import { db, isFirestoreAvailable } from '../config/firebase';
 import { WorshipEvent, Song, Member, Team, ConfirmationStatus, AdoptionSong } from '../types';
@@ -578,3 +581,36 @@ export async function seedFirestoreWithInitialData(): Promise<{ success: boolean
   }
 }
 
+
+export async function linkUserWithInviteToken(uid: string, token: string): Promise<boolean> {
+  if (isFirestoreAvailable && db) {
+    try {
+      const q = query(collection(db, 'users'), where('inviteToken', '==', token));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const docRef = querySnapshot.docs[0].ref;
+        await updateDoc(docRef, {
+          uid: uid,
+          inviteToken: null
+        });
+        return true;
+      }
+    } catch (e) {
+      console.warn('Erro ao processar token de convite no Firestore:', e);
+    }
+  }
+
+  // Local fallback / mock logic
+  const list = getLocal<Member[]>(STORAGE_KEYS.MEMBERS, INITIAL_MEMBERS);
+  const index = list.findIndex(m => m.inviteToken === token);
+  if (index >= 0) {
+    const updated = [...list];
+    updated[index] = { ...updated[index], uid, inviteToken: undefined };
+    setLocal(STORAGE_KEYS.MEMBERS, updated);
+    localListeners.members.forEach(l => l(updated));
+    return true;
+  }
+
+  return false;
+}
