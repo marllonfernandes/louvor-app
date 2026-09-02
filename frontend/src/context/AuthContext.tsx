@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
 import { auth, googleProvider, db, isFirestoreAvailable } from '../config/firebase';
 import { User } from '../types';
 
@@ -36,6 +36,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userDocRef = doc(db, 'users', user.uid);
           const usersRef = collection(db, 'users');
           const emailQuery = user.email ? query(usersRef, where('email', '==', user.email)) : null;
+
+          const urlParams = new URLSearchParams(window.location.search);
+          const inviteToken = urlParams.get('inviteToken');
+          
+          if (inviteToken) {
+            // Process invite token
+            const tokenQuery = query(usersRef, where('inviteToken', '==', inviteToken));
+            const tokenSnap = await getDocs(tokenQuery);
+            if (!tokenSnap.empty) {
+              const inviteDoc = tokenSnap.docs[0];
+              const inviteData = inviteDoc.data();
+              
+              const newUserProfile: User = {
+                id: user.uid,
+                name: inviteData.name || user.displayName || 'Sem Nome',
+                email: user.email || inviteData.email || '',
+                phone: inviteData.phone || '',
+                role: inviteData.role || 'Membro',
+                roles: inviteData.roles || [],
+                systemRole: inviteData.systemRole === 'Member' ? 'Viewer' : (inviteData.systemRole || 'Viewer'),
+                active: true,
+                avatar: user.photoURL || undefined
+              };
+              
+              // Move data to new UID and delete old invite document
+              await setDoc(userDocRef, newUserProfile);
+              await deleteDoc(inviteDoc.ref);
+              
+              setUserProfile(newUserProfile);
+              window.history.replaceState({}, document.title, window.location.pathname);
+              setLoading(false);
+              return; // Done processing invite
+            }
+          }
 
           const [userDocSnap, querySnapshot] = await Promise.all([
             getDoc(userDocRef),

@@ -4,6 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 
 export function LoginView() {
   const { loginWithGoogle, error } = useAuth();
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  const isInvite = urlParams.has('inviteToken');
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
@@ -12,9 +15,20 @@ export function LoginView() {
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
             App Louvor
           </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Faça login para acessar as escalas e o repertório.
-          </p>
+          {isInvite ? (
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-sm text-blue-800 dark:text-blue-300 font-medium">
+                Você recebeu um convite! 🎉
+              </p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                Faça login para criar seu acesso e vincular ao seu perfil na equipe.
+              </p>
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              Faça login para acessar as escalas e o repertório.
+            </p>
+          )}
         </div>
         
         {error && (
