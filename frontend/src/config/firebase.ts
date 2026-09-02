@@ -35,9 +35,13 @@ try {
     } else {
       app = getApps()[0];
     }
+    
+    // Inicializa a autenticação PRIMEIRO, pois Firestore pode lançar erro se o databaseId for inválido
+    auth = getAuth(app);
+    
     // Conecta explicitamente ao database 'app-unida'
     db = getFirestore(app, databaseId);
-    auth = getAuth(app);
+    
     isFirestoreAvailable = true;
     
     if (import.meta.env.DEV) {

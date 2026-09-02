@@ -4,20 +4,34 @@
 FROM node:22-alpine AS frontend-builder
 WORKDIR /app/frontend
 
-# Argumentos para variáveis de ambiente injetadas pelo Cloud Build
-ARG VITE_FIREBASE_API_KEY
-ARG VITE_FIREBASE_PROJECT_ID
-ARG VITE_FIREBASE_DATABASE_ID
-
-# Define como ENV para o Vite capturar durante o npm run build
-ENV VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY
-ENV VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID
-ENV VITE_FIREBASE_DATABASE_ID=$VITE_FIREBASE_DATABASE_ID
+# Argumentos opcionais para variáveis injetadas via --build-arg no Cloud Build / CI/CD
+ARG VITE_FIREBASE_API_KEY=""
+ARG VITE_FIREBASE_PROJECT_ID=""
+ARG VITE_FIREBASE_DATABASE_ID=""
 
 COPY frontend/package*.json ./
 RUN npm ci
 
 COPY frontend/ ./
+
+# Se os ARGs foram passados no build (ex: CI/CD no Cloud Build com cloudbuild.yaml), injeta no .env
+# Se NÃO foram passados (ex: make deploy-gcp com .env local enviado pelo .gcloudignore), mantém o .env existente intacto
+RUN if [ -n "$VITE_FIREBASE_API_KEY" ]; then \
+      touch .env && \
+      sed -i '/^VITE_FIREBASE_API_KEY=/d' .env 2>/dev/null || true && \
+      echo "VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY" >> .env; \
+    fi && \
+    if [ -n "$VITE_FIREBASE_PROJECT_ID" ]; then \
+      touch .env && \
+      sed -i '/^VITE_FIREBASE_PROJECT_ID=/d' .env 2>/dev/null || true && \
+      echo "VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID" >> .env; \
+    fi && \
+    if [ -n "$VITE_FIREBASE_DATABASE_ID" ]; then \
+      touch .env && \
+      sed -i '/^VITE_FIREBASE_DATABASE_ID=/d' .env 2>/dev/null || true && \
+      echo "VITE_FIREBASE_DATABASE_ID=$VITE_FIREBASE_DATABASE_ID" >> .env; \
+    fi
+
 RUN npm run build
 
 # ==========================================
