@@ -210,6 +210,7 @@ export const TeamView: React.FC<TeamViewProps> = ({
         teams={teams}
         onEditMember={handleOpenEditMember}
         onDeleteMember={onDeleteMember}
+        onSaveMember={onSaveMember}
       />
 
       <TeamDetailModal

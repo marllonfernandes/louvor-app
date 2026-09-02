@@ -14,6 +14,7 @@ interface MemberDetailModalProps {
   teams: Team[];
   onEditMember: (member: Member) => void;
   onDeleteMember: (id: string, name?: string) => void;
+  onSaveMember?: (member: Member) => void;
 }
 
 export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
@@ -22,7 +23,8 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
   member,
   teams,
   onEditMember,
-  onDeleteMember
+  onDeleteMember,
+  onSaveMember
 }) => {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
@@ -48,6 +50,25 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
   const { userProfile } = useAuth();
   const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
   const isSelf = userProfile?.id === member.id;
+
+  const handleSendInvite = () => {
+    let currentToken = member.inviteToken;
+    if (!currentToken) {
+      currentToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      if (onSaveMember) {
+        onSaveMember({ ...member, inviteToken: currentToken });
+      }
+    }
+    
+    const inviteUrl = `${window.location.origin}?inviteToken=${currentToken}`;
+    const message = `Olá ${member.name.split(' ')[0]}! Aqui está o seu convite para acessar o App Louvor. Clique no link abaixo para se conectar com sua conta Google e acessar as escalas:\n\n${inviteUrl}`;
+    
+    if (formattedPhone) {
+      window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    }
+  };
 
   return (
     <>
@@ -105,6 +126,32 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
                 </a>
               )}
             </div>
+
+            {/* Gerenciamento de Acesso ao App */}
+            {member.uid ? (
+              <div className="pt-2 mt-2 border-t border-slate-800 flex items-center justify-between">
+                <span className="text-xs text-slate-400">Acesso ao Aplicativo</span>
+                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Ativo</span>
+              </div>
+            ) : isLeader ? (
+              <div className="pt-2 mt-2 border-t border-slate-800">
+                <Button 
+                  variant="primary" 
+                  size="sm" 
+                  fullWidth 
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs border border-emerald-500/50"
+                  onClick={handleSendInvite}
+                  icon={<MessageCircle size={14} />}
+                >
+                  Enviar Convite de Acesso (WhatsApp)
+                </Button>
+              </div>
+            ) : (
+              <div className="pt-2 mt-2 border-t border-slate-800 flex items-center justify-between">
+                <span className="text-xs text-slate-400">Acesso ao Aplicativo</span>
+                <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">Pendente</span>
+              </div>
+            )}
           </div>
 
           {/* Equipes Participantes */}
