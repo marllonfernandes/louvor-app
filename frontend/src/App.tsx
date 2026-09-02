@@ -10,6 +10,7 @@ import { SettingsModal } from './components/settings/SettingsModal';
 import { ToastContainer, ToastMessage } from './components/ui/Toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginView } from './components/auth/LoginView';
+import { ReloadPrompt } from './components/pwa/ReloadPrompt';
 import { 
   subscribeToEvents, 
   saveEvent, 
@@ -372,6 +373,8 @@ export function AppContent() {
         onClose={() => setIsSettingsOpen(false)}
         onShowToast={addToast}
       />
+
+      <ReloadPrompt />
     </MobileContainer>
   );
 }
