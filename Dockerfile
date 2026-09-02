@@ -14,23 +14,16 @@ RUN npm ci
 
 COPY frontend/ ./
 
-# Se os ARGs foram passados no build (ex: CI/CD no Cloud Build com cloudbuild.yaml), injeta no .env
-# Se NÃO foram passados (ex: make deploy-gcp com .env local enviado pelo .gcloudignore), mantém o .env existente intacto
+# Injeta variáveis no .env.production.local (maior prioridade no Vite) se foram passadas via ARG
 RUN if [ -n "$VITE_FIREBASE_API_KEY" ]; then \
-      touch .env && \
-      sed -i '/^VITE_FIREBASE_API_KEY=/d' .env 2>/dev/null || true && \
-      echo "VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY" >> .env; \
-    fi && \
-    if [ -n "$VITE_FIREBASE_PROJECT_ID" ]; then \
-      touch .env && \
-      sed -i '/^VITE_FIREBASE_PROJECT_ID=/d' .env 2>/dev/null || true && \
-      echo "VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID" >> .env; \
-    fi && \
-    if [ -n "$VITE_FIREBASE_DATABASE_ID" ]; then \
-      touch .env && \
-      sed -i '/^VITE_FIREBASE_DATABASE_ID=/d' .env 2>/dev/null || true && \
-      echo "VITE_FIREBASE_DATABASE_ID=$VITE_FIREBASE_DATABASE_ID" >> .env; \
+      echo "VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY" > .env.production.local && \
+      echo "VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID" >> .env.production.local && \
+      echo "VITE_FIREBASE_DATABASE_ID=$VITE_FIREBASE_DATABASE_ID" >> .env.production.local; \
     fi
+
+# Debug: mostra os arquivos de ambiente que o Vite vai usar
+RUN echo "=== CONTEUDO DO .env.production ===" && cat .env.production || echo "ARQUIVO NAO EXISTE"
+RUN echo "=== CONTEUDO DO .env.production.local ===" && cat .env.production.local || echo "ARQUIVO NAO EXISTE"
 
 RUN npm run build
 
