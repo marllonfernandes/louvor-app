@@ -61,7 +61,7 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
     }
     
     const inviteUrl = `${window.location.origin}?inviteToken=${currentToken}`;
-    const message = `Olá ${member.name.split(' ')[0]}! Aqui está o seu convite para acessar o App Louvor. Clique no link abaixo para se conectar com sua conta Google e acessar as escalas:\n\n${inviteUrl}`;
+    const message = `Olá ${member.name.split(' ')[0]}! Convite para acessar o Louvor App. Clique no link abaixo para se conectar com sua conta Google:\n\n${inviteUrl}`;
     
     if (formattedPhone) {
       window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
