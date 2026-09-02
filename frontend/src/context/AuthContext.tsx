@@ -50,6 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               
               const newUserProfile: User = {
                 id: user.uid,
+                uid: user.uid,
                 name: inviteData.name || user.displayName || 'Sem Nome',
                 email: user.email || inviteData.email || '',
                 phone: inviteData.phone || '',
@@ -89,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
             }
             
-            setUserProfile({ id: userDocSnap.id, ...data, systemRole } as User);
+            setUserProfile({ id: userDocSnap.id, uid: user.uid, ...data, systemRole } as User);
           } else {
             // 2. Se não existir pelo UID, checa o resultado da busca por email (Convite criado pelo Líder)
             if (user.email) {
@@ -100,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 
                 const newUserProfile: User = {
                   id: user.uid,
+                  uid: user.uid,
                   name: inviteData.name || user.displayName || 'Sem Nome',
                   email: user.email,
                   phone: inviteData.phone || '',
