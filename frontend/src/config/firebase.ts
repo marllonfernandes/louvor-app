@@ -31,27 +31,41 @@ try {
     }
 
     if (!getApps().length) {
+      console.log('🔥 [Firebase Debug] Inicializando um novo App com firebaseConfig:', { ...firebaseConfig, apiKey: '***' });
       app = initializeApp(firebaseConfig);
     } else {
+      console.log('🔥 [Firebase Debug] Usando app existente.');
       app = getApps()[0];
     }
     
     // Inicializa a autenticação PRIMEIRO, pois Firestore pode lançar erro se o databaseId for inválido
-    auth = getAuth(app);
+    console.log('🔥 [Firebase Debug] Inicializando Auth...');
+    try {
+      auth = getAuth(app);
+      console.log('🔥 [Firebase Debug] Auth inicializado com sucesso?', auth !== null);
+    } catch (authErr) {
+      console.error('❌ [Firebase Debug] Erro ao inicializar Auth:', authErr);
+    }
     
     // Conecta explicitamente ao database 'app-unida'
-    db = getFirestore(app, databaseId);
-    
-    isFirestoreAvailable = true;
+    console.log('🔥 [Firebase Debug] Inicializando Firestore com databaseId:', databaseId);
+    try {
+      db = getFirestore(app, databaseId);
+      isFirestoreAvailable = true;
+      console.log('🔥 [Firebase Debug] Firestore inicializado com sucesso.');
+    } catch (dbErr) {
+      console.error('❌ [Firebase Debug] Erro ao inicializar Firestore:', dbErr);
+    }
     
     if (import.meta.env.DEV) {
       console.log(`🔥 [Firebase] SDK inicializado com sucesso para o projeto: ${projectId} (Database: ${databaseId})`);
     }
   } else {
+    console.error('❌ [Firebase Debug] FALTANDO VARIÁVEIS! apiKey:', !!apiKey, 'projectId:', !!projectId);
     console.info('[Firebase] VITE_FIREBASE_API_KEY ou VITE_FIREBASE_PROJECT_ID não definidos. Operando em modo LocalStorage.');
   }
 } catch (error) {
-  console.warn('❌ [Firestore] Erro na inicialização do Firebase SDK:', error);
+  console.error('❌ [Firestore] Erro na inicialização do Firebase SDK:', error);
   isFirestoreAvailable = false;
 }
 
