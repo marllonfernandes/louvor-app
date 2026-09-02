@@ -4,9 +4,15 @@
 FROM node:22-alpine AS frontend-builder
 WORKDIR /app/frontend
 
-# Usaremos o arquivo frontend/.env (copiado localmente) para as variáveis
-# Não definimos ENV VITE_FIREBASE_* vazios aqui para não sobrescrever o .env
+# Argumentos para variáveis de ambiente injetadas pelo Cloud Build
+ARG VITE_FIREBASE_API_KEY
+ARG VITE_FIREBASE_PROJECT_ID
+ARG VITE_FIREBASE_DATABASE_ID
 
+# Define como ENV para o Vite capturar durante o npm run build
+ENV VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY
+ENV VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID
+ENV VITE_FIREBASE_DATABASE_ID=$VITE_FIREBASE_DATABASE_ID
 
 COPY frontend/package*.json ./
 RUN npm ci
