@@ -5,25 +5,18 @@ FROM node:22-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Argumentos opcionais para variáveis injetadas via --build-arg no Cloud Build / CI/CD
-ARG VITE_FIREBASE_API_KEY=""
-ARG VITE_FIREBASE_PROJECT_ID=""
-ARG VITE_FIREBASE_DATABASE_ID=""
+# Argumentos opcionais para variáveis injetadas via --build-arg no Cloud Build / CI/CD
+# IMPORTANTE: NÃO defina valores padrão vazios (="") aqui! 
+# Se você usar ="", o Docker vai injetar strings vazias no ambiente (process.env),
+# e o Vite (dotenv) não vai ler os valores do arquivo .env.production!
+ARG VITE_FIREBASE_API_KEY
+ARG VITE_FIREBASE_PROJECT_ID
+ARG VITE_FIREBASE_DATABASE_ID
 
 COPY frontend/package*.json ./
 RUN npm ci
 
 COPY frontend/ ./
-
-# Injeta variáveis no .env.production.local (maior prioridade no Vite) se foram passadas via ARG
-RUN if [ -n "$VITE_FIREBASE_API_KEY" ]; then \
-      echo "VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY" > .env.production.local && \
-      echo "VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID" >> .env.production.local && \
-      echo "VITE_FIREBASE_DATABASE_ID=$VITE_FIREBASE_DATABASE_ID" >> .env.production.local; \
-    fi
-
-# Debug: mostra os arquivos de ambiente que o Vite vai usar
-RUN echo "=== CONTEUDO DO .env.production ===" && cat .env.production || echo "ARQUIVO NAO EXISTE"
-RUN echo "=== CONTEUDO DO .env.production.local ===" && cat .env.production.local || echo "ARQUIVO NAO EXISTE"
 
 RUN npm run build
 
