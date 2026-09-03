@@ -1,5 +1,5 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, GoogleAuthProvider, Auth } from 'firebase/auth';
 
 const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
@@ -43,12 +43,19 @@ try {
       console.error('❌ Erro ao inicializar Auth:', authErr);
     }
     
-    // Conecta explicitamente ao database 'app-unida'
+    // Conecta explicitamente ao database 'app-unida' com suporte a ignoreUndefinedProperties
     try {
-      db = getFirestore(app, databaseId);
+      db = initializeFirestore(app, {
+        ignoreUndefinedProperties: true
+      }, databaseId);
       isFirestoreAvailable = true;
     } catch (dbErr) {
-      console.error('❌ Erro ao inicializar Firestore:', dbErr);
+      try {
+        db = getFirestore(app, databaseId);
+        isFirestoreAvailable = true;
+      } catch (fallbackErr) {
+        console.error('❌ Erro ao inicializar Firestore:', fallbackErr);
+      }
     }
     
     if (import.meta.env.DEV) {

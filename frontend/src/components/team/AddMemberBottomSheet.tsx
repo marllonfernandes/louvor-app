@@ -3,7 +3,8 @@ import { Member, MemberRole } from '../../types';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { User, Phone, Check, Crown, Sparkles, Mail, Shield, Eye, Edit2 } from 'lucide-react';
+import { User, Phone, Check, Crown, Sparkles, Mail, Shield, Eye, Edit2, Lock } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface AddMemberBottomSheetProps {
   isOpen: boolean;
@@ -34,6 +35,10 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
   onSaveMember,
   memberToEdit
 }) => {
+  const { userProfile } = useAuth();
+  const isAdmin = userProfile?.systemRole === 'Admin';
+  const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [selectedRoles, setSelectedRoles] = useState<string[]>(['Vocal']);
@@ -65,6 +70,11 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
   }, [memberToEdit, isOpen]);
 
   const toggleRole = (r: string) => {
+    // Apenas líderes/admins podem se autodesignar Líder se já não possuíam o papel
+    if (r === 'Líder' && !isLeader && !memberToEdit?.roles?.includes('Líder')) {
+      return;
+    }
+
     setSelectedRoles(prev => {
       if (prev.includes(r)) {
         if (prev.length === 1) return prev; // Mantém ao menos 1 função
@@ -80,15 +90,20 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
     if (!name.trim()) return;
     if (selectedRoles.length === 0) return;
 
+    // Apenas Administradores podem definir ou alterar o systemRole
+    const finalSystemRole = isAdmin 
+      ? systemRole 
+      : (memberToEdit?.systemRole || 'Viewer');
+
     onSaveMember({
-      ...(memberToEdit?.id ? { id: memberToEdit.id } : {}),
+      ...(memberToEdit || {}),
       name: name.trim(),
       email: email.trim(),
       role: selectedRoles.join(', '),
       roles: selectedRoles,
-      systemRole,
+      systemRole: finalSystemRole,
       phone: phone.trim(),
-      active: true
+      active: memberToEdit?.active ?? true
     });
 
     onClose();
@@ -181,9 +196,15 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
         {/* Seleção de Permissão / Nível de Acesso */}
         <div>
           <div className="flex items-center justify-between mb-1.5 mt-2">
-            <label className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+            <label className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+              {!isAdmin && <Lock size={12} className="text-amber-400" />}
               Nível de Acesso (Permissões)
             </label>
+            {!isAdmin && (
+              <span className="text-[10px] text-amber-400/90 font-medium">
+                Apenas Administrador pode alterar
+              </span>
+            )}
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -191,30 +212,36 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
               { id: 'Admin', label: 'Administrador', desc: 'Acesso total', icon: <Shield size={14} /> },
               { id: 'Editor', label: 'Editor', desc: 'Gerencia eventos e repertório', icon: <Edit2 size={14} /> },
               { id: 'Viewer', label: 'Visualizador', desc: 'Apenas visualiza e confirma', icon: <Eye size={14} /> }
-            ].map(roleOption => (
-              <button
-                key={roleOption.id}
-                type="button"
-                onClick={() => setSystemRole(roleOption.id as any)}
-                className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition-all active:scale-95 ${
-                  systemRole === roleOption.id
-                    ? 'bg-blue-600/20 border-blue-500 text-blue-300 shadow-md shadow-blue-950/30'
-                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-1.5">
-                  <div className={systemRole === roleOption.id ? 'text-blue-400' : 'text-slate-500'}>
-                    {roleOption.icon}
+            ].map(roleOption => {
+              const isCurrent = systemRole === roleOption.id;
+              return (
+                <button
+                  key={roleOption.id}
+                  type="button"
+                  disabled={!isAdmin}
+                  onClick={() => isAdmin && setSystemRole(roleOption.id as any)}
+                  className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition-all ${
+                    !isAdmin ? 'cursor-not-allowed opacity-70' : 'active:scale-95'
+                  } ${
+                    isCurrent
+                      ? 'bg-blue-600/20 border-blue-500 text-blue-300 shadow-md shadow-blue-950/30'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <div className={isCurrent ? 'text-blue-400' : 'text-slate-500'}>
+                      {roleOption.icon}
+                    </div>
+                    <span className={`text-xs font-bold ${isCurrent ? 'text-blue-300' : 'text-slate-300'}`}>
+                      {roleOption.label}
+                    </span>
                   </div>
-                  <span className={`text-xs font-bold ${systemRole === roleOption.id ? 'text-blue-300' : 'text-slate-300'}`}>
-                    {roleOption.label}
+                  <span className="text-[10px] leading-tight text-slate-500">
+                    {roleOption.desc}
                   </span>
-                </div>
-                <span className="text-[10px] leading-tight text-slate-500">
-                  {roleOption.desc}
-                </span>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         </div>
 

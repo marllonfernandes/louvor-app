@@ -14,8 +14,8 @@ export default defineConfig(({ mode }) => {
           name: 'Louvor App - Ministério de Louvor',
           short_name: 'Louvor App',
           description: 'App Moderno para Gestão do Ministério de Louvor, Escalas, Repertório e Equipes.',
-          theme_color: '#10b981',
-          background_color: '#090d16',
+          theme_color: '#0f172a',
+          background_color: '#0f172a',
           display: 'standalone',
           orientation: 'portrait',
           icons: [

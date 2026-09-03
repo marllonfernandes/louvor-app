@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, collection, query, where, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { auth, googleProvider, db, isFirestoreAvailable } from '../config/firebase';
 import { User } from '../types';
 
@@ -27,12 +27,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
+    let unsubUserDoc: (() => void) | null = null;
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (unsubUserDoc) {
+        unsubUserDoc();
+        unsubUserDoc = null;
+      }
+
       setCurrentUser(user);
       
       if (user && isFirestoreAvailable && db) {
         try {
-          // Realiza as consultas no banco de dados em paralelo para agilizar a verificação
           const userDocRef = doc(db, 'users', user.uid);
           const usersRef = collection(db, 'users');
           const emailQuery = user.email ? query(usersRef, where('email', '==', user.email)) : null;
@@ -65,10 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               await setDoc(userDocRef, newUserProfile);
               await deleteDoc(inviteDoc.ref);
               
-              setUserProfile(newUserProfile);
               window.history.replaceState({}, document.title, window.location.pathname);
-              setLoading(false);
-              return; // Done processing invite
             }
           }
 
@@ -77,71 +80,83 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             emailQuery ? getDocs(emailQuery) : Promise.resolve({ empty: true, docs: [] })
           ]);
           
-          if (userDocSnap.exists()) {
-            const data = userDocSnap.data();
-            let systemRole = data.systemRole;
-            
-            // Migração em memória para usuários antigos
-            if (systemRole === 'Member' || !systemRole) {
-              if (data.roles?.includes('Líder') || data.role?.includes('Líder')) {
-                systemRole = 'Editor';
-              } else {
-                systemRole = 'Viewer';
-              }
-            }
-            
-            setUserProfile({ id: userDocSnap.id, uid: user.uid, ...data, systemRole } as User);
-          } else {
-            // 2. Se não existir pelo UID, checa o resultado da busca por email (Convite criado pelo Líder)
-            if (user.email) {
-              if (!querySnapshot.empty) {
-                // Migrar o convite para o UID definitivo
-                const inviteDoc = (querySnapshot as any).docs[0];
-                const inviteData = inviteDoc.data();
-                
-                const newUserProfile: User = {
-                  id: user.uid,
-                  uid: user.uid,
-                  name: inviteData.name || user.displayName || 'Sem Nome',
-                  email: user.email,
-                  phone: inviteData.phone || '',
-                  role: inviteData.role || 'Membro',
-                  roles: inviteData.roles || [],
-                  systemRole: inviteData.systemRole === 'Member' ? 'Viewer' : (inviteData.systemRole || 'Viewer'),
-                  active: true,
-                  avatar: user.photoURL || undefined
-                };
-                
-                // Cria na coleção users com o UID
-                await setDoc(userDocRef, newUserProfile);
-                setUserProfile(newUserProfile);
-                
-                // Opcional: deletar o documento de convite original?
-                // await deleteDoc(inviteDoc.ref);
-              } else {
-                // Usuário não foi convidado
-                setError('Você não tem permissão para acessar o aplicativo. Solicite ao líder que o convide pelo seu email.');
-                if (auth) await firebaseSignOut(auth);
-                setCurrentUser(null);
-                setUserProfile(null);
-              }
-            } else {
+          if (!userDocSnap.exists()) {
+            // Se não existir pelo UID, checa o resultado da busca por email (Convite criado pelo Líder)
+            if (user.email && !querySnapshot.empty) {
+              const inviteDoc = (querySnapshot as any).docs[0];
+              const inviteData = inviteDoc.data();
+              
+              const newUserProfile: User = {
+                id: user.uid,
+                uid: user.uid,
+                name: inviteData.name || user.displayName || 'Sem Nome',
+                email: user.email,
+                phone: inviteData.phone || '',
+                role: inviteData.role || 'Membro',
+                roles: inviteData.roles || [],
+                systemRole: inviteData.systemRole === 'Member' ? 'Viewer' : (inviteData.systemRole || 'Viewer'),
+                active: true,
+                avatar: user.photoURL || undefined
+              };
+              
+              await setDoc(userDocRef, newUserProfile);
+            } else if (!user.email) {
               setError('Seu login não forneceu um email válido.');
               if (auth) await firebaseSignOut(auth);
+              setCurrentUser(null);
+              setUserProfile(null);
+              setLoading(false);
+              return;
+            } else {
+              setError('Você não tem permissão para acessar o aplicativo. Solicite ao líder que o convide pelo seu email.');
+              if (auth) await firebaseSignOut(auth);
+              setCurrentUser(null);
+              setUserProfile(null);
+              setLoading(false);
+              return;
             }
           }
+
+          // Assinatura em tempo real às alterações no documento do usuário logado
+          unsubUserDoc = onSnapshot(userDocRef, (snap) => {
+            if (snap.exists()) {
+              const data = snap.data();
+              let systemRole = data.systemRole;
+              
+              // Migração em memória para usuários antigos
+              if (systemRole === 'Member' || !systemRole) {
+                if (data.roles?.includes('Líder') || data.role?.includes('Líder')) {
+                  systemRole = 'Editor';
+                } else {
+                  systemRole = 'Viewer';
+                }
+              }
+              
+              setUserProfile({ id: snap.id, uid: user.uid, ...data, systemRole } as User);
+            } else {
+              setUserProfile(null);
+            }
+            setLoading(false);
+          }, (err) => {
+            console.warn('Erro no listener em tempo real do perfil:', err);
+            setLoading(false);
+          });
+
         } catch (err) {
           console.error("Erro ao buscar perfil do usuário", err);
           setError('Erro ao carregar seu perfil.');
+          setLoading(false);
         }
       } else {
         setUserProfile(null);
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      if (unsubUserDoc) unsubUserDoc();
+      unsubscribe();
+    };
   }, []);
 
   const loginWithGoogle = async () => {

@@ -62,6 +62,21 @@ function logFirestoreConnectionOnce(collectionName: string, docCount: number) {
     console.log(`✅ [Firestore Conectado] Conexão em tempo real ativa! (${collectionName}: ${docCount} documentos recebidos do banco de dados)`);
   }
 }
+function cleanForFirestore<T>(obj: T): T {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(item => cleanForFirestore(item)) as unknown as T;
+  }
+  const cleaned: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj as Record<string, any>)) {
+    if (value !== undefined) {
+      cleaned[key] = cleanForFirestore(value);
+    }
+  }
+  return cleaned as T;
+}
 
 // ----------------- EVENTOS -----------------
 
@@ -70,15 +85,10 @@ export function subscribeToEvents(callback: (events: WorshipEvent[]) => void): (
     try {
       const q = collection(db, 'events');
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as WorshipEvent));
-          logFirestoreConnectionOnce('events', list.length);
-          callback(list);
-        } else {
-          console.info('ℹ️ [Firestore Events] Coleção "events" conectada, mas vazia no Firestore (usando fallback local).');
-          const initial = getLocal<WorshipEvent[]>(STORAGE_KEYS.EVENTS, INITIAL_EVENTS);
-          callback(initial);
-        }
+        const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as WorshipEvent));
+        logFirestoreConnectionOnce('events', list.length);
+        setLocal(STORAGE_KEYS.EVENTS, list);
+        callback(list);
       }, (error) => {
         console.warn('❌ [Firestore Events] Erro ao sincronizar eventos em tempo real:', error.message, error);
         callback(getLocal<WorshipEvent[]>(STORAGE_KEYS.EVENTS, INITIAL_EVENTS));
@@ -98,13 +108,16 @@ export function subscribeToEvents(callback: (events: WorshipEvent[]) => void): (
 
 export async function saveEvent(event: Omit<WorshipEvent, 'id'> & { id?: string }): Promise<string> {
   const id = event.id || `ev_${Date.now()}`;
-  const newEvent: WorshipEvent = { ...event, id, createdAt: Date.now() };
+  const newEvent: WorshipEvent = { ...event, id, createdAt: event.createdAt || Date.now() };
+  const cleaned = cleanForFirestore(newEvent);
 
   if (isFirestoreAvailable && db) {
     try {
-      await setDoc(doc(db, 'events', id), newEvent);
-    } catch (e) {
-      console.warn('Erro ao salvar no Firestore, salvando local:', e);
+      await setDoc(doc(db, 'events', id), cleaned);
+      console.log(`✅ [Firestore Events] Evento ${id} salvo com sucesso no Cloud Firestore.`);
+    } catch (e: any) {
+      console.error('❌ [Firestore Events] Erro ao salvar evento no Firestore:', e);
+      throw e;
     }
   }
 
@@ -124,8 +137,10 @@ export async function updateEventStatus(eventId: string, memberName: string, sta
       await updateDoc(ref, {
         [`confirmed.${memberName}`]: status
       });
-    } catch (e) {
-      console.warn('Erro ao atualizar status no Firestore:', e);
+      console.log(`✅ [Firestore Events] Presença de ${memberName} atualizada para ${status} no evento ${eventId}.`);
+    } catch (e: any) {
+      console.error('❌ [Firestore Events] Erro ao atualizar status no Firestore:', e);
+      throw e;
     }
   }
 
@@ -150,8 +165,10 @@ export async function deleteEvent(eventId: string): Promise<void> {
   if (isFirestoreAvailable && db) {
     try {
       await deleteDoc(doc(db, 'events', eventId));
-    } catch (e) {
-      console.warn('Erro ao deletar no Firestore:', e);
+      console.log(`✅ [Firestore Events] Evento ${eventId} excluído do Cloud Firestore.`);
+    } catch (e: any) {
+      console.error('❌ [Firestore Events] Erro ao deletar no Firestore:', e);
+      throw e;
     }
   }
 
@@ -168,14 +185,10 @@ export function subscribeToSongs(callback: (songs: Song[]) => void): () => void 
     try {
       const q = collection(db, 'songs');
       return onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Song));
-          logFirestoreConnectionOnce('songs', list.length);
-          callback(list);
-        } else {
-          console.info('ℹ️ [Firestore Songs] Coleção "songs" conectada, mas vazia no Firestore (usando fallback local).');
-          callback(getLocal<Song[]>(STORAGE_KEYS.SONGS, INITIAL_SONGS));
-        }
+        const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Song));
+        logFirestoreConnectionOnce('songs', list.length);
+        setLocal(STORAGE_KEYS.SONGS, list);
+        callback(list);
       }, (error) => {
         console.warn('❌ [Firestore Songs] Erro ao sincronizar músicas:', error.message, error);
         callback(getLocal<Song[]>(STORAGE_KEYS.SONGS, INITIAL_SONGS));
@@ -195,12 +208,15 @@ export function subscribeToSongs(callback: (songs: Song[]) => void): () => void 
 export async function saveSong(song: Omit<Song, 'id'> & { id?: string }): Promise<string> {
   const id = song.id || `song_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
   const newSong: Song = { ...song, id, createdAt: song.createdAt || Date.now() };
+  const cleaned = cleanForFirestore(newSong);
 
   if (isFirestoreAvailable && db) {
     try {
-      await setDoc(doc(db, 'songs', id), newSong);
-    } catch (e) {
-      console.warn('Erro no Firestore ao salvar música:', e);
+      await setDoc(doc(db, 'songs', id), cleaned);
+      console.log(`✅ [Firestore Songs] Música ${id} salva no Cloud Firestore.`);
+    } catch (e: any) {
+      console.error('❌ [Firestore Songs] Erro no Firestore ao salvar música:', e);
+      throw e;
     }
   }
 
@@ -226,8 +242,10 @@ export async function deleteSong(songId: string): Promise<void> {
   if (isFirestoreAvailable && db) {
     try {
       await deleteDoc(doc(db, 'songs', songId));
-    } catch (e) {
-      console.warn('Erro ao deletar música:', e);
+      console.log(`✅ [Firestore Songs] Música ${songId} excluída do Cloud Firestore.`);
+    } catch (e: any) {
+      console.error('❌ [Firestore Songs] Erro ao deletar música:', e);
+      throw e;
     }
   }
 
@@ -244,13 +262,10 @@ export function subscribeToAdoptionSongs(callback: (songs: AdoptionSong[]) => vo
     try {
       const q = collection(db, 'adoption_songs');
       return onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AdoptionSong));
-          logFirestoreConnectionOnce('adoption_songs', list.length);
-          callback(list);
-        } else {
-          callback(getLocal<AdoptionSong[]>(STORAGE_KEYS.ADOPTION_SONGS, INITIAL_ADOPTION_SONGS));
-        }
+        const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AdoptionSong));
+        logFirestoreConnectionOnce('adoption_songs', list.length);
+        setLocal(STORAGE_KEYS.ADOPTION_SONGS, list);
+        callback(list);
       }, (error) => {
         console.warn('❌ [Firestore Adoption] Erro ao sincronizar músicas de adoção:', error.message, error);
         callback(getLocal<AdoptionSong[]>(STORAGE_KEYS.ADOPTION_SONGS, INITIAL_ADOPTION_SONGS));
@@ -276,12 +291,15 @@ export async function saveAdoptionSong(song: Omit<AdoptionSong, 'id'> & { id?: s
     votes: song.votes || [],
     status: song.status || 'voting'
   };
+  const cleaned = cleanForFirestore(newAdoptionSong);
 
   if (isFirestoreAvailable && db) {
     try {
-      await setDoc(doc(db, 'adoption_songs', id), newAdoptionSong);
-    } catch (e) {
-      console.warn('Erro no Firestore ao salvar música para adoção:', e);
+      await setDoc(doc(db, 'adoption_songs', id), cleaned);
+      console.log(`✅ [Firestore Adoption] Sugestão ${id} salva no Cloud Firestore.`);
+    } catch (e: any) {
+      console.error('❌ [Firestore Adoption] Erro no Firestore ao salvar música para adoção:', e);
+      throw e;
     }
   }
 
@@ -313,8 +331,10 @@ export async function voteAdoptionSong(songId: string, voterName: string): Promi
     try {
       const ref = doc(db, 'adoption_songs', songId);
       await updateDoc(ref, { votes: updatedVotes });
-    } catch (e) {
-      console.warn('Erro no Firestore ao computar voto:', e);
+      console.log(`✅ [Firestore Adoption] Voto de ${voterName} registrado para ${songId}.`);
+    } catch (e: any) {
+      console.error('❌ [Firestore Adoption] Erro no Firestore ao computar voto:', e);
+      throw e;
     }
   }
 
@@ -350,8 +370,10 @@ export async function approveAdoptionSong(
           approvedAt: Date.now(),
           approvedByMemberName: leaderName
         });
-      } catch (e) {
-        console.warn('Erro no Firestore ao aprovar adoção:', e);
+        console.log(`✅ [Firestore Adoption] Música ${adoptionSongId} aprovada no Cloud Firestore.`);
+      } catch (e: any) {
+        console.error('❌ [Firestore Adoption] Erro no Firestore ao aprovar adoção:', e);
+        throw e;
       }
     }
 
@@ -371,8 +393,10 @@ export async function rejectAdoptionSong(adoptionSongId: string): Promise<void> 
     try {
       const ref = doc(db, 'adoption_songs', adoptionSongId);
       await updateDoc(ref, { status: 'rejected' });
-    } catch (e) {
-      console.warn('Erro no Firestore ao rejeitar adoção:', e);
+      console.log(`✅ [Firestore Adoption] Sugestão ${adoptionSongId} rejeitada.`);
+    } catch (e: any) {
+      console.error('❌ [Firestore Adoption] Erro no Firestore ao rejeitar adoção:', e);
+      throw e;
     }
   }
 
@@ -384,8 +408,10 @@ export async function deleteAdoptionSong(songId: string): Promise<void> {
   if (isFirestoreAvailable && db) {
     try {
       await deleteDoc(doc(db, 'adoption_songs', songId));
-    } catch (e) {
-      console.warn('Erro ao deletar música de adoção no Firestore:', e);
+      console.log(`✅ [Firestore Adoption] Sugestão ${songId} excluída do Cloud Firestore.`);
+    } catch (e: any) {
+      console.error('❌ [Firestore Adoption] Erro ao deletar música de adoção no Firestore:', e);
+      throw e;
     }
   }
 
@@ -402,12 +428,9 @@ export function subscribeToMembers(callback: (members: Member[]) => void): () =>
     try {
       const q = collection(db, 'users');
       return onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Member));
-          callback(list);
-        } else {
-          callback(getLocal<Member[]>(STORAGE_KEYS.MEMBERS, INITIAL_MEMBERS));
-        }
+        const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Member));
+        setLocal(STORAGE_KEYS.MEMBERS, list);
+        callback(list);
       }, (error) => {
         console.warn('[Firestore Members] Erro ao sincronizar membros:', error.message, error);
         callback(getLocal<Member[]>(STORAGE_KEYS.MEMBERS, INITIAL_MEMBERS));
@@ -427,12 +450,15 @@ export function subscribeToMembers(callback: (members: Member[]) => void): () =>
 export async function saveMember(member: Omit<Member, 'id'> & { id?: string }): Promise<string> {
   const id = member.id || (member.email ? member.email.trim().toLowerCase() : `mem_${Date.now()}`);
   const newMember: Member = { ...member, id, active: member.active ?? true };
+  const cleaned = cleanForFirestore(newMember);
 
   if (isFirestoreAvailable && db) {
     try {
-      await setDoc(doc(db, 'users', id), newMember);
-    } catch (e) {
-      console.warn('Erro no Firestore ao salvar membro:', e);
+      await setDoc(doc(db, 'users', id), cleaned);
+      console.log(`✅ [Firestore Users] Membro ${id} salvo com sucesso no Cloud Firestore.`);
+    } catch (e: any) {
+      console.error('❌ [Firestore Users] Erro no Firestore ao salvar membro:', e);
+      throw e;
     }
   }
 
@@ -449,8 +475,10 @@ export async function deleteMember(memberId: string): Promise<void> {
   if (isFirestoreAvailable && db) {
     try {
       await deleteDoc(doc(db, 'users', memberId));
-    } catch (e) {
-      console.warn('Erro ao deletar membro:', e);
+      console.log(`✅ [Firestore Users] Membro ${memberId} deletado do Cloud Firestore.`);
+    } catch (e: any) {
+      console.error('❌ [Firestore Users] Erro ao deletar membro:', e);
+      throw e;
     }
   }
 
@@ -467,12 +495,9 @@ export function subscribeToTeams(callback: (teams: Team[]) => void): () => void 
     try {
       const q = collection(db, 'teams');
       return onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Team));
-          callback(list);
-        } else {
-          callback(getLocal<Team[]>(STORAGE_KEYS.TEAMS, INITIAL_TEAMS));
-        }
+        const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Team));
+        setLocal(STORAGE_KEYS.TEAMS, list);
+        callback(list);
       }, (error) => {
         console.warn('[Firestore Teams] Erro ao sincronizar equipes:', error.message, error);
         callback(getLocal<Team[]>(STORAGE_KEYS.TEAMS, INITIAL_TEAMS));
@@ -492,12 +517,15 @@ export function subscribeToTeams(callback: (teams: Team[]) => void): () => void 
 export async function saveTeam(team: Omit<Team, 'id'> & { id?: string }): Promise<string> {
   const id = team.id || `team_${Date.now()}`;
   const newTeam: Team = { ...team, id };
+  const cleaned = cleanForFirestore(newTeam);
 
   if (isFirestoreAvailable && db) {
     try {
-      await setDoc(doc(db, 'teams', id), newTeam);
-    } catch (e) {
-      console.warn('Erro no Firestore ao salvar equipe:', e);
+      await setDoc(doc(db, 'teams', id), cleaned);
+      console.log(`✅ [Firestore Teams] Equipe ${id} salva no Cloud Firestore.`);
+    } catch (e: any) {
+      console.error('❌ [Firestore Teams] Erro no Firestore ao salvar equipe:', e);
+      throw e;
     }
   }
 
@@ -514,8 +542,10 @@ export async function deleteTeam(teamId: string): Promise<void> {
   if (isFirestoreAvailable && db) {
     try {
       await deleteDoc(doc(db, 'teams', teamId));
-    } catch (e) {
-      console.warn('Erro ao deletar equipe:', e);
+      console.log(`✅ [Firestore Teams] Equipe ${teamId} deletada do Cloud Firestore.`);
+    } catch (e: any) {
+      console.error('❌ [Firestore Teams] Erro ao deletar equipe:', e);
+      throw e;
     }
   }
 
@@ -543,27 +573,27 @@ export async function seedFirestoreWithInitialData(): Promise<{ success: boolean
     let adoptionCount = 0;
 
     for (const ev of INITIAL_EVENTS) {
-      await setDoc(doc(db, 'events', ev.id), { ...ev, createdAt: Date.now() });
+      await setDoc(doc(db, 'events', ev.id), cleanForFirestore({ ...ev, createdAt: Date.now() }));
       eventsCount++;
     }
 
     for (const s of INITIAL_SONGS) {
-      await setDoc(doc(db, 'songs', s.id), { ...s, createdAt: Date.now() });
+      await setDoc(doc(db, 'songs', s.id), cleanForFirestore({ ...s, createdAt: Date.now() }));
       songsCount++;
     }
 
     for (const m of INITIAL_MEMBERS) {
-      await setDoc(doc(db, 'members', m.id), m);
+      await setDoc(doc(db, 'users', m.id), cleanForFirestore(m));
       membersCount++;
     }
 
     for (const t of INITIAL_TEAMS) {
-      await setDoc(doc(db, 'teams', t.id), t);
+      await setDoc(doc(db, 'teams', t.id), cleanForFirestore(t));
       teamsCount++;
     }
 
     for (const a of INITIAL_ADOPTION_SONGS) {
-      await setDoc(doc(db, 'adoption_songs', a.id), a);
+      await setDoc(doc(db, 'adoption_songs', a.id), cleanForFirestore(a));
       adoptionCount++;
     }
 
