@@ -35,10 +35,21 @@ try {
     } else {
       app = getApps()[0];
     }
+    
+    // Inicializa a autenticação PRIMEIRO, pois Firestore pode lançar erro se o databaseId for inválido
+    try {
+      auth = getAuth(app);
+    } catch (authErr) {
+      console.error('❌ Erro ao inicializar Auth:', authErr);
+    }
+    
     // Conecta explicitamente ao database 'app-unida'
-    db = getFirestore(app, databaseId);
-    auth = getAuth(app);
-    isFirestoreAvailable = true;
+    try {
+      db = getFirestore(app, databaseId);
+      isFirestoreAvailable = true;
+    } catch (dbErr) {
+      console.error('❌ Erro ao inicializar Firestore:', dbErr);
+    }
     
     if (import.meta.env.DEV) {
       console.log(`🔥 [Firebase] SDK inicializado com sucesso para o projeto: ${projectId} (Database: ${databaseId})`);
@@ -47,7 +58,7 @@ try {
     console.info('[Firebase] VITE_FIREBASE_API_KEY ou VITE_FIREBASE_PROJECT_ID não definidos. Operando em modo LocalStorage.');
   }
 } catch (error) {
-  console.warn('❌ [Firestore] Erro na inicialização do Firebase SDK:', error);
+  console.error('❌ [Firestore] Erro na inicialização do Firebase SDK:', error);
   isFirestoreAvailable = false;
 }
 
