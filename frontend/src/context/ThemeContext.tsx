@@ -23,10 +23,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.classList.add('dark');
       root.classList.remove('light');
       document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0f172a');
+      document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')?.setAttribute('content', 'black-translucent');
     } else {
       root.classList.remove('dark');
       root.classList.add('light');
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f8fafc');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#ffffff');
+      document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')?.setAttribute('content', 'default');
     }
   };
 
