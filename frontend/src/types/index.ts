@@ -11,6 +11,7 @@ export interface WorshipEvent {
   location?: string;
   team?: string;
   confirmed: Record<string, ConfirmationStatus>; // { [userId]: 'accepted' | 'declined' | 'pending' }
+  justifications?: Record<string, string>; // { [userId]: 'Trabalho' }
   songIds?: string[]; // IDs das músicas escaladas para este culto
   notes?: string;
   createdAt?: number;

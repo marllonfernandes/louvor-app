@@ -13,7 +13,7 @@ interface AgendaViewProps {
   songs: Song[];
   members: Member[];
   teams: Team[];
-  onStatusChange: (eventId: string, memberName: string, status: ConfirmationStatus) => void;
+  onStatusChange: (eventId: string, memberName: string, status: ConfirmationStatus, justification?: string) => void;
   onSaveEvent: (event: Omit<WorshipEvent, 'id'> & { id?: string }) => void;
   onDeleteEvent: (eventId: string) => void;
   onSelectSong: (song: Song) => void;
