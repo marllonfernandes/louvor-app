@@ -49,6 +49,7 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
 
   const { userProfile } = useAuth();
   const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
+  const isAdmin = userProfile?.systemRole === 'Admin';
   const isSelf = userProfile?.id === member.id;
 
   const handleSendInvite = () => {
@@ -196,7 +197,7 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
                 Editar Integrante
               </Button>
 
-              {isLeader && (
+              {isAdmin && (
                 <Button
                   variant="danger"
                   size="sm"

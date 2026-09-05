@@ -130,13 +130,23 @@ export async function saveEvent(event: Omit<WorshipEvent, 'id'> & { id?: string 
   return id;
 }
 
-export async function updateEventStatus(eventId: string, memberName: string, status: ConfirmationStatus): Promise<void> {
+export async function updateEventStatus(eventId: string, memberName: string, status: ConfirmationStatus, justification?: string): Promise<void> {
   if (isFirestoreAvailable && db) {
     try {
       const ref = doc(db, 'events', eventId);
-      await updateDoc(ref, {
+      const updates: Record<string, any> = {
         [`confirmed.${memberName}`]: status
-      });
+      };
+      
+      if (justification !== undefined) {
+        if (justification) {
+          updates[`justifications.${memberName}`] = justification;
+        } else {
+          updates[`justifications.${memberName}`] = null; // Removed when not provided or status changes
+        }
+      }
+
+      await updateDoc(ref, updates);
       console.log(`✅ [Firestore Events] Presença de ${memberName} atualizada para ${status} no evento ${eventId}.`);
     } catch (e: any) {
       console.error('❌ [Firestore Events] Erro ao atualizar status no Firestore:', e);
@@ -147,12 +157,25 @@ export async function updateEventStatus(eventId: string, memberName: string, sta
   const list = getLocal<WorshipEvent[]>(STORAGE_KEYS.EVENTS, INITIAL_EVENTS);
   const updated = list.map(ev => {
     if (ev.id === eventId) {
+      const newConfirmed = {
+        ...(ev.confirmed || {}),
+        [memberName]: status
+      };
+      
+      const newJustifications = {
+        ...(ev.justifications || {})
+      };
+      
+      if (justification) {
+        newJustifications[memberName] = justification;
+      } else if (justification === '') {
+        delete newJustifications[memberName];
+      }
+
       return {
         ...ev,
-        confirmed: {
-          ...(ev.confirmed || {}),
-          [memberName]: status
-        }
+        confirmed: newConfirmed,
+        justifications: newJustifications
       };
     }
     return ev;

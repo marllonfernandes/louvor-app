@@ -91,9 +91,9 @@ export function AppContent() {
     }
   };
 
-  const handleStatusChange = async (eventId: string, memberName: string, status: ConfirmationStatus) => {
+  const handleStatusChange = async (eventId: string, memberName: string, status: ConfirmationStatus, justification?: string) => {
     try {
-      await updateEventStatus(eventId, memberName, status);
+      await updateEventStatus(eventId, memberName, status, justification);
       const statusLabels = { accepted: 'Confirmado ✅', declined: 'Recusado ❌', pending: 'Pendente ⏳' };
       addToast('Presença Atualizada', `${memberName}: ${statusLabels[status]}`, 'info');
     } catch (err) {
