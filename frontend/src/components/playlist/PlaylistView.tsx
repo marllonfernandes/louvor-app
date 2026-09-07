@@ -110,8 +110,8 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
 
         <div className="flex items-center gap-2 flex-shrink-0">
           {subTab === 'repertoire' ? (
-            isCurrentUserLeader && (
-              <>
+            <>
+              {isCurrentUserLeader && (
                 <button
                   type="button"
                   onClick={() => setIsImportPlaylistOpen(true)}
@@ -121,20 +121,24 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
                   <YoutubeIcon size={15} />
                   <span className="hidden sm:inline">Importar</span> Playlist
                 </button>
+              )}
 
-                <Button
-                  onClick={() => {
+              <Button
+                onClick={() => {
+                  if (isCurrentUserLeader) {
                     setSongToEdit(null);
                     setIsAddSongOpen(true);
-                  }}
-                  size="sm"
-                  className="flex-shrink-0 whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm"
-                  icon={<Plus size={16} />}
-                >
-                  Nova Música
-                </Button>
-              </>
-            )
+                  } else {
+                    setIsAddAdoptionOpen(true);
+                  }
+                }}
+                size="sm"
+                className="flex-shrink-0 whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm"
+                icon={<Plus size={16} />}
+              >
+                Nova Música
+              </Button>
+            </>
           ) : (
             <Button
               onClick={() => setIsAddAdoptionOpen(true)}
@@ -233,16 +237,28 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
               </div>
               <p className="text-sm font-bold text-slate-200">Nenhuma música encontrada</p>
               <p className="text-xs text-slate-400">Cadastre músicas ou importe uma playlist do YouTube.</p>
-              {isCurrentUserLeader && (
-                <div className="flex justify-center gap-2 pt-1">
+              <div className="flex justify-center gap-2 pt-1">
+                {isCurrentUserLeader && (
                   <Button size="sm" onClick={() => setIsImportPlaylistOpen(true)} icon={<YoutubeIcon size={15} />}>
                     Importar Playlist
                   </Button>
-                  <Button size="sm" variant="secondary" onClick={() => setIsAddSongOpen(true)} icon={<Plus size={16} />}>
-                    Nova Música
-                  </Button>
-                </div>
-              )}
+                )}
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  onClick={() => {
+                    if (isCurrentUserLeader) {
+                      setSongToEdit(null);
+                      setIsAddSongOpen(true);
+                    } else {
+                      setIsAddAdoptionOpen(true);
+                    }
+                  }} 
+                  icon={<Plus size={16} />}
+                >
+                  Nova Música
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
@@ -250,6 +266,7 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
                 <SongCard
                   key={song.id}
                   song={song}
+                  isLeader={isCurrentUserLeader}
                   onSelectSong={setActiveSong}
                   onEditSong={song => {
                     setSongToEdit(song);
