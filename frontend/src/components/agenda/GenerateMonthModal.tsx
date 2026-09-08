@@ -66,7 +66,7 @@ export const GenerateMonthModal: React.FC<GenerateMonthModalProps> = ({
               <li>Terças (20:00) - Culto de Oração</li>
               <li>Quintas (20:00) - Culto de Ensinamento</li>
               <li>Sextas (20:00) - Ensaio</li>
-              <li>Sábados (19:30) - Culto Departamental (exceto 2º sábado)</li>
+              <li>Sábados (19:30) - Culto Departamento</li>
               <li>1º Domingo (08:30) - Santa Ceia</li>
               <li>Outros Domingos (18:30) - Culto com a Família</li>
             </ul>

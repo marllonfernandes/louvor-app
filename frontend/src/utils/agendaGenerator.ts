@@ -7,7 +7,7 @@ import { WorshipEvent, EventType } from '../types';
  * - Terças (20:00): Culto de Oração
  * - Quintas (20:00): Culto de Ensinamento
  * - Sextas (20:00): Ensaio
- * - Sábados (19:30): Culto Departamental (exceto 2º sábado que é livre)
+ * - Sábados (19:30): Culto Departamento (exceto 2º sábado que é livre)
  * - 1º Domingo (08:30): Santa Ceia (não há culto à noite)
  * - Outros Domingos (18:30): Culto com a Família
  */
@@ -68,11 +68,9 @@ export function generateEventsForMonth(year: number, month: number, existingEven
     } else if (dayOfWeek === 6) {
       // SÁBADO
       saturdayCount++;
-      if (saturdayCount !== 2) {
-        eventTitle = 'Culto Departamental';
-        eventType = 'outro';
-        eventTime = '19:30';
-      }
+      eventTitle = 'Culto Departamento';
+      eventType = 'culto';
+      eventTime = '19:30';
     }
 
     if (eventTitle) {
