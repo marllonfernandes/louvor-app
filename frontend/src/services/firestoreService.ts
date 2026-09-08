@@ -130,6 +130,15 @@ export async function saveEvent(event: Omit<WorshipEvent, 'id'> & { id?: string 
   return id;
 }
 
+export async function saveBatchEvents(eventsList: (Omit<WorshipEvent, 'id'> & { id?: string })[]): Promise<number> {
+  let count = 0;
+  for (const item of eventsList) {
+    await saveEvent(item);
+    count++;
+  }
+  return count;
+}
+
 export async function updateEventStatus(eventId: string, memberName: string, status: ConfirmationStatus, justification?: string): Promise<void> {
   if (isFirestoreAvailable && db) {
     try {

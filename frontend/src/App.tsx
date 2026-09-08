@@ -14,6 +14,7 @@ import { ReloadPrompt } from './components/pwa/ReloadPrompt';
 import { 
   subscribeToEvents, 
   saveEvent, 
+  saveBatchEvents,
   updateEventStatus, 
   deleteEvent,
   subscribeToSongs, 
@@ -88,6 +89,19 @@ export function AppContent() {
       );
     } catch (err) {
       addToast('Erro', 'Não foi possível salvar o evento.', 'error');
+    }
+  };
+
+  const handleBatchSaveEvents = async (eventsList: Omit<WorshipEvent, 'id'>[]) => {
+    try {
+      const count = await saveBatchEvents(eventsList);
+      addToast(
+        'Mês Gerado', 
+        `${count} novos eventos foram criados na agenda!`, 
+        'success'
+      );
+    } catch (err) {
+      addToast('Erro', 'Falha ao gerar eventos do mês.', 'error');
     }
   };
 
@@ -314,6 +328,7 @@ export function AppContent() {
             teams={teams}
             onStatusChange={handleStatusChange}
             onSaveEvent={handleSaveEvent}
+            onBatchSaveEvents={handleBatchSaveEvents}
             onDeleteEvent={handleDeleteEvent}
             onSelectSong={handleSelectSongFromEvent}
           />
