@@ -5,6 +5,7 @@ import { EventCard } from './EventCard';
 import { EventDetailModal } from './EventDetailModal';
 import { WhatsAppShareModal } from './WhatsAppShareModal';
 import { AddEventBottomSheet } from './AddEventBottomSheet';
+import { GenerateMonthModal } from './GenerateMonthModal';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../context/AuthContext';
 
@@ -15,6 +16,7 @@ interface AgendaViewProps {
   teams: Team[];
   onStatusChange: (eventId: string, memberName: string, status: ConfirmationStatus, justification?: string) => void;
   onSaveEvent: (event: Omit<WorshipEvent, 'id'> & { id?: string }) => void;
+  onBatchSaveEvents: (events: Omit<WorshipEvent, 'id'>[]) => Promise<void>;
   onDeleteEvent: (eventId: string) => void;
   onSelectSong: (song: Song) => void;
 }
@@ -28,15 +30,18 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   teams,
   onStatusChange,
   onSaveEvent,
+  onBatchSaveEvents,
   onDeleteEvent,
   onSelectSong
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [filterMonth, setFilterMonth] = useState<string>('all');
   const [timelineTab, setTimelineTab] = useState<TimelineTab>('upcoming');
   const [selectedEvent, setSelectedEvent] = useState<WorshipEvent | null>(null);
   const [shareEvent, setShareEvent] = useState<WorshipEvent | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<WorshipEvent | null>(null);
 
   const { userProfile } = useAuth();
@@ -65,11 +70,18 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
 
   const activeEventsList = timelineTab === 'upcoming' ? upcomingEvents : pastEvents;
 
+  // Extrair meses únicos para o filtro (formato YYYY-MM)
+  const uniqueMonths = Array.from(
+    new Set(activeEventsList.map(ev => ev.date.substring(0, 7)))
+  ).sort();
+
   const filteredEvents = activeEventsList.filter(ev => {
     const matchesSearch = ev.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (ev.team && ev.team.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesType = filterType === 'all' || ev.type === filterType;
-    return matchesSearch && matchesType;
+    const matchesMonth = filterMonth === 'all' || ev.date.startsWith(filterMonth);
+    
+    return matchesSearch && matchesType && matchesMonth;
   });
 
   const handleOpenCreateEvent = () => {
@@ -88,6 +100,10 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
     setEventToEdit(null);
   };
 
+  const handleCloseGenerateModal = () => {
+    setIsGenerateOpen(false);
+  };
+
   return (
     <div className="space-y-4 text-left">
       {/* Topo com proporções ajustadas */}
@@ -97,14 +113,24 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
           <p className="text-xs text-slate-400 truncate">Cultos, ensaios e presença</p>
         </div>
         {isLeader && (
-          <Button
-            onClick={handleOpenCreateEvent}
-            size="sm"
-            className="flex-shrink-0 whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm"
-            icon={<Plus size={16} />}
-          >
-            Novo Evento
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setIsGenerateOpen(true)}
+              size="sm"
+              variant="secondary"
+              className="flex-shrink-0 whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm hidden sm:flex"
+            >
+              Gerar Mês
+            </Button>
+            <Button
+              onClick={handleOpenCreateEvent}
+              size="sm"
+              className="flex-shrink-0 whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm"
+              icon={<Plus size={16} />}
+            >
+              Novo Evento
+            </Button>
+          </div>
         )}
       </div>
 
@@ -170,6 +196,41 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
             </button>
           ))}
         </div>
+
+        {/* Filtro de Mês */}
+        {uniqueMonths.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar mt-2">
+            <button
+              onClick={() => setFilterMonth('all')}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                filterMonth === 'all'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-800/90 text-slate-400 hover:text-slate-200 border border-slate-700/60'
+              }`}
+            >
+              Todos os Meses
+            </button>
+            {uniqueMonths.map(monthStr => {
+              const [year, month] = monthStr.split('-');
+              const date = new Date(parseInt(year), parseInt(month) - 1);
+              const label = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace('.', '');
+              
+              return (
+                <button
+                  key={monthStr}
+                  onClick={() => setFilterMonth(monthStr)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all capitalize ${
+                    filterMonth === monthStr
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-slate-800/90 text-slate-400 hover:text-slate-200 border border-slate-700/60'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Lista de Eventos Despoluída */}
@@ -243,6 +304,13 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
         event={shareEvent}
         songs={songs}
         members={members}
+      />
+
+      <GenerateMonthModal
+        isOpen={isGenerateOpen}
+        onClose={handleCloseGenerateModal}
+        existingEvents={events}
+        onGenerate={onBatchSaveEvents}
       />
     </div>
   );
