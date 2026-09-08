@@ -118,7 +118,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
               onClick={() => setIsGenerateOpen(true)}
               size="sm"
               variant="secondary"
-              className="flex-shrink-0 whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm hidden sm:flex"
+              className="flex-shrink-0 whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm"
             >
               Gerar Mês
             </Button>
