@@ -6,7 +6,7 @@ import { Input } from '../ui/Input';
 import { YoutubeIcon } from '../ui/YoutubeIcon';
 import { Sparkles, Music, Disc3, Loader2, MessageSquare, User, CheckCircle } from 'lucide-react';
 import { ALL_KEYS } from '../../utils/chordTransposer';
-import { fetchYoutubeDetails, getYoutubeThumbnail, YoutubeDetails } from '../../utils/youtube';
+import { fetchYoutubeDetails, getYoutubeThumbnail, sanitizeUrl, YoutubeDetails } from '../../utils/youtube';
 
 interface AddAdoptionSongModalProps {
   isOpen: boolean;
@@ -92,7 +92,7 @@ export const AddAdoptionSongModal: React.FC<AddAdoptionSongModalProps> = ({
     onSaveAdoptionSong({
       title: title.trim(),
       artist: artist.trim() || 'Artista',
-      url: url.trim(),
+      url: sanitizeUrl(url),
       suggestedKey,
       suggestedCategory,
       suggestedByMemberName: suggestedBy || 'Membro do Ministério',
