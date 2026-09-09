@@ -334,3 +334,24 @@ export async function fetchYoutubePlaylist(urlOrId: string): Promise<YoutubePlay
 
   return null;
 }
+
+/**
+ * Higieniza URLs para prevenir injeção de esquemas perigosos como javascript: ou data:
+ */
+export function sanitizeUrl(url: string | null | undefined): string {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  // Permite apenas http:// e https://
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  // Se for um domínio sem protocolo (ex: youtube.com/watch...)
+  if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/.*)?$/i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+
+  return '';
+}

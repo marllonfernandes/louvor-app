@@ -6,7 +6,7 @@ import { Input } from '../ui/Input';
 import { YoutubeIcon } from '../ui/YoutubeIcon';
 import { Music, Disc3, Sparkles, Loader2, Play, Image as ImageIcon, ExternalLink, CheckCircle } from 'lucide-react';
 import { ALL_KEYS } from '../../utils/chordTransposer';
-import { getYoutubeEmbedUrl, getYoutubeThumbnail, fetchYoutubeDetails, YoutubeDetails } from '../../utils/youtube';
+import { getYoutubeEmbedUrl, getYoutubeThumbnail, fetchYoutubeDetails, sanitizeUrl, YoutubeDetails } from '../../utils/youtube';
 
 interface AddSongBottomSheetProps {
   isOpen: boolean;
@@ -124,7 +124,7 @@ export const AddSongBottomSheet: React.FC<AddSongBottomSheetProps> = ({
       ...(songToEdit?.id ? { id: songToEdit.id } : {}),
       title: title.trim(),
       artist: artist.trim() || 'Artista Desconhecido',
-      url: url.trim(),
+      url: sanitizeUrl(url),
       key,
       bpm: bpm ? parseInt(bpm, 10) : undefined,
       category,
