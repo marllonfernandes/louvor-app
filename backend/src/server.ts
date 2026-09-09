@@ -5,6 +5,8 @@ import { fileURLToPath } from 'url';
 import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 // Carrega variáveis de ambiente (.env) se existirem
 dotenv.config();
@@ -58,9 +60,58 @@ function parseSongTitleAndArtist(rawTitle: string, authorName: string = ''): { t
 }
 
 // -----------------------------------------------------------------------------
-// 3. MIDDLEWARES PADRÃO
+// 3. MIDDLEWARES DE SEGURANÇA & PADRÃO
 // -----------------------------------------------------------------------------
-app.use(cors());
+// Headers de segurança HTTP (HSTS, X-Content-Type-Options, etc.)
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
+
+// Configuração segura de CORS
+const allowedOriginsEnv = process.env.ALLOWED_ORIGINS;
+const allowedOrigins = allowedOriginsEnv
+  ? allowedOriginsEnv.split(',').map(o => o.trim().toLowerCase())
+  : [];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const lowerOrigin = origin.toLowerCase();
+    if (
+      process.env.NODE_ENV !== 'production' ||
+      allowedOrigins.length === 0 ||
+      allowedOrigins.includes(lowerOrigin) ||
+      lowerOrigin.endsWith('.run.app') ||
+      lowerOrigin.includes('localhost') ||
+      lowerOrigin.includes('127.0.0.1')
+    ) {
+      return callback(null, true);
+    }
+    return callback(new Error('Bloqueado pela política de CORS da Louvor App API.'));
+  },
+  credentials: true
+}));
+
+// Rate Limiter Global para rotas de API (300 requisições / 15 min por IP)
+const globalApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas requisições originadas deste IP. Tente novamente mais tarde.' }
+});
+app.use('/api/', globalApiLimiter);
+
+// Rate Limiter Específico para o Endpoint de Importação do YouTube (25 requisições / 5 min por IP)
+const youtubeImportLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 25,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Limite de importação de playlists atingido. Aguarde alguns minutos.' }
+});
+
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
@@ -91,11 +142,17 @@ app.get('/api/info', (_req: Request, res: Response) => {
 // -----------------------------------------------------------------------------
 // 4.1 ENDPOINT DE IMPORTAÇÃO DE PLAYLIST DO YOUTUBE
 // -----------------------------------------------------------------------------
-app.get('/api/youtube/playlist', async (req: Request, res: Response): Promise<void> => {
+app.get('/api/youtube/playlist', youtubeImportLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const rawInput = (req.query.url as string || req.query.id as string || '').trim();
     if (!rawInput) {
       res.status(400).json({ error: 'Parâmetro "url" ou "id" da playlist é obrigatório.' });
+      return;
+    }
+
+    // Proteção contra payload excessivo (prevenção de DoS e consumo de recursos)
+    if (rawInput.length > 500) {
+      res.status(400).json({ error: 'URL ou ID da playlist excede o limite máximo permitido.' });
       return;
     }
 
@@ -107,6 +164,12 @@ app.get('/api/youtube/playlist', async (req: Request, res: Response): Promise<vo
     } else if (rawInput.includes('/playlist/')) {
       const match = rawInput.match(/\/playlist\/([a-zA-Z0-9_-]+)/);
       if (match) playlistId = match[1];
+    }
+
+    // Validação estrita de formato do playlistId (evita caracteres de injeção e abusos de caminho)
+    if (!/^[a-zA-Z0-9_-]{8,80}$/.test(playlistId)) {
+      res.status(400).json({ error: 'Formato de ID de playlist inválido.' });
+      return;
     }
 
     // 1. Tenta instâncias Invidious (JSON puro de alta velocidade)
@@ -151,9 +214,10 @@ app.get('/api/youtube/playlist', async (req: Request, res: Response): Promise<vo
       }
     }
 
-    // 2. Fallback para YouTube RSS Feed
+    // 2. Fallback para YouTube RSS Feed com timeout explícito de 5s
     const rssUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(playlistId)}`;
     const response = await fetch(rssUrl, {
+      signal: AbortSignal.timeout(5000),
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       }
