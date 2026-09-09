@@ -26,6 +26,7 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
   const [transposeOffset, setTransposeOffset] = useState(0);
   const { userProfile } = useAuth();
   const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
+  const isAdmin = userProfile?.systemRole === 'Admin';
 
   if (!song) return null;
 
@@ -175,20 +176,22 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
                   Editar
                 </Button>
 
-                <Button
-                  variant="danger"
-                  size="sm"
-                  className="min-h-[42px] px-3.5 text-xs font-bold flex-shrink-0"
-                  onClick={() => {
-                    if (confirm(`Deseja realmente remover "${song.title}" do repertório?`)) {
-                      onDeleteSong(song.id);
-                      onClose();
-                    }
-                  }}
-                  icon={<Trash2 size={15} />}
-                >
-                  Excluir
-                </Button>
+                {isAdmin && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    className="min-h-[42px] px-3.5 text-xs font-bold flex-shrink-0"
+                    onClick={() => {
+                      if (confirm(`Deseja realmente remover "${song.title}" do repertório?`)) {
+                        onDeleteSong(song.id);
+                        onClose();
+                      }
+                    }}
+                    icon={<Trash2 size={15} />}
+                  >
+                    Excluir
+                  </Button>
+                )}
               </>
             )}
           </div>

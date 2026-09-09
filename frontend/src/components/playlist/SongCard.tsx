@@ -7,11 +7,12 @@ import { YoutubeIcon } from '../ui/YoutubeIcon';
 
 interface SongCardProps {
   song: Song;
+  isLeader: boolean;
   onSelectSong: (song: Song) => void;
   onEditSong: (song: Song) => void;
 }
 
-export const SongCard: React.FC<SongCardProps> = ({ song, onSelectSong, onEditSong }) => {
+export const SongCard: React.FC<SongCardProps> = ({ song, isLeader, onSelectSong, onEditSong }) => {
   const thumbnailUrl = song.url ? getYoutubeThumbnail(song.url, 'hq') : null;
 
   return (
@@ -67,16 +68,18 @@ export const SongCard: React.FC<SongCardProps> = ({ song, onSelectSong, onEditSo
             Tom: {song.key}
           </Badge>
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEditSong(song);
-            }}
-            className="p-2 rounded-xl text-slate-400 hover:text-blue-600 dark:text-blue-400 hover:bg-slate-700/80 active:scale-95 transition-all bg-slate-900 border border-slate-700/60"
-            title="Editar Música"
-          >
-            <Pencil size={14} />
-          </button>
+          {isLeader && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditSong(song);
+              }}
+              className="p-2 rounded-xl text-slate-400 hover:text-blue-600 dark:text-blue-400 hover:bg-slate-700/80 active:scale-95 transition-all bg-slate-900 border border-slate-700/60"
+              title="Editar Música"
+            >
+              <Pencil size={14} />
+            </button>
+          )}
         </div>
       </div>
 

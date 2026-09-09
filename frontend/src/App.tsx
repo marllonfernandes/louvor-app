@@ -14,6 +14,7 @@ import { ReloadPrompt } from './components/pwa/ReloadPrompt';
 import { 
   subscribeToEvents, 
   saveEvent, 
+  saveBatchEvents,
   updateEventStatus, 
   deleteEvent,
   subscribeToSongs, 
@@ -91,9 +92,22 @@ export function AppContent() {
     }
   };
 
-  const handleStatusChange = async (eventId: string, memberName: string, status: ConfirmationStatus) => {
+  const handleBatchSaveEvents = async (eventsList: Omit<WorshipEvent, 'id'>[]) => {
     try {
-      await updateEventStatus(eventId, memberName, status);
+      const count = await saveBatchEvents(eventsList);
+      addToast(
+        'Mês Gerado', 
+        `${count} novos eventos foram criados na agenda!`, 
+        'success'
+      );
+    } catch (err) {
+      addToast('Erro', 'Falha ao gerar eventos do mês.', 'error');
+    }
+  };
+
+  const handleStatusChange = async (eventId: string, memberName: string, status: ConfirmationStatus, justification?: string) => {
+    try {
+      await updateEventStatus(eventId, memberName, status, justification);
       const statusLabels = { accepted: 'Confirmado ✅', declined: 'Recusado ❌', pending: 'Pendente ⏳' };
       addToast('Presença Atualizada', `${memberName}: ${statusLabels[status]}`, 'info');
     } catch (err) {
@@ -314,6 +328,7 @@ export function AppContent() {
             teams={teams}
             onStatusChange={handleStatusChange}
             onSaveEvent={handleSaveEvent}
+            onBatchSaveEvents={handleBatchSaveEvents}
             onDeleteEvent={handleDeleteEvent}
             onSelectSong={handleSelectSongFromEvent}
           />

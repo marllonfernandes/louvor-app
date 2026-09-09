@@ -31,6 +31,7 @@ export const TeamDetailModal: React.FC<TeamDetailModalProps> = ({
 
   const { userProfile } = useAuth();
   const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
+  const isAdmin = userProfile?.systemRole === 'Admin';
 
   return (
     <BottomSheet
@@ -121,20 +122,22 @@ export const TeamDetailModal: React.FC<TeamDetailModalProps> = ({
               Editar Equipe
             </Button>
 
-            <Button
-              variant="danger"
-              size="sm"
-              className="min-h-[42px] px-3.5 text-xs font-bold flex-shrink-0"
-              onClick={() => {
-                if (confirm(`Deseja realmente remover o time "${team.name}"?`)) {
-                  onDeleteTeam(team.id);
-                  onClose();
-                }
-              }}
-              icon={<Trash2 size={15} />}
-            >
-              Excluir
-            </Button>
+            {isAdmin && (
+              <Button
+                variant="danger"
+                size="sm"
+                className="min-h-[42px] px-3.5 text-xs font-bold flex-shrink-0"
+                onClick={() => {
+                  if (confirm(`Deseja realmente remover o time "${team.name}"?`)) {
+                    onDeleteTeam(team.id);
+                    onClose();
+                  }
+                }}
+                icon={<Trash2 size={15} />}
+              >
+                Excluir
+              </Button>
+            )}
           </div>
         )}
       </div>

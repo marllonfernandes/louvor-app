@@ -1,8 +1,113 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+
+    // =========================================================================
+    // FUNÇÕES UTILITÁRIAS DE AUTENTICAÇÃO E CONTROLE DE ACESSO (RBAC)
+    // =========================================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function hasUserData() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isRole(role) {
+      return hasUserData() && getUserData().get('systemRole', 'Viewer') == role;
+    }
+
+    function isAdmin() {
+      return isRole('Admin');
+    }
+
+    function isEditorOrAdmin() {
+      return isRole('Admin') || isRole('Editor');
+    }
+
+    // =========================================================================
+    // COLEÇÃO: USERS (Integrantes / Membros do Ministério)
+    // =========================================================================
+    match /users/{userId} {
+      // Qualquer integrante autenticado pode visualizar os membros da equipe
+      allow read: if isAuthenticated();
+      
+      // Permitir criação:
+      // 1. Administrador (pode criar qualquer perfil com qualquer systemRole)
+      // 2. Líder/Editor (pode convidar/adicionar membro com systemRole Viewer)
+      // 3. O próprio usuário no primeiro login (apenas systemRole Viewer ou omitido)
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isEditorOrAdmin() && request.resource.data.get('systemRole', 'Viewer') == 'Viewer') ||
+        (request.auth.uid == userId && (!request.resource.data.keys().hasAny(['systemRole']) || request.resource.data.systemRole == 'Viewer'))
+      );
+      
+      // Permitir atualização:
+      // 1. Administrador (pode alterar dados e promover/rebaixar papéis)
+      // 2. Líder/Editor (pode atualizar dados cadastrais sem alterar o systemRole)
+      // 3. O próprio usuário (pode atualizar seus dados sem auto-promoção de systemRole)
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (isEditorOrAdmin() && request.resource.data.get('systemRole', 'Viewer') == resource.data.get('systemRole', 'Viewer')) ||
+        (request.auth.uid == userId && request.resource.data.get('systemRole', 'Viewer') == resource.data.get('systemRole', 'Viewer'))
+      );
+
+      // Exclusão permitida apenas para Administradores ou remoção de convite pendente
+      allow delete: if isAuthenticated() && (
+        isAdmin() ||
+        (resource.data.keys().hasAny(['inviteToken']) && resource.data.inviteToken != null)
+      );
+    }
+
+    // =========================================================================
+    // COLEÇÃO: EVENTS (Escalas e Cultos)
+    // =========================================================================
+    match /events/{eventId} {
+      allow read: if isAuthenticated();
+      allow create: if isEditorOrAdmin();
+      
+      // Permite edição completa para Líderes/Admins e atualização de presença/justificativa para qualquer integrante
+      allow update: if isEditorOrAdmin() || (
+        isAuthenticated() && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmed', 'justifications'])
+      );
+      
+      allow delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // COLEÇÃO: SONGS (Repertório Musical Oficial)
+    // =========================================================================
+    match /songs/{songId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isEditorOrAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // COLEÇÃO: TEAMS (Equipes / Grupos de Louvor)
+    // =========================================================================
+    match /teams/{teamId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isEditorOrAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // COLEÇÃO: ADOPTION_SONGS (Músicas para Adoção / Votação)
+    // =========================================================================
+    match /adoption_songs/{adoptionId} {
+      allow read: if isAuthenticated();
+      // Qualquer integrante autenticado pode sugerir músicas
+      allow create: if isAuthenticated();
+      // Integrantes podem votar e Líderes podem homologar/rejeitar
+      allow update: if isAuthenticated();
+      // Apenas Líderes e Administradores podem excluir sugestões
+      allow delete: if isEditorOrAdmin();
     }
   }
 }

@@ -5,6 +5,7 @@ import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { YoutubeIcon } from '../ui/YoutubeIcon';
 import { getYoutubeThumbnail } from '../../utils/youtube';
+import { useAuth } from '../../context/AuthContext';
 
 interface AdoptionSongCardProps {
   adoptionSong: AdoptionSong;
@@ -27,6 +28,8 @@ export const AdoptionSongCard: React.FC<AdoptionSongCardProps> = ({
   onDelete,
   isLeader
 }) => {
+  const { userProfile } = useAuth();
+  const isAdmin = userProfile?.systemRole === 'Admin';
   const thumb = adoptionSong.url ? getYoutubeThumbnail(adoptionSong.url, 'hq') : null;
   const hasVoted = Boolean(currentVoterName && adoptionSong.votes.includes(currentVoterName));
   const voteCount = adoptionSong.votes.length;
@@ -69,7 +72,7 @@ export const AdoptionSongCard: React.FC<AdoptionSongCardProps> = ({
           )}
         </div>
 
-        {adoptionSong.status === 'voting' && (
+        {isAdmin && adoptionSong.status === 'voting' && (
           <button
             type="button"
             onClick={() => {
