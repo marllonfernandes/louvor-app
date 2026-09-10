@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut, User as FirebaseUser } from 'firebase/auth';
+import {
+  onAuthStateChanged,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  signOut as firebaseSignOut,
+  User as FirebaseUser
+} from 'firebase/auth';
 import { doc, getDoc, collection, query, where, getDocs, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { auth, googleProvider, db, isFirestoreAvailable } from '../config/firebase';
 import { User } from '../types';
@@ -26,6 +33,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       return;
     }
+
+    // Processa retorno de login por redirecionamento caso o popup tenha usado fallback
+    getRedirectResult(auth).catch((err: any) => {
+      if (err && err.code !== 'auth/popup-closed-by-user') {
+        console.error('[Auth] Erro no redirect de autenticação:', err);
+        setError(formatAuthError(err));
+      }
+    });
 
     let unsubUserDoc: (() => void) | null = null;
 
@@ -159,6 +174,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  const formatAuthError = (err: any): string => {
+    if (!err) return 'Erro desconhecido na autenticação.';
+    switch (err.code) {
+      case 'auth/unauthorized-domain':
+        return 'Este domínio não está autorizado no Firebase Console. Adicione a URL atual em Firebase Console > Authentication > Settings > Authorized Domains.';
+      case 'auth/popup-blocked':
+        return 'O navegador bloqueou a abertura da janela de login. Por favor, permita popups para este site.';
+      case 'auth/popup-closed-by-user':
+        return 'A janela de autenticação foi fechada antes da conclusão.';
+      case 'auth/network-request-failed':
+        return 'Falha de conexão com a rede. Verifique sua internet.';
+      case 'auth/cancelled-popup-request':
+        return 'Operação anterior de login cancelada.';
+      default:
+        return err.message || 'Falha no login com Google.';
+    }
+  };
+
   const loginWithGoogle = async () => {
     setError(null);
     if (!auth) {
@@ -168,8 +201,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Falha no login com Google.');
+      // 1. Usuário fechou a janela ou cancelou a operação: não exibe erro alarmante
+      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+        console.info('[Auth] Login cancelado pelo usuário.');
+        return;
+      }
+
+      // 2. Se o popup foi bloqueado pelo navegador (comum no iOS / Webviews / PWA), tenta redirecionamento
+      if (err?.code === 'auth/popup-blocked') {
+        try {
+          console.info('[Auth] Popup bloqueado, tentando login com redirecionamento...');
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        } catch (redirectErr: any) {
+          console.error('[Auth] Falha no redirecionamento:', redirectErr);
+        }
+      }
+
+      console.error('[Auth] Erro no login com Google:', err);
+      setError(formatAuthError(err));
     }
   };
 

@@ -63,9 +63,12 @@ function parseSongTitleAndArtist(rawTitle: string, authorName: string = ''): { t
 // 3. MIDDLEWARES DE SEGURANÇA & PADRÃO
 // -----------------------------------------------------------------------------
 // Headers de segurança HTTP (HSTS, X-Content-Type-Options, etc.)
+// NOTA: crossOriginOpenerPolicy deve ser 'same-origin-allow-popups' para permitir o popup de autenticação do Google/Firebase
 app.use(helmet({
   contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
 // Configuração segura de CORS
