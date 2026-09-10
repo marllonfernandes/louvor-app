@@ -6,11 +6,13 @@ const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
 const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
 const databaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID;
 
+const authDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`;
+
 // Configuração mínima e essencial para conexão direta com o Google Cloud Firestore
 const firebaseConfig = {
   apiKey,
   projectId,
-  authDomain: `${projectId}.firebaseapp.com`
+  authDomain
 };
 
 let app: FirebaseApp | null = null;
