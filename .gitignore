@@ -4,11 +4,11 @@
 
 # Arquivos explicitamente solicitados para não serem versionados
 Makefile
+Makefile*
 Makefile.*
-!Makefile.example
 makefile
+makefile*
 makefile.*
-!makefile.example
 
 # Variáveis de Ambiente & Arquivos de Configuração Local
 .env
