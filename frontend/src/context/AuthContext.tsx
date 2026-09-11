@@ -4,6 +4,10 @@ import {
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
   signOut as firebaseSignOut,
   User as FirebaseUser
 } from 'firebase/auth';
@@ -17,6 +21,10 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   loginWithGoogle: () => Promise<void>;
+  loginWithEmail: (email: string, password: string) => Promise<void>;
+  registerWithEmail: (email: string, password: string, name?: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  clearError: () => void;
   logout: () => Promise<void>;
 }
 
@@ -187,10 +195,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return 'Falha de conexão com a rede. Verifique sua internet.';
       case 'auth/cancelled-popup-request':
         return 'Operação anterior de login cancelada.';
+      case 'auth/user-not-found':
+        return 'Nenhum usuário encontrado com este e-mail.';
+      case 'auth/wrong-password':
+        return 'Senha incorreta. Verifique a senha ou redefina-a.';
+      case 'auth/invalid-credential':
+        return 'E-mail ou senha incorretos. Verifique suas credenciais.';
+      case 'auth/email-already-in-use':
+        return 'Este e-mail já está cadastrado. Faça login ou solicite a recuperação de senha.';
+      case 'auth/weak-password':
+        return 'A senha deve conter pelo menos 6 caracteres.';
+      case 'auth/invalid-email':
+        return 'O formato do e-mail inserido é inválido.';
+      case 'auth/too-many-requests':
+        return 'Muitas tentativas malsucedidas. Por favor, aguarde alguns instantes antes de tentar novamente.';
       default:
-        return err.message || 'Falha no login com Google.';
+        return err.message || 'Falha na autenticação.';
     }
   };
+
+  const clearError = () => setError(null);
 
   const loginWithGoogle = async () => {
     setError(null);
@@ -223,6 +247,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginWithEmail = async (email: string, password: string) => {
+    setError(null);
+    if (!auth) {
+      setError('Autenticação não configurada.');
+      throw new Error('Autenticação não configurada.');
+    }
+    try {
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+    } catch (err: any) {
+      console.error('[Auth] Erro no login com Email:', err);
+      const msg = formatAuthError(err);
+      setError(msg);
+      throw new Error(msg);
+    }
+  };
+
+  const registerWithEmail = async (email: string, password: string, name?: string) => {
+    setError(null);
+    if (!auth) {
+      setError('Autenticação não configurada.');
+      throw new Error('Autenticação não configurada.');
+    }
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      if (name && userCredential.user) {
+        await updateProfile(userCredential.user, { displayName: name.trim() });
+      }
+    } catch (err: any) {
+      console.error('[Auth] Erro no cadastro com Email:', err);
+      const msg = formatAuthError(err);
+      setError(msg);
+      throw new Error(msg);
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    setError(null);
+    if (!auth) {
+      setError('Autenticação não configurada.');
+      throw new Error('Autenticação não configurada.');
+    }
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+    } catch (err: any) {
+      console.error('[Auth] Erro na recuperação de senha:', err);
+      const msg = formatAuthError(err);
+      setError(msg);
+      throw new Error(msg);
+    }
+  };
+
   const logout = async () => {
     if (auth) {
       await firebaseSignOut(auth);
@@ -230,7 +305,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, userProfile, loading, error, loginWithGoogle, logout }}>
+    <AuthContext.Provider
+      value={{
+        currentUser,
+        userProfile,
+        loading,
+        error,
+        loginWithGoogle,
+        loginWithEmail,
+        registerWithEmail,
+        resetPassword,
+        clearError,
+        logout
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
