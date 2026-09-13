@@ -4,7 +4,7 @@ import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { YoutubeIcon } from '../ui/YoutubeIcon';
-import { Music, Disc3, Sparkles, Loader2, Play, Image as ImageIcon, ExternalLink, CheckCircle } from 'lucide-react';
+import { Music, Disc3, Sparkles, Loader2, Play, Image as ImageIcon, ExternalLink, CheckCircle, Folder } from 'lucide-react';
 import { ALL_KEYS } from '../../utils/chordTransposer';
 import { getYoutubeEmbedUrl, getYoutubeThumbnail, fetchYoutubeDetails, sanitizeUrl, YoutubeDetails } from '../../utils/youtube';
 
@@ -13,13 +13,15 @@ interface AddSongBottomSheetProps {
   onClose: () => void;
   onSaveSong: (song: Omit<Song, 'id'> & { id?: string }) => void;
   songToEdit?: Song | null;
+  availableGroups?: string[];
 }
 
 export const AddSongBottomSheet: React.FC<AddSongBottomSheetProps> = ({
   isOpen,
   onClose,
   onSaveSong,
-  songToEdit
+  songToEdit,
+  availableGroups = []
 }) => {
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
@@ -27,6 +29,7 @@ export const AddSongBottomSheet: React.FC<AddSongBottomSheetProps> = ({
   const [key, setKey] = useState('C');
   const [bpm, setBpm] = useState<string>('');
   const [category, setCategory] = useState<SongCategory>('Adoração');
+  const [group, setGroup] = useState('');
   const [notes, setNotes] = useState('');
 
   // Estados de integração com o YouTube
@@ -45,6 +48,7 @@ export const AddSongBottomSheet: React.FC<AddSongBottomSheetProps> = ({
       setKey(songToEdit.key || 'C');
       setBpm(songToEdit.bpm ? String(songToEdit.bpm) : '');
       setCategory(songToEdit.category || 'Adoração');
+      setGroup(songToEdit.group || '');
       setNotes(songToEdit.notes || '');
       setShowPlayer(false);
       setAutoFilled(false);
@@ -55,6 +59,7 @@ export const AddSongBottomSheet: React.FC<AddSongBottomSheetProps> = ({
       setKey('C');
       setBpm('');
       setCategory('Adoração');
+      setGroup('');
       setNotes('');
       setYtDetails(null);
       setShowPlayer(false);
@@ -128,6 +133,7 @@ export const AddSongBottomSheet: React.FC<AddSongBottomSheetProps> = ({
       key,
       bpm: bpm ? parseInt(bpm, 10) : undefined,
       category,
+      group: group.trim() || undefined,
       notes: notes.trim()
     });
 
@@ -137,6 +143,7 @@ export const AddSongBottomSheet: React.FC<AddSongBottomSheetProps> = ({
     setUrl('');
     setKey('C');
     setBpm('');
+    setGroup('');
     setNotes('');
     setYtDetails(null);
     setShowPlayer(false);
@@ -329,6 +336,59 @@ export const AddSongBottomSheet: React.FC<AddSongBottomSheetProps> = ({
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Grupo de Repertório (Opcional) */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Folder size={13} className="text-blue-400" />
+              Grupo de Repertório (Opcional)
+            </span>
+            {group && (
+              <button
+                type="button"
+                onClick={() => setGroup('')}
+                className="text-[10px] text-slate-400 hover:text-slate-200"
+              >
+                Limpar
+              </button>
+            )}
+          </label>
+          <input
+            type="text"
+            list="available-groups-list"
+            value={group}
+            onChange={e => setGroup(e.target.value)}
+            placeholder="Ex: Congresso Varões, Louvor Jovem..."
+            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+          />
+          <datalist id="available-groups-list">
+            {availableGroups.map(g => (
+              <option key={g} value={g} />
+            ))}
+          </datalist>
+
+          {/* Sugestões Rápidas de Grupos Existentes */}
+          {availableGroups.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap mt-2">
+              <span className="text-[10px] text-slate-500">Sugestões:</span>
+              {availableGroups.map(g => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setGroup(g)}
+                  className={`text-[10px] px-2 py-0.5 rounded-lg border transition-all ${
+                    group === g
+                      ? 'bg-blue-600/30 text-blue-300 border-blue-500/50 font-bold'
+                      : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+                  }`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Notas adicionais */}

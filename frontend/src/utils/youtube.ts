@@ -150,6 +150,20 @@ export function cleanSongTitle(text: string): string {
 }
 
 /**
+ * Limpa títulos de playlists do YouTube (remove sufixos como "- YouTube", tags CDATA, etc.)
+ */
+export function cleanPlaylistTitle(rawTitle: string): string {
+  if (!rawTitle) return '';
+  return rawTitle
+    .replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1')
+    .replace(/\s*-\s*YouTube$/i, '')
+    .replace(/\s*\|\s*YouTube$/i, '')
+    .replace(/^YouTube\s*-\s*/i, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+/**
  * Tenta separar Artista e Título de strings comuns do YouTube
  */
 export function parseSongTitleAndArtist(rawTitle: string, authorName: string = ''): { title: string; artist: string } {
@@ -238,7 +252,10 @@ export async function fetchYoutubePlaylist(urlOrId: string): Promise<YoutubePlay
     if (backendRes.ok) {
       const data = await backendRes.json();
       if (data.items && Array.isArray(data.items) && data.items.length > 0) {
-        return data as YoutubePlaylistDetails;
+        return {
+          ...data,
+          title: cleanPlaylistTitle(data.title || 'Playlist do YouTube')
+        } as YoutubePlaylistDetails;
       }
     }
   } catch {
@@ -271,7 +288,7 @@ export async function fetchYoutubePlaylist(urlOrId: string): Promise<YoutubePlay
 
           return {
             playlistId,
-            title: invJson.title || 'Playlist do YouTube',
+            title: cleanPlaylistTitle(invJson.title || 'Playlist do YouTube'),
             total: items.length,
             items
           };
@@ -291,7 +308,7 @@ export async function fetchYoutubePlaylist(urlOrId: string): Promise<YoutubePlay
     if (res.ok) {
       const xmlText = await res.text();
       const titleMatch = xmlText.match(/<title>([\s\S]*?)<\/title>/);
-      const playlistTitle = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : 'Playlist do YouTube';
+      const playlistTitle = cleanPlaylistTitle(titleMatch ? titleMatch[1] : 'Playlist do YouTube');
 
       const entries = xmlText.split('<entry>');
       const items: YoutubePlaylistItem[] = [];

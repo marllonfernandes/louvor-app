@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Disc3, Sparkles, Heart, Crown, Filter, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, Disc3, Sparkles, Heart, Crown, Filter, CheckCircle2, Folder, FolderPlus, FolderX, Pencil, Trash2, Layers } from 'lucide-react';
 import { YoutubeIcon } from '../ui/YoutubeIcon';
 import { Song, AdoptionSong, Member } from '../../types';
 import { SongCard } from './SongCard';
@@ -9,6 +9,8 @@ import { AdoptionSongCard } from './AdoptionSongCard';
 import { AddAdoptionSongModal } from './AddAdoptionSongModal';
 import { ApproveAdoptionModal } from './ApproveAdoptionModal';
 import { ImportPlaylistModal } from './ImportPlaylistModal';
+import { DeleteGroupModal } from './DeleteGroupModal';
+import { CreateGroupModal } from './CreateGroupModal';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../context/AuthContext';
 
@@ -24,6 +26,8 @@ interface PlaylistViewProps {
   onApproveAdoptionSong: (adoptionSongId: string, approvedSongData: Omit<Song, 'id'>, leaderName: string) => void;
   onRejectAdoptionSong: (songId: string) => void;
   onDeleteAdoptionSong: (songId: string) => void;
+  onDeleteGroup?: (groupName: string, deleteSongsToo: boolean) => void;
+  onSaveGroup?: (groupName: string, selectedSongIds: string[]) => void;
   selectedSongFromEvent?: Song | null;
   onClearSelectedSong?: () => void;
 }
@@ -40,6 +44,8 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
   onApproveAdoptionSong,
   onRejectAdoptionSong,
   onDeleteAdoptionSong,
+  onDeleteGroup,
+  onSaveGroup,
   selectedSongFromEvent,
   onClearSelectedSong
 }) => {
@@ -47,6 +53,7 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedKey, setSelectedKey] = useState<string>('all');
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [adoptionFilter, setAdoptionFilter] = useState<'all' | 'voting' | 'approved' | 'rejected'>('all');
 
   const { userProfile } = useAuth();
@@ -59,9 +66,19 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
   const [isAddSongOpen, setIsAddSongOpen] = useState(false);
   const [isImportPlaylistOpen, setIsImportPlaylistOpen] = useState(false);
   const [isAddAdoptionOpen, setIsAddAdoptionOpen] = useState(false);
+  const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
+  const [groupToEdit, setGroupToEdit] = useState<string | null>(null);
+  const [groupToDelete, setGroupToDelete] = useState<{ name: string; count: number } | null>(null);
   const [activeSong, setActiveSong] = useState<Song | null>(selectedSongFromEvent || null);
   const [songToEdit, setSongToEdit] = useState<Song | null>(null);
   const [adoptionToApprove, setAdoptionToApprove] = useState<AdoptionSong | null>(null);
+
+  // Lista dinâmica de Grupos do Repertório
+  const availableGroups = Array.from(
+    new Set(songs.map(s => s.group?.trim()).filter(Boolean))
+  ).sort() as string[];
+
+  const ungroupedCount = songs.filter(s => !s.group?.trim()).length;
 
   // Lista de Líderes
   const leaders = members.filter(m => {
@@ -72,10 +89,16 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
   // Filtros do Repertório Principal
   const filteredSongs = songs.filter(song => {
     const matchesSearch = song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      song.artist.toLowerCase().includes(searchTerm.toLowerCase());
+      song.artist.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (song.group && song.group.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = selectedCategory === 'all' || song.category === selectedCategory;
     const matchesKey = selectedKey === 'all' || song.key === selectedKey;
-    return matchesSearch && matchesCategory && matchesKey;
+    const matchesGroup = selectedGroup === 'all'
+      ? true
+      : selectedGroup === 'ungrouped'
+      ? !song.group?.trim()
+      : song.group?.trim() === selectedGroup;
+    return matchesSearch && matchesCategory && matchesKey && matchesGroup;
   });
 
   // Filtros e Ordenação das Músicas para Adoção (mais votadas primeiro)
@@ -199,6 +222,129 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
       {/* Conteúdo: Subaba Repertório Principal */}
       {subTab === 'repertoire' && (
         <div className="space-y-3">
+          {/* Barra de Filtro de Grupos de Repertório */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+            <button
+              type="button"
+              onClick={() => setSelectedGroup('all')}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                selectedGroup === 'all'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-850 text-slate-400 hover:text-slate-200 border border-slate-700/60'
+              }`}
+            >
+              <Layers size={13} />
+              <span>Todas ({songs.length})</span>
+            </button>
+
+            {availableGroups.map(grp => {
+              const count = songs.filter(s => s.group === grp).length;
+              const isSelected = selectedGroup === grp;
+              return (
+                <button
+                  key={grp}
+                  type="button"
+                  onClick={() => setSelectedGroup(grp)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-slate-800/90 text-slate-300 hover:text-white border border-slate-700/70'
+                  }`}
+                >
+                  <Folder size={13} className={isSelected ? 'text-white' : 'text-blue-400'} />
+                  <span>{grp}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                    isSelected ? 'bg-blue-700 text-white' : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+
+            {ungroupedCount > 0 && availableGroups.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelectedGroup('ungrouped')}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                  selectedGroup === 'ungrouped'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-slate-800/90 text-slate-400 hover:text-slate-200 border border-slate-700/60'
+                }`}
+              >
+                <span>Sem Grupo</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  selectedGroup === 'ungrouped' ? 'bg-blue-700 text-white' : 'bg-slate-800 text-slate-400'
+                }`}>
+                  {ungroupedCount}
+                </span>
+              </button>
+            )}
+
+            {isCurrentUserLeader && (
+              <button
+                type="button"
+                onClick={() => {
+                  setGroupToEdit(null);
+                  setIsCreateGroupOpen(true);
+                }}
+                className="px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/30 active:scale-95"
+                title="Criar novo grupo de repertório"
+              >
+                <FolderPlus size={13} />
+                <span>Novo Grupo</span>
+              </button>
+            )}
+          </div>
+
+          {/* Banner de Gestão do Grupo Ativo (quando filtrado por grupo específico) */}
+          {selectedGroup !== 'all' && selectedGroup !== 'ungrouped' && (
+            <div className="bg-slate-900/90 border border-blue-500/30 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-md">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
+                  <Folder size={20} />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-sm font-bold text-slate-100 truncate flex items-center gap-1.5">
+                    {selectedGroup}
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    {songs.filter(s => s.group === selectedGroup).length} {songs.filter(s => s.group === selectedGroup).length === 1 ? 'música agrupada' : 'músicas agrupadas'}
+                  </p>
+                </div>
+              </div>
+
+              {isCurrentUserLeader && (
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGroupToEdit(selectedGroup);
+                      setIsCreateGroupOpen(true);
+                    }}
+                    className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1 border border-slate-700 transition-all active:scale-95"
+                    title="Editar músicas deste grupo"
+                  >
+                    <Pencil size={13} />
+                    <span className="hidden sm:inline">Editar</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const count = songs.filter(s => s.group === selectedGroup).length;
+                      setGroupToDelete({ name: selectedGroup, count });
+                    }}
+                    className="px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-semibold flex items-center gap-1 transition-all active:scale-95"
+                    title="Excluir grupo de repertório"
+                  >
+                    <Trash2 size={13} />
+                    <span className="hidden sm:inline">Excluir Grupo</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Filtros de Categoria e Tom */}
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar flex-1">
@@ -366,6 +512,39 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
         }}
         onSaveSong={onSaveSong}
         songToEdit={songToEdit}
+        availableGroups={availableGroups}
+      />
+
+      {/* Modal de Criação / Edição de Grupo de Repertório */}
+      <CreateGroupModal
+        isOpen={isCreateGroupOpen}
+        onClose={() => {
+          setIsCreateGroupOpen(false);
+          setGroupToEdit(null);
+        }}
+        songs={songs}
+        initialGroupName={groupToEdit || ''}
+        onSaveGroup={(groupName, selectedSongIds) => {
+          if (onSaveGroup) onSaveGroup(groupName, selectedSongIds);
+          setSelectedGroup(groupName);
+        }}
+      />
+
+      {/* Modal de Exclusão de Grupo de Repertório (com opção de apagar ou manter músicas) */}
+      <DeleteGroupModal
+        isOpen={Boolean(groupToDelete)}
+        onClose={() => setGroupToDelete(null)}
+        groupName={groupToDelete?.name || ''}
+        songCount={groupToDelete?.count || 0}
+        onConfirm={(deleteSongsToo) => {
+          if (groupToDelete && onDeleteGroup) {
+            onDeleteGroup(groupToDelete.name, deleteSongsToo);
+            if (selectedGroup === groupToDelete.name) {
+              setSelectedGroup('all');
+            }
+          }
+          setGroupToDelete(null);
+        }}
       />
 
       <SongDetailModal
@@ -387,6 +566,12 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
         isOpen={isImportPlaylistOpen}
         onClose={() => setIsImportPlaylistOpen(false)}
         onImportSongs={onSaveBatchSongs}
+        availableGroups={availableGroups}
+        onImportComplete={(importedGroup) => {
+          if (importedGroup) {
+            setSelectedGroup(importedGroup);
+          }
+        }}
       />
 
       {/* Modais de Adoção de Canções */}

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Calendar, Clock, MapPin, Share2, Music2, ChevronRight, CheckCircle2, Check, X, Clock3 } from 'lucide-react';
+import { Calendar, Clock, MapPin, Share2, Music2, ChevronRight, CheckCircle2, Check, X, Clock3, Folder } from 'lucide-react';
 import { WorshipEvent, ConfirmationStatus, Song, Member } from '../../types';
 import { Badge } from '../ui/Badge';
+import { getEventTypeDefinition } from '../../utils/eventType';
 
 interface EventCardProps {
   event: WorshipEvent;
@@ -27,6 +28,8 @@ export const EventCard: React.FC<EventCardProps> = ({
   const pendingCount = confirmedEntries.filter(([_, s]) => s === 'pending').length;
 
   const eventSongs = (event.songIds || []).map(id => songs.find(s => s.id === id)).filter(Boolean) as Song[];
+  const uniqueSongGroups = Array.from(new Set(eventSongs.map(s => s.group).filter(Boolean))) as string[];
+  const typeDef = getEventTypeDefinition(event.type);
 
   // Formata data amigável (ex: Dom, 01 Mar)
   const formatDateFriendly = (dateStr: string) => {
@@ -42,7 +45,7 @@ export const EventCard: React.FC<EventCardProps> = ({
   return (
     <div
       onClick={() => onSelectEvent(event)}
-      className={`border rounded-2xl p-4 shadow-sm space-y-3 transition-all text-left cursor-pointer active:scale-[0.99] group ${
+      className={`border border-l-4 ${typeDef.borderClass} rounded-2xl p-4 shadow-sm space-y-3 transition-all text-left cursor-pointer active:scale-[0.99] group ${
         isPast 
           ? 'bg-slate-900/70 border-slate-800 hover:border-slate-700 opacity-90' 
           : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700/80 hover:border-blue-500/40 shadow-slate-950/20'
@@ -55,8 +58,9 @@ export const EventCard: React.FC<EventCardProps> = ({
             {event.team || 'Escala Avulsa'}
           </Badge>
           {event.type && (
-            <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider bg-slate-950/90 px-2.5 py-0.5 rounded-md border border-slate-700/60">
-              {event.type}
+            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md border flex items-center gap-1 shadow-sm ${typeDef.badgeClass}`}>
+              <typeDef.icon size={12} className="shrink-0" />
+              <span>{typeDef.label}</span>
             </span>
           )}
           {isPast && (
@@ -125,6 +129,15 @@ export const EventCard: React.FC<EventCardProps> = ({
         </div>
 
         <div className="flex items-center gap-2 text-slate-300 font-medium">
+          {uniqueSongGroups.length > 0 && (
+            <span
+              className="inline-flex items-center gap-1 bg-purple-500/10 text-purple-300 border border-purple-500/25 px-2 py-0.5 rounded-md text-[11px] max-w-[120px] truncate"
+              title={`Grupo: ${uniqueSongGroups.join(', ')}`}
+            >
+              <Folder size={11} className="text-purple-400 shrink-0" />
+              <span className="truncate">{uniqueSongGroups.join(', ')}</span>
+            </span>
+          )}
           {eventSongs.length > 0 && (
             <span className="inline-flex items-center gap-1 bg-slate-950 px-2 py-0.5 rounded-md border border-slate-700 text-[11px]">
               <Music2 size={12} className="text-blue-400" />

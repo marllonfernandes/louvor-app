@@ -1,6 +1,6 @@
 export type ConfirmationStatus = 'accepted' | 'declined' | 'pending';
 
-export type EventType = 'culto' | 'ensaio' | 'especial' | 'jovens' | 'ceia' | 'outro';
+export type EventType = 'culto' | 'ensaio' | 'congresso' | 'especial' | 'jovens' | 'ceia' | 'outro';
 
 export interface WorshipEvent {
   id: string;
@@ -27,10 +27,17 @@ export interface Song {
   key: string;
   bpm?: number;
   category?: SongCategory;
+  group?: string; // Ex: "Congresso Varões"
   cifraUrl?: string;
   lyrics?: string;
   notes?: string;
   createdAt?: number;
+}
+
+export interface RepertoireGroupSummary {
+  name: string;
+  songCount: number;
+  songIds: string[];
 }
 
 export interface AdoptionSong {

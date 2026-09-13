@@ -178,10 +178,12 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
         <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
           {[
             { id: 'all', label: 'Todos' },
+            { id: 'congresso', label: 'Congressos' },
             { id: 'culto', label: 'Cultos' },
             { id: 'ensaio', label: 'Ensaios' },
             { id: 'jovens', label: 'Jovens' },
-            { id: 'ceia', label: 'Santa Ceia' }
+            { id: 'ceia', label: 'Santa Ceia' },
+            { id: 'especial', label: 'Especiais' }
           ].map(f => (
             <button
               key={f.id}

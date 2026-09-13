@@ -5,14 +5,16 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { YoutubeIcon } from '../ui/YoutubeIcon';
 import { Badge } from '../ui/Badge';
-import { Search, Loader2, Check, Sparkles, Disc3, Music2, AlertCircle } from 'lucide-react';
+import { Search, Loader2, Check, Sparkles, Disc3, Music2, AlertCircle, Folder } from 'lucide-react';
 import { ALL_KEYS } from '../../utils/chordTransposer';
-import { fetchYoutubePlaylist, YoutubePlaylistItem } from '../../utils/youtube';
+import { fetchYoutubePlaylist, YoutubePlaylistItem, cleanPlaylistTitle } from '../../utils/youtube';
 
 interface ImportPlaylistModalProps {
   isOpen: boolean;
   onClose: () => void;
   onImportSongs: (songs: Omit<Song, 'id'>[]) => void;
+  availableGroups?: string[];
+  onImportComplete?: (groupName?: string) => void;
 }
 
 interface EditablePlaylistItem extends YoutubePlaylistItem {
@@ -26,12 +28,16 @@ const CATEGORIES: SongCategory[] = ['Adoração', 'Celebração', 'Ministração
 export const ImportPlaylistModal: React.FC<ImportPlaylistModalProps> = ({
   isOpen,
   onClose,
-  onImportSongs
+  onImportSongs,
+  availableGroups,
+  onImportComplete
 }) => {
   const [playlistUrl, setPlaylistUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [playlistTitle, setPlaylistTitle] = useState('');
+  const [groupName, setGroupName] = useState('');
+  const [createGroup, setCreateGroup] = useState(true);
   const [items, setItems] = useState<EditablePlaylistItem[]>([]);
 
   // Configurações em Lote
@@ -50,7 +56,10 @@ export const ImportPlaylistModal: React.FC<ImportPlaylistModalProps> = ({
     setIsLoading(false);
 
     if (details && details.items.length > 0) {
-      setPlaylistTitle(details.title || 'Playlist do YouTube');
+      const detectedTitle = cleanPlaylistTitle(details.title || 'Playlist do YouTube');
+      setPlaylistTitle(detectedTitle);
+      setGroupName(detectedTitle);
+      setCreateGroup(true);
       setItems(
         details.items.map(item => ({
           ...item,
@@ -98,16 +107,22 @@ export const ImportPlaylistModal: React.FC<ImportPlaylistModalProps> = ({
     const selectedItems = items.filter(it => it.selected);
     if (selectedItems.length === 0) return;
 
+    const targetGroup = createGroup && groupName.trim() ? groupName.trim() : undefined;
+
     const songsToImport: Omit<Song, 'id'>[] = selectedItems.map(item => ({
       title: item.title,
       artist: item.artist || 'Artista',
       url: item.url,
       key: item.key,
       category: item.category,
+      group: targetGroup,
       createdAt: Date.now()
     }));
 
     onImportSongs(songsToImport);
+    if (onImportComplete) {
+      onImportComplete(targetGroup);
+    }
     handleReset();
     onClose();
   };
@@ -116,6 +131,8 @@ export const ImportPlaylistModal: React.FC<ImportPlaylistModalProps> = ({
     setPlaylistUrl('');
     setItems([]);
     setPlaylistTitle('');
+    setGroupName('');
+    setCreateGroup(true);
     setErrorMessage('');
     setIsLoading(false);
   };
@@ -188,6 +205,52 @@ export const ImportPlaylistModal: React.FC<ImportPlaylistModalProps> = ({
                   {selectedCount === items.length ? 'Desmarcar Todas' : 'Selecionar Todas'}
                 </button>
               </div>
+            </div>
+
+            {/* Agrupamento Automático no Repertório com Nome da Playlist */}
+            <div className="bg-purple-950/25 border border-purple-500/30 p-3 rounded-xl space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-purple-300">
+                  <input
+                    type="checkbox"
+                    checked={createGroup}
+                    onChange={e => setCreateGroup(e.target.checked)}
+                    className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 bg-slate-900 border-slate-700 cursor-pointer"
+                  />
+                  <Folder size={15} className="text-purple-400 shrink-0" />
+                  <span>Criar grupo de repertório com o nome da playlist</span>
+                </label>
+                {createGroup && (
+                  <span className="text-[10px] text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-md font-bold shrink-0 border border-purple-500/30">
+                    Auto
+                  </span>
+                )}
+              </div>
+
+              {createGroup && (
+                <div className="space-y-1.5 pt-1">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      list="playlist-import-groups"
+                      value={groupName}
+                      onChange={e => setGroupName(e.target.value)}
+                      placeholder="Nome do grupo no repertório..."
+                      className="w-full bg-slate-900 border border-purple-500/40 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 font-semibold focus:outline-none focus:border-purple-400"
+                    />
+                    {availableGroups && availableGroups.length > 0 && (
+                      <datalist id="playlist-import-groups">
+                        {availableGroups.map(g => (
+                          <option key={g} value={g} />
+                        ))}
+                      </datalist>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Todas as músicas importadas serão vinculadas ao grupo <strong className="text-purple-300 font-semibold">"{groupName || 'Sem nome'}"</strong> no repertório.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Configurações em Lote */}

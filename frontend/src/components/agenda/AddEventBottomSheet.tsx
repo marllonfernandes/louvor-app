@@ -21,7 +21,8 @@ import {
   Sparkles,
   CheckCircle,
   Clock3,
-  Crown
+  Crown,
+  Folder
 } from 'lucide-react';
 import { SongSelectModal } from './SongSelectModal';
 import { MemberSelectModal } from './MemberSelectModal';
@@ -257,19 +258,27 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               Tipo de Evento
             </label>
-            <div className="grid grid-cols-3 gap-1.5">
-              {(['culto', 'ensaio', 'jovens', 'ceia', 'especial', 'outro'] as EventType[]).map(t => (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+              {[
+                { id: 'culto', label: 'Culto', activeClass: 'bg-blue-600 text-white shadow-md border-blue-500/30' },
+                { id: 'ensaio', label: 'Ensaio', activeClass: 'bg-amber-600 text-white shadow-md border-amber-500/30' },
+                { id: 'congresso', label: 'Congresso', activeClass: 'bg-purple-600 text-white shadow-md border-purple-500/30' },
+                { id: 'jovens', label: 'Jovens', activeClass: 'bg-emerald-600 text-white shadow-md border-emerald-500/30' },
+                { id: 'ceia', label: 'Santa Ceia', activeClass: 'bg-rose-600 text-white shadow-md border-rose-500/30' },
+                { id: 'especial', label: 'Especial', activeClass: 'bg-yellow-600 text-white shadow-md border-yellow-500/30' },
+                { id: 'outro', label: 'Outro', activeClass: 'bg-slate-700 text-white shadow-md border-slate-600/30' },
+              ].map(t => (
                 <button
-                  key={t}
+                  key={t.id}
                   type="button"
-                  onClick={() => setType(t)}
-                  className={`py-2 text-xs font-bold rounded-xl capitalize transition-all ${
-                    type === t
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-950/40 border border-blue-500/30'
+                  onClick={() => setType(t.id as EventType)}
+                  className={`py-2 text-xs font-bold rounded-xl transition-all ${
+                    type === t.id
+                      ? `${t.activeClass} border`
                       : 'bg-slate-950 text-slate-400 border border-slate-800 hover:bg-slate-800'
                   }`}
                 >
-                  {t}
+                  {t.label}
                 </button>
               ))}
             </div>

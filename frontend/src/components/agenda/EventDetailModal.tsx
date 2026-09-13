@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, MapPin, Users, Music, Trash2, Share2, MessageCircle, Edit3, MessageSquare } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Music, Trash2, Share2, MessageCircle, Edit3, MessageSquare, Folder } from 'lucide-react';
 import { WorshipEvent, Song, Member, ConfirmationStatus } from '../../types';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
@@ -9,6 +9,7 @@ import { JustificationModal } from './JustificationModal';
 import { createMemberReminderLink } from '../../utils/whatsapp';
 import { getYoutubeThumbnail } from '../../utils/youtube';
 import { useAuth } from '../../context/AuthContext';
+import { getEventTypeDefinition } from '../../utils/eventType';
 
 interface EventDetailModalProps {
   isOpen: boolean;
@@ -41,6 +42,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
   const eventSongs = (event.songIds || []).map(id => songs.find(s => s.id === id)).filter(Boolean) as Song[];
   const confirmedEntries = Object.entries(event.confirmed || {});
+  const typeDef = getEventTypeDefinition(event.type);
 
   const { userProfile } = useAuth();
   const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
@@ -74,8 +76,9 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           <div className="flex items-center justify-between gap-2 bg-slate-950 p-2 rounded-2xl border border-slate-800">
             <div className="flex items-center gap-2">
               {event.type && (
-                <span className="text-[11px] uppercase font-bold text-blue-400 tracking-wider bg-blue-500/10 px-2.5 py-1 rounded-xl border border-blue-500/20">
-                  {event.type}
+                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border flex items-center gap-1.5 shadow-sm ${typeDef.badgeClass}`}>
+                  <typeDef.icon size={12} className="shrink-0" />
+                  <span>{typeDef.label}</span>
                 </span>
               )}
               <Badge variant="slate" size="sm">
@@ -178,7 +181,15 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-bold text-slate-100 truncate">{song.title}</p>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-xs font-bold text-slate-100 truncate">{song.title}</p>
+                            {song.group && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 text-[10px] font-medium shrink-0">
+                                <Folder size={10} className="text-purple-400" />
+                                {song.group}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[11px] text-slate-400 truncate">{song.artist}</p>
                         </div>
                       </div>

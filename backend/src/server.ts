@@ -31,6 +31,17 @@ function cleanSongTitle(text: string): string {
     .trim();
 }
 
+function cleanPlaylistTitle(rawTitle: string): string {
+  if (!rawTitle) return '';
+  return rawTitle
+    .replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1')
+    .replace(/\s*-\s*YouTube$/i, '')
+    .replace(/\s*\|\s*YouTube$/i, '')
+    .replace(/^YouTube\s*-\s*/i, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 function parseSongTitleAndArtist(rawTitle: string, authorName: string = ''): { title: string; artist: string } {
   const cleaned = cleanSongTitle(rawTitle);
 
@@ -205,7 +216,7 @@ app.get('/api/youtube/playlist', youtubeImportLimiter, async (req: Request, res:
 
             res.status(200).json({
               playlistId,
-              title: invJson.title || 'Playlist do YouTube',
+              title: cleanPlaylistTitle(invJson.title || 'Playlist do YouTube'),
               total: items.length,
               items
             });
@@ -229,7 +240,7 @@ app.get('/api/youtube/playlist', youtubeImportLimiter, async (req: Request, res:
     if (response.ok) {
       const xmlText = await response.text();
       const playlistTitleMatch = xmlText.match(/<title>([\s\S]*?)<\/title>/);
-      const playlistTitle = playlistTitleMatch ? playlistTitleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : 'Playlist do YouTube';
+      const playlistTitle = cleanPlaylistTitle(playlistTitleMatch ? playlistTitleMatch[1] : 'Playlist do YouTube');
 
       const entries = xmlText.split('<entry>');
       const items: Array<{

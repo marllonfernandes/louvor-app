@@ -1,4 +1,5 @@
 import { WorshipEvent, Member, Song } from '../types';
+import { getEventTypeDefinition } from './eventType';
 
 /**
  * Limpa o número de telefone e garante o formato internacional para o WhatsApp
@@ -22,7 +23,10 @@ export function createMemberReminderLink(member: Member, event: WorshipEvent): s
   const phone = formatPhoneNumberForWhatsApp(member.phone);
   if (!phone) return '';
 
-  const message = `Olá, *${member.name}*! 👋🎶\n\nVocê está escalado(a) para o ministério de louvor:\n📅 *Evento:* ${event.title}\n🗓 *Data:* ${event.date} às ${event.time}\n🎸 *Função:* ${member.role}\n\nPor favor, confirme sua presença no app! Deus abençoe! 🙏✨`;
+  const typeDef = getEventTypeDefinition(event.type);
+  const typeTag = event.type ? ` (${typeDef.label})` : '';
+
+  const message = `Olá, *${member.name}*! 👋🎶\n\nVocê está escalado(a) para o ministério de louvor:\n📅 *Evento:* ${event.title}${typeTag}\n🗓 *Data:* ${event.date} às ${event.time}\n🎸 *Função:* ${member.role}\n\nPor favor, confirme sua presença no app! Deus abençoe! 🙏✨`;
 
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
@@ -32,6 +36,7 @@ export function createMemberReminderLink(member: Member, event: WorshipEvent): s
  */
 export function generateEventShareText(event: WorshipEvent, songs: Song[] = [], members: Member[] = []): string {
   const confirmedList = Object.entries(event.confirmed || {});
+  const typeDef = getEventTypeDefinition(event.type);
   
   let membersText = '';
   if (confirmedList.length === 0) {
@@ -48,13 +53,14 @@ export function generateEventShareText(event: WorshipEvent, songs: Song[] = [], 
   let songsText = '';
   if (songs.length > 0) {
     songsText = `\n\n🎵 *REPERTÓRIO / MÚSICAS:*\n` + songs.map((s, idx) => {
-      return `${idx + 1}. *${s.title}* - ${s.artist} (Tom: *${s.key}*)${s.url ? `\n   ▶️ ${s.url}` : ''}`;
+      const groupTag = s.group ? ` [📁 ${s.group}]` : '';
+      return `${idx + 1}. *${s.title}* - ${s.artist} (Tom: *${s.key}*)${groupTag}${s.url ? `\n   ▶️ ${s.url}` : ''}`;
     }).join('\n');
   }
 
   const text = `📋 *ESCALA DO MINISTÉRIO DE LOUVOR* 🎶\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
-    `⛪ *Evento:* ${event.title}\n` +
+    `${typeDef.emoji} *Evento:* ${event.title}${event.type ? ` (${typeDef.label})` : ''}\n` +
     `🗓 *Data:* ${event.date}\n` +
     `⏰ *Horário:* ${event.time}\n` +
     (event.team ? `👥 *Equipe:* ${event.team}\n` : '') +

@@ -287,6 +287,69 @@ export async function deleteSong(songId: string): Promise<void> {
   localListeners.songs.forEach(l => l(updated));
 }
 
+export async function deleteRepertoireGroup(groupName: string, deleteSongsToo: boolean): Promise<{ affectedCount: number }> {
+  const list = getLocal<Song[]>(STORAGE_KEYS.SONGS, INITIAL_SONGS);
+  const targetSongs = list.filter(s => s.group === groupName);
+
+  if (deleteSongsToo) {
+    for (const s of targetSongs) {
+      if (isFirestoreAvailable && db) {
+        try {
+          await deleteDoc(doc(db, 'songs', s.id));
+        } catch (e) {
+          console.error(`Erro ao excluir música ${s.id} do grupo ${groupName}:`, e);
+        }
+      }
+    }
+    const updated = list.filter(s => s.group !== groupName);
+    setLocal(STORAGE_KEYS.SONGS, updated);
+    localListeners.songs.forEach(l => l(updated));
+    return { affectedCount: targetSongs.length };
+  } else {
+    for (const s of targetSongs) {
+      if (isFirestoreAvailable && db) {
+        try {
+          await updateDoc(doc(db, 'songs', s.id), { group: null });
+        } catch (e) {
+          console.error(`Erro ao desvincular música ${s.id} do grupo ${groupName}:`, e);
+        }
+      }
+    }
+    const updated = list.map(s => {
+      if (s.group === groupName) {
+        const copy = { ...s };
+        delete copy.group;
+        return copy;
+      }
+      return s;
+    });
+    setLocal(STORAGE_KEYS.SONGS, updated);
+    localListeners.songs.forEach(l => l(updated));
+    return { affectedCount: targetSongs.length };
+  }
+}
+
+export async function assignSongsToGroup(songIds: string[], groupName: string): Promise<void> {
+  const list = getLocal<Song[]>(STORAGE_KEYS.SONGS, INITIAL_SONGS);
+  for (const id of songIds) {
+    if (isFirestoreAvailable && db) {
+      try {
+        await updateDoc(doc(db, 'songs', id), { group: groupName || null });
+      } catch (e) {
+        console.error(`Erro ao atualizar grupo da música ${id}:`, e);
+      }
+    }
+  }
+  const updated = list.map(s => {
+    if (songIds.includes(s.id)) {
+      return { ...s, group: groupName || undefined };
+    }
+    return s;
+  });
+  setLocal(STORAGE_KEYS.SONGS, updated);
+  localListeners.songs.forEach(l => l(updated));
+}
+
 // ----------------- MÚSICAS PARA ADOÇÃO (SUGESTÕES & VOTAÇÃO) -----------------
 
 export function subscribeToAdoptionSongs(callback: (songs: AdoptionSong[]) => void): () => void {

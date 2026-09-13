@@ -21,6 +21,8 @@ import {
   saveSong, 
   saveBatchSongs,
   deleteSong,
+  deleteRepertoireGroup,
+  assignSongsToGroup,
   subscribeToAdoptionSongs,
   saveAdoptionSong,
   voteAdoptionSong,
@@ -142,11 +144,20 @@ export function AppContent() {
   const handleSaveBatchSongs = async (songsList: Omit<Song, 'id'>[]) => {
     try {
       const count = await saveBatchSongs(songsList);
-      addToast(
-        'Playlist Importada', 
-        `${count} novas canções foram adicionadas ao repertório com sucesso!`, 
-        'success'
-      );
+      const groupName = songsList.find(s => s.group?.trim())?.group?.trim();
+      if (groupName) {
+        addToast(
+          'Playlist Importada com Grupo', 
+          `${count} novas canções foram adicionadas e organizadas no grupo "${groupName}"!`, 
+          'success'
+        );
+      } else {
+        addToast(
+          'Playlist Importada', 
+          `${count} novas canções foram adicionadas ao repertório com sucesso!`, 
+          'success'
+        );
+      }
     } catch (err) {
       addToast('Erro', 'Falha ao importar playlist.', 'error');
     }
@@ -158,6 +169,50 @@ export function AppContent() {
       addToast('Música Removida', 'Canção removida do repertório.', 'info');
     } catch (err) {
       addToast('Erro', 'Falha ao excluir música.', 'error');
+    }
+  };
+
+  const handleDeleteGroup = async (groupName: string, deleteSongsToo: boolean) => {
+    try {
+      const { affectedCount } = await deleteRepertoireGroup(groupName, deleteSongsToo);
+      if (deleteSongsToo) {
+        addToast(
+          'Grupo e Áudios Excluídos', 
+          `O grupo "${groupName}" e ${affectedCount} música(s) foram excluídos do repertório.`, 
+          'info'
+        );
+      } else {
+        addToast(
+          'Grupo Excluído', 
+          `O grupo "${groupName}" foi removido. As ${affectedCount} música(s) continuam no repertório.`, 
+          'success'
+        );
+      }
+    } catch (err) {
+      addToast('Erro', 'Falha ao excluir grupo de repertório.', 'error');
+    }
+  };
+
+  const handleSaveGroup = async (groupName: string, selectedSongIds: string[]) => {
+    try {
+      // 1. Desvincula músicas que pertenciam ao grupo mas foram desmarcadas
+      const songsToUnlink = songs.filter(s => s.group === groupName && !selectedSongIds.includes(s.id));
+      for (const s of songsToUnlink) {
+        await saveSong({ ...s, group: undefined });
+      }
+
+      // 2. Vincula músicas selecionadas ao grupo
+      if (selectedSongIds.length > 0) {
+        await assignSongsToGroup(selectedSongIds, groupName);
+      }
+
+      addToast(
+        'Grupo Atualizado', 
+        `Grupo "${groupName}" salvo com ${selectedSongIds.length} música(s)!`, 
+        'success'
+      );
+    } catch (err) {
+      addToast('Erro', 'Falha ao salvar grupo de repertório.', 'error');
     }
   };
 
@@ -347,6 +402,8 @@ export function AppContent() {
             onApproveAdoptionSong={handleApproveAdoptionSong}
             onRejectAdoptionSong={handleRejectAdoptionSong}
             onDeleteAdoptionSong={handleDeleteAdoptionSong}
+            onDeleteGroup={handleDeleteGroup}
+            onSaveGroup={handleSaveGroup}
             selectedSongFromEvent={selectedSongFromEvent}
             onClearSelectedSong={() => setSelectedSongFromEvent(null)}
           />

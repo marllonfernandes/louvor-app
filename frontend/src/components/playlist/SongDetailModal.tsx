@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Music, Trash2, ArrowUp, ArrowDown, RefreshCw, Pencil, Play, ExternalLink } from 'lucide-react';
+import { Music, Trash2, ArrowUp, ArrowDown, RefreshCw, Pencil, Play, ExternalLink, Folder } from 'lucide-react';
 import { Song } from '../../types';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
@@ -133,6 +133,17 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
             <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800">
               <p className="text-[10px] text-slate-500 font-medium">Categoria</p>
               <p className="font-bold text-slate-200">{song.category}</p>
+            </div>
+          )}
+          {song.group && (
+            <div className="col-span-2 bg-blue-950/30 p-3 rounded-xl border border-blue-500/30 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-blue-400 font-medium">Grupo de Repertório</p>
+                <p className="font-bold text-slate-100 flex items-center gap-1.5 mt-0.5">
+                  <Folder size={14} className="text-blue-400" />
+                  {song.group}
+                </p>
+              </div>
             </div>
           )}
         </div>

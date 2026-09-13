@@ -58,6 +58,11 @@ export const SongCard: React.FC<SongCardProps> = ({ song, isLeader, onSelectSong
                 {song.category}
               </span>
             )}
+            {song.group && (
+              <span className="text-[10px] bg-blue-950/70 text-blue-300 px-2 py-0.5 rounded-md border border-blue-500/30 font-semibold flex items-center gap-1">
+                📁 {song.group}
+              </span>
+            )}
           </div>
           <p className="text-xs text-slate-400 mt-0.5 truncate">{song.artist}</p>
         </div>
