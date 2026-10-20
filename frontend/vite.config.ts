@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         registerType: 'prompt',
-        includeAssets: ['icon.svg', 'apple-touch-icon-180x180.png', 'push-sw.js'],
+        includeAssets: ['icon.svg', 'apple-touch-icon-180x180.png', 'push-sw.js', 'badge-96x96.png', 'badge-72x72.png'],
         workbox: {
           importScripts: ['push-sw.js']
         },

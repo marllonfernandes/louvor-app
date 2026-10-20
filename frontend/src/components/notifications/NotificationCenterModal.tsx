@@ -135,7 +135,8 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
           // Fallback local via ServiceWorker se o servidor estiver offline
           await reg?.showNotification('🔔 Teste do Louvor App!', {
             body: `Olá ${userProfile.name.split(' ')[0]}! Notificações ativas neste dispositivo.`,
-            icon: '/pwa-192x192.png'
+            icon: '/pwa-192x192.png',
+            badge: '/badge-96x96.png'
           });
           onShowToast('Notificação Disparada! 📱', 'Alerta exibido no dispositivo.', 'success');
         }

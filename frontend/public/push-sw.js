@@ -6,7 +6,7 @@ self.addEventListener('push', (event) => {
     title: 'Louvor App',
     body: 'Uma escala de louvor foi atualizada.',
     icon: '/pwa-192x192.png',
-    badge: '/pwa-192x192.png',
+    badge: '/badge-96x96.png',
     tag: 'louvor-event-update',
     url: '/',
     eventId: undefined
@@ -25,10 +25,14 @@ self.addEventListener('push', (event) => {
     }
   }
 
+  // Converte URLs relativas em absolutas para compatibilidade total com Android Chrome e iOS
+  const iconUrl = new URL(payload.icon || '/pwa-192x192.png', self.location.origin).href;
+  const badgeUrl = new URL(payload.badge || '/badge-96x96.png', self.location.origin).href;
+
   const options = {
     body: payload.body,
-    icon: payload.icon || '/pwa-192x192.png',
-    badge: payload.badge || '/pwa-192x192.png',
+    icon: iconUrl,
+    badge: badgeUrl,
     tag: payload.tag || `louvor-${payload.eventId || Date.now()}`,
     renotify: true,
     vibrate: [200, 100, 200],

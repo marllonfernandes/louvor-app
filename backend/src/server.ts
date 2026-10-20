@@ -339,7 +339,7 @@ app.post('/api/push/send', async (req: Request, res: Response): Promise<void> =>
       title: String(notification.title).slice(0, 120),
       body: String(notification.body).slice(0, 300),
       icon: notification.icon || '/pwa-192x192.png',
-      badge: notification.badge || '/pwa-192x192.png',
+      badge: notification.badge || '/badge-96x96.png',
       tag: notification.tag || `louvor-event-${notification.eventId || Date.now()}`,
       url: notification.url || '/',
       eventId: notification.eventId,

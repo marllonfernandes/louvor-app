@@ -294,6 +294,8 @@ export async function sendPushToSubscriptions(
         notification: {
           title: payload.title,
           body: payload.body,
+          icon: '/pwa-192x192.png',
+          badge: '/badge-96x96.png',
           eventId: payload.eventId,
           tag: payload.tag || `louvor-event-${payload.eventId || Date.now()}`,
           url: payload.eventId ? `/?eventId=${encodeURIComponent(payload.eventId)}` : '/',
