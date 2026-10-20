@@ -527,22 +527,36 @@ function normalizeMembersList(rawList: Member[]): Member[] {
   }));
 
   // 2. Se houver mais de um registro do mesmo usuário (ex: convite por email + doc UID do login Google),
-  // garante que a foto do login Google seja propagada para todos os registros correspondentes
+  // garante que a foto do login Google e as assinaturas Push sejam propagadas para todos os registros correspondentes
   return sanitized.map(member => {
-    if (member.avatar) return member;
-    const matchWithPhoto = sanitized.find(
+    const matchingDocs = sanitized.filter(
       other =>
         other.id !== member.id &&
-        Boolean(other.avatar) &&
         ((member.email &&
           other.email &&
           member.email.trim().toLowerCase() === other.email.trim().toLowerCase()) ||
           isSamePersonName(member.name, other.name))
     );
-    if (matchWithPhoto?.avatar) {
-      return { ...member, avatar: matchWithPhoto.avatar };
-    }
-    return member;
+
+    if (matchingDocs.length === 0) return member;
+
+    const mergedAvatar =
+      member.avatar || matchingDocs.find(d => Boolean(d.avatar))?.avatar;
+
+    const allSubs = [
+      ...(member.pushSubscriptions || []),
+      ...matchingDocs.flatMap(d => d.pushSubscriptions || [])
+    ];
+    const uniqueSubs =
+      allSubs.length > 0
+        ? Array.from(new Map(allSubs.map(s => [s.endpoint, s])).values())
+        : undefined;
+
+    return {
+      ...member,
+      ...(mergedAvatar ? { avatar: mergedAvatar } : {}),
+      ...(uniqueSubs ? { pushSubscriptions: uniqueSubs } : {})
+    };
   });
 }
 

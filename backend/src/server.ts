@@ -7,6 +7,12 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import {
+  DEFAULT_VAPID_PUBLIC_KEY,
+  sendWebPushNotification,
+  PushSubscriptionData,
+  PushNotificationPayload
+} from './webPush.js';
 
 // Carrega variáveis de ambiente (.env) se existirem
 dotenv.config();
@@ -291,6 +297,74 @@ app.get('/api/youtube/playlist', youtubeImportLimiter, async (req: Request, res:
   } catch (error) {
     console.error('Erro ao processar playlist do YouTube:', error);
     res.status(500).json({ error: 'Erro interno ao processar a playlist do YouTube.' });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// 4.2 ENDPOINTS DE NOTIFICAÇÕES WEB PUSH (FUNCIONA COM APP FECHADO)
+// -----------------------------------------------------------------------------
+app.get('/api/push/public-key', (_req: Request, res: Response) => {
+  res.status(200).json({
+    publicKey: DEFAULT_VAPID_PUBLIC_KEY
+  });
+});
+
+app.post('/api/push/send', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { subscriptions, notification } = req.body as {
+      subscriptions?: PushSubscriptionData[];
+      notification?: PushNotificationPayload;
+    };
+
+    if (!Array.isArray(subscriptions) || subscriptions.length === 0) {
+      res.status(200).json({ sentCount: 0, failedCount: 0, expiredEndpoints: [] });
+      return;
+    }
+
+    if (!notification || !notification.title || !notification.body) {
+      res.status(400).json({ error: 'Título e mensagem da notificação são obrigatórios.' });
+      return;
+    }
+
+    // Deduplica assinaturas pelo endpoint para não enviar duplicado ao mesmo aparelho
+    const uniqueSubs = Array.from(
+      new Map(
+        subscriptions
+          .filter(s => s && typeof s.endpoint === 'string' && s.keys?.p256dh && s.keys?.auth)
+          .map(s => [s.endpoint, s])
+      ).values()
+    ).slice(0, 100);
+
+    const payload: PushNotificationPayload = {
+      title: String(notification.title).slice(0, 120),
+      body: String(notification.body).slice(0, 300),
+      icon: notification.icon || '/pwa-192x192.png',
+      badge: notification.badge || '/pwa-192x192.png',
+      tag: notification.tag || `louvor-event-${notification.eventId || Date.now()}`,
+      url: notification.url || '/',
+      eventId: notification.eventId,
+      timestamp: notification.timestamp || Date.now()
+    };
+
+    const results = await Promise.all(
+      uniqueSubs.map(async (sub) => {
+        const result = await sendWebPushNotification(sub, payload);
+        return { endpoint: sub.endpoint, ...result };
+      })
+    );
+
+    const sentCount = results.filter(r => r.ok).length;
+    const failedCount = results.filter(r => !r.ok).length;
+    const expiredEndpoints = results.filter(r => r.expired).map(r => r.endpoint);
+
+    res.status(200).json({
+      sentCount,
+      failedCount,
+      expiredEndpoints
+    });
+  } catch (err) {
+    console.error('[WebPush] Erro ao disparar notificações:', err);
+    res.status(500).json({ error: 'Falha ao enviar notificações push.' });
   }
 });
 

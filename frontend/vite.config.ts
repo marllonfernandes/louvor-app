@@ -9,7 +9,10 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         registerType: 'prompt',
-        includeAssets: ['icon.svg', 'apple-touch-icon-180x180.png'],
+        includeAssets: ['icon.svg', 'apple-touch-icon-180x180.png', 'push-sw.js'],
+        workbox: {
+          importScripts: ['push-sw.js']
+        },
         manifest: {
           name: 'Louvor App - Ministério de Louvor',
           short_name: 'Louvor App',
@@ -28,7 +31,13 @@ export default defineConfig(({ mode }) => {
     ],
     server: {
       port: 5173,
-      host: true
+      host: true,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:8080',
+          changeOrigin: true
+        }
+      }
     },
     preview: {
       port: 8080,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Music, Cloud, Database, Sliders, Sun, Moon, User as UserIcon } from 'lucide-react';
+import { Music, Cloud, Database, Sliders, Sun, Moon, Bell } from 'lucide-react';
 import { isFirestoreAvailable } from '../../config/firebase';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -7,9 +7,15 @@ import { MemberAvatar } from '../ui/MemberAvatar';
 
 interface HeaderProps {
   onOpenSettings: () => void;
+  onOpenNotifications: () => void;
+  unreadNotificationsCount?: number;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
+export const Header: React.FC<HeaderProps> = ({
+  onOpenSettings,
+  onOpenNotifications,
+  unreadNotificationsCount = 0
+}) => {
   const { theme, toggleTheme } = useTheme();
   const { userProfile, currentUser } = useAuth();
   const profileAvatar = userProfile?.avatar || currentUser?.photoURL;
@@ -69,6 +75,21 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
             </>
           )}
         </div>
+
+        {/* Botão de Central de Notificações (Sininho) */}
+        <button
+          onClick={onOpenNotifications}
+          className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center active:scale-95 transition-all shadow-sm shrink-0 relative cursor-pointer"
+          aria-label="Notificações"
+          title="Notificações e alertas no celular"
+        >
+          <Bell size={15} className={unreadNotificationsCount > 0 ? 'text-blue-600 dark:text-blue-400' : ''} />
+          {unreadNotificationsCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
+              {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+            </span>
+          )}
+        </button>
 
         {/* Botão de Alternância de Tema */}
         <button

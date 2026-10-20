@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Calendar, History } from 'lucide-react';
 import { WorshipEvent, ConfirmationStatus, Song, Member, Team } from '../../types';
 import { EventCard } from './EventCard';
@@ -19,6 +19,8 @@ interface AgendaViewProps {
   onBatchSaveEvents: (events: Omit<WorshipEvent, 'id'>[]) => Promise<void>;
   onDeleteEvent: (eventId: string) => void;
   onSelectSong: (song: Song) => void;
+  selectedEventFromNotification?: WorshipEvent | null;
+  onClearSelectedEventFromNotification?: () => void;
 }
 
 type TimelineTab = 'upcoming' | 'past';
@@ -32,7 +34,9 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   onSaveEvent,
   onBatchSaveEvents,
   onDeleteEvent,
-  onSelectSong
+  onSelectSong,
+  selectedEventFromNotification,
+  onClearSelectedEventFromNotification
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
@@ -43,6 +47,13 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<WorshipEvent | null>(null);
+
+  useEffect(() => {
+    if (selectedEventFromNotification) {
+      setSelectedEvent(selectedEventFromNotification);
+      onClearSelectedEventFromNotification?.();
+    }
+  }, [selectedEventFromNotification, onClearSelectedEventFromNotification]);
 
   const { userProfile } = useAuth();
   const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');

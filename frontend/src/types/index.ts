@@ -92,6 +92,31 @@ export type MemberRole =
   | 'Mídia / Projeção'
   | 'Outro';
 
+export interface PushSubscriptionItem {
+  endpoint: string;
+  expirationTime?: number | null;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+  userAgent?: string;
+  updatedAt?: number;
+}
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  body: string;
+  eventId?: string;
+  eventTitle?: string;
+  eventDate?: string;
+  type: 'event_created' | 'event_updated' | 'presence_updated' | 'repertoire_updated';
+  actorName?: string;
+  targetMembers: string[]; // Nomes dos integrantes destinatários (ou '*' para todos)
+  readBy: string[]; // Nomes/IDs dos integrantes que já visualizaram
+  createdAt: number;
+}
+
 export interface Member {
   id: string; // Document ID (anteriormente tratado apenas como Auth UID, mas agora pode ser mem_xxx)
   uid?: string; // Auth UID real, após o usuário aceitar o convite e se cadastrar
@@ -104,6 +129,7 @@ export interface Member {
   email?: string;
   active?: boolean;
   avatar?: string;
+  pushSubscriptions?: PushSubscriptionItem[];
 }
 
 export type User = Member;

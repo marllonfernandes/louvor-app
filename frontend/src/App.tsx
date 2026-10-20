@@ -7,6 +7,7 @@ import { PlaylistView } from './components/playlist/PlaylistView';
 import { TeamView } from './components/team/TeamView';
 import { MetricsView } from './components/metrics/MetricsView';
 import { SettingsModal } from './components/settings/SettingsModal';
+import { NotificationCenterModal } from './components/notifications/NotificationCenterModal';
 import { ToastContainer, ToastMessage } from './components/ui/Toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginView } from './components/auth/LoginView';
@@ -36,7 +37,14 @@ import {
   saveTeam, 
   deleteTeam 
 } from './services/firestoreService';
-import { WorshipEvent, Song, Member, Team, TabType, ConfirmationStatus, AdoptionSong } from './types';
+import {
+  subscribeToNotifications,
+  syncExistingPushSubscription,
+  notifyEventSaved,
+  notifyPresenceChanged
+} from './services/notificationService';
+import { isSamePersonName } from './utils/avatar';
+import { WorshipEvent, Song, Member, Team, TabType, ConfirmationStatus, AdoptionSong, AppNotification } from './types';
 
 export function AppContent() {
   const { currentUser, userProfile, loading } = useAuth();
@@ -46,10 +54,13 @@ export function AppContent() {
   const [adoptionSongs, setAdoptionSongs] = useState<AdoptionSong[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [selectedSongFromEvent, setSelectedSongFromEvent] = useState<Song | null>(null);
+  const [selectedEventFromNotification, setSelectedEventFromNotification] = useState<WorshipEvent | null>(null);
 
   const addToast = (title: string, description?: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = `toast_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
@@ -69,6 +80,7 @@ export function AppContent() {
     const unsubAdoptionSongs = subscribeToAdoptionSongs(data => setAdoptionSongs(data));
     const unsubMembers = subscribeToMembers(data => setMembers(data));
     const unsubTeams = subscribeToTeams(data => setTeams(data));
+    const unsubNotifications = subscribeToNotifications(data => setNotifications(data));
 
     return () => {
       unsubEvents();
@@ -76,18 +88,71 @@ export function AppContent() {
       unsubAdoptionSongs();
       unsubMembers();
       unsubTeams();
+      unsubNotifications();
     };
   }, [currentUser]);
+
+  // Sincroniza silenciosamente a assinatura Push do aparelho quando o perfil e os membros carregam
+  useEffect(() => {
+    if (userProfile && members.length > 0) {
+      syncExistingPushSubscription(userProfile, members);
+    }
+  }, [userProfile, members]);
+
+  // Abre o evento diretamente caso o usuário toque em uma notificação Push (via URL ?eventId=... ou mensagem do Service Worker)
+  useEffect(() => {
+    if (events.length === 0) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const eventIdParam = params.get('eventId');
+    if (eventIdParam) {
+      const target = events.find(e => e.id === eventIdParam);
+      if (target) {
+        setActiveTab('agenda');
+        setSelectedEventFromNotification(target);
+      }
+      params.delete('eventId');
+      const newSearch = params.toString();
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname + (newSearch ? `?${newSearch}` : '')
+      );
+    }
+
+    const handleSwMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'OPEN_EVENT_FROM_NOTIFICATION' && event.data?.eventId) {
+        const target = events.find(e => e.id === event.data.eventId);
+        if (target) {
+          setActiveTab('agenda');
+          setSelectedEventFromNotification(target);
+        }
+      }
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleSwMessage);
+      return () => navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+    }
+  }, [events]);
 
   // Handlers para Agenda
   const handleSaveEvent = async (newEvent: Omit<WorshipEvent, 'id'> & { id?: string }) => {
     try {
       const isEditing = Boolean(newEvent.id);
-      await saveEvent(newEvent);
+      const previousEvent = newEvent.id ? events.find(e => e.id === newEvent.id) : undefined;
+      const savedId = await saveEvent(newEvent);
+      const savedEventObj: WorshipEvent = { ...newEvent, id: savedId };
+
       addToast(
         isEditing ? 'Evento Atualizado' : 'Evento Criado', 
         isEditing ? 'As alterações na escala foram salvas com sucesso!' : 'Novo culto/ensaio adicionado à agenda!', 
         'success'
+      );
+
+      // Dispara notificação no celular dos membros escalados (mesmo com app fechado) + Sininho
+      notifyEventSaved(previousEvent, savedEventObj, members, userProfile?.name).catch(err =>
+        console.warn('[Push] Falha ao notificar mudança no evento:', err)
       );
     } catch (err) {
       addToast('Erro', 'Não foi possível salvar o evento.', 'error');
@@ -112,6 +177,13 @@ export function AppContent() {
       await updateEventStatus(eventId, memberName, status, justification);
       const statusLabels = { accepted: 'Confirmado ✅', declined: 'Recusado ❌', pending: 'Pendente ⏳' };
       addToast('Presença Atualizada', `${memberName}: ${statusLabels[status]}`, 'info');
+
+      const targetEvent = events.find(e => e.id === eventId);
+      if (targetEvent) {
+        notifyPresenceChanged(targetEvent, memberName, status, justification, members).catch(err =>
+          console.warn('[Push] Falha ao notificar mudança de presença:', err)
+        );
+      }
     } catch (err) {
       addToast('Erro', 'Falha ao atualizar status.', 'error');
     }
@@ -360,13 +432,27 @@ export function AppContent() {
     return <LoginView />;
   }
 
+  const isLeaderOrAdmin = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
+  const unreadNotificationsCount = notifications.filter(n => {
+    const isForUser =
+      isLeaderOrAdmin ||
+      n.targetMembers.includes('*') ||
+      n.targetMembers.some(t => isSamePersonName(t, userProfile.name));
+    if (!isForUser) return false;
+    return !n.readBy.some(r => isSamePersonName(r, userProfile.name));
+  }).length;
+
   return (
     <MobileContainer>
       {/* Notificações Toast */}
       <ToastContainer toasts={toasts} onDismiss={removeToast} />
 
       {/* Top Header */}
-      <Header onOpenSettings={() => setIsSettingsOpen(true)} />
+      <Header
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenNotifications={() => setIsNotificationsOpen(true)}
+        unreadNotificationsCount={unreadNotificationsCount}
+      />
 
       {/* Conteúdo com Scroll Nativo Confinado e Fluido */}
       <main 
@@ -386,6 +472,8 @@ export function AppContent() {
             onBatchSaveEvents={handleBatchSaveEvents}
             onDeleteEvent={handleDeleteEvent}
             onSelectSong={handleSelectSongFromEvent}
+            selectedEventFromNotification={selectedEventFromNotification}
+            onClearSelectedEventFromNotification={() => setSelectedEventFromNotification(null)}
           />
         )}
 
@@ -437,6 +525,20 @@ export function AppContent() {
         onChangeTab={setActiveTab}
         eventCount={events.length}
         songCount={songs.length}
+      />
+
+      {/* Modal de Central de Notificações & Ativação de Push no Celular */}
+      <NotificationCenterModal
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+        notifications={notifications}
+        members={members}
+        events={events}
+        onSelectEvent={(ev) => {
+          setActiveTab('agenda');
+          setSelectedEventFromNotification(ev);
+        }}
+        onShowToast={addToast}
       />
 
       {/* Modal de Configurações / Status Cloud Run */}
