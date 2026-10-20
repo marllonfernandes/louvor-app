@@ -12,6 +12,8 @@ import {
   isSamePersonName
 } from '../../utils/avatar';
 import { MemberAvatar } from '../ui/MemberAvatar';
+import { formatPhoneNumberForWhatsApp } from '../../utils/whatsapp';
+import { generateInviteToken } from '../../services/firestoreService';
 
 interface AddMemberBottomSheetProps {
   isOpen: boolean;
@@ -53,6 +55,7 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
   const [systemRole, setSystemRole] = useState<'Admin' | 'Editor' | 'Viewer'>('Viewer');
   const [avatar, setAvatar] = useState<string>('');
   const [avatarSeedSuffix, setAvatarSeedSuffix] = useState<number>(1);
+  const [sendInviteWhatsApp, setSendInviteWhatsApp] = useState(true);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isEditingSelf = Boolean(
@@ -131,6 +134,8 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
       ? systemRole 
       : (memberToEdit?.systemRole || 'Viewer');
 
+    const token = memberToEdit?.inviteToken || generateInviteToken();
+
     onSaveMember({
       ...(memberToEdit || {}),
       name: name.trim(),
@@ -140,8 +145,18 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
       systemRole: finalSystemRole,
       phone: phone.trim(),
       avatar: avatar.trim() || undefined,
+      inviteToken: token,
       active: memberToEdit?.active ?? true
     });
+
+    if (!isEditing && sendInviteWhatsApp && phone.trim()) {
+      const formatted = formatPhoneNumberForWhatsApp(phone.trim());
+      const inviteUrl = `${window.location.origin}?inviteToken=${token}`;
+      const message = `Olá ${name.trim().split(' ')[0]}! Convite para acessar o Louvor App. Clique no link abaixo para entrar com o Google:\n\n${inviteUrl}`;
+      if (formatted) {
+        window.open(`https://wa.me/${formatted}?text=${encodeURIComponent(message)}`, '_blank');
+      }
+    }
 
     onClose();
   };
@@ -401,6 +416,18 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
             })}
           </div>
         </div>
+
+        {!isEditing && (
+          <label className="flex items-center gap-2.5 p-3 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/60 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={sendInviteWhatsApp}
+              onChange={(e) => setSendInviteWhatsApp(e.target.checked)}
+              className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+            />
+            <span>Enviar link de convite no WhatsApp automaticamente</span>
+          </label>
+        )}
 
         <div className="flex gap-2 pt-2 border-t border-slate-800">
           <Button type="button" variant="secondary" fullWidth onClick={onClose}>

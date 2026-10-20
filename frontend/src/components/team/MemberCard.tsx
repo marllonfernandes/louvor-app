@@ -18,14 +18,6 @@ export const MemberCard: React.FC<MemberCardProps> = ({
   onSelectMember, 
   onEditMember
 }) => {
-  const formattedPhone = formatPhoneNumberForWhatsApp(member.phone);
-  const waLink = formattedPhone ? `https://wa.me/${formattedPhone}` : null;
-
-  const rolesList = member.roles && member.roles.length > 0
-    ? member.roles
-    : (member.role ? member.role.split(/[,/]/).map(r => r.trim()).filter(Boolean) : ['Vocal']);
-
-  const isRoleLeader = rolesList.includes('Líder');
   const { userProfile, currentUser } = useAuth();
   const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
   const isSelf = Boolean(
@@ -34,6 +26,24 @@ export const MemberCard: React.FC<MemberCardProps> = ({
         (userProfile.email && member.email && userProfile.email.toLowerCase() === member.email.toLowerCase()) ||
         isSamePersonName(userProfile.name, member.name))
   );
+
+  const formattedPhone = formatPhoneNumberForWhatsApp(member.phone);
+  const isPendingInvite = !member.uid && !isSelf;
+  const inviteToken = member.inviteToken;
+  const inviteUrl = inviteToken ? `${window.location.origin}?inviteToken=${inviteToken}` : window.location.origin;
+  const inviteMessage = `Olá ${member.name.split(' ')[0]}! Convite para acessar o Louvor App. Clique no link abaixo para entrar com o Google:\n\n${inviteUrl}`;
+
+  const waLink = formattedPhone 
+    ? (isPendingInvite && isLeader
+        ? `https://wa.me/${formattedPhone}?text=${encodeURIComponent(inviteMessage)}`
+        : `https://wa.me/${formattedPhone}`)
+    : null;
+
+  const rolesList = member.roles && member.roles.length > 0
+    ? member.roles
+    : (member.role ? member.role.split(/[,/]/).map(r => r.trim()).filter(Boolean) : ['Vocal']);
+
+  const isRoleLeader = rolesList.includes('Líder');
 
   const resolvedAvatar = isValidAvatarUrl(member.avatar)
     ? member.avatar
@@ -57,7 +67,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
         />
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-base group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors truncate">
               {member.name}
             </h4>
@@ -65,6 +75,11 @@ export const MemberCard: React.FC<MemberCardProps> = ({
               <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md flex-shrink-0">
                 <Crown size={11} className="text-amber-500 dark:text-amber-400" />
                 Líder
+              </span>
+            )}
+            {isPendingInvite && isLeader && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-md flex-shrink-0">
+                Convite Pendente
               </span>
             )}
           </div>
@@ -93,7 +108,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
             rel="noreferrer"
             onClick={(e) => e.stopPropagation()}
             className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 active:scale-90 transition-all border border-emerald-500/20 shadow-2xs"
-            title="Abrir WhatsApp"
+            title={isPendingInvite && isLeader ? "Enviar Convite com Link no WhatsApp" : "Abrir WhatsApp"}
           >
             <MessageCircle size={17} />
           </a>

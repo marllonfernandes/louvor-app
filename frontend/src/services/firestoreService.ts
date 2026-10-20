@@ -585,9 +585,19 @@ export function subscribeToMembers(callback: (members: Member[]) => void): () =>
   };
 }
 
+export function generateInviteToken(): string {
+  return Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
+}
+
 export async function saveMember(member: Omit<Member, 'id'> & { id?: string }): Promise<string> {
   const id = member.id || (member.email ? member.email.trim().toLowerCase() : `mem_${Date.now()}`);
-  const newMember: Member = { ...member, id, active: member.active ?? true };
+  const inviteToken = member.inviteToken || (!member.uid ? generateInviteToken() : undefined);
+  const newMember: Member = { 
+    ...member, 
+    id, 
+    active: member.active ?? true,
+    ...(inviteToken ? { inviteToken } : {})
+  };
   const cleaned = cleanForFirestore(newMember);
 
   if (isFirestoreAvailable && db) {
