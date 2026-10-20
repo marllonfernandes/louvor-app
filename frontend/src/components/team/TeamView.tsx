@@ -8,6 +8,7 @@ import { TeamDetailModal } from './TeamDetailModal';
 import { AddMemberBottomSheet } from './AddMemberBottomSheet';
 import { AddTeamBottomSheet } from './AddTeamBottomSheet';
 import { Button } from '../ui/Button';
+import { EmptyState } from '../ui/EmptyState';
 import { useAuth } from '../../context/AuthContext';
 
 interface TeamViewProps {
@@ -149,18 +150,20 @@ export const TeamView: React.FC<TeamViewProps> = ({
       {subTab === 'teams' ? (
         <div className="space-y-3">
           {filteredTeams.length === 0 ? (
-            <div className="bg-slate-800/40 border border-dashed border-slate-700/80 rounded-3xl p-8 text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
-                <Users size={24} />
-              </div>
-              <p className="text-sm font-bold text-slate-200">Nenhum time de louvor criado</p>
-              <p className="text-xs text-slate-400">Crie times para facilitar a escala automática dos cultos.</p>
-              {isLeader && (
-                <Button size="sm" onClick={handleOpenCreateTeam} icon={<Plus size={16} />}>
-                  Criar Primeiro Time
-                </Button>
-              )}
-            </div>
+            <EmptyState
+              icon={Users}
+              title={searchTerm ? "Nenhum time encontrado" : "Nenhum time de louvor criado"}
+              description={
+                searchTerm
+                  ? "Nenhuma equipe corresponde ao termo pesquisado."
+                  : "Crie times fixos (ex: Time Alfa, Jovens, Domingo) para facilitar a escala automática dos cultos."
+              }
+              actionText={isLeader ? (searchTerm ? undefined : "Criar Primeiro Time") : undefined}
+              actionIcon={<Plus size={16} />}
+              onAction={handleOpenCreateTeam}
+              secondaryActionText={searchTerm ? "Limpar Busca" : undefined}
+              onSecondaryAction={() => setSearchTerm('')}
+            />
           ) : (
             filteredTeams.map(team => (
               <TeamCard
@@ -177,17 +180,20 @@ export const TeamView: React.FC<TeamViewProps> = ({
       ) : (
         <div className="space-y-2.5">
           {filteredMembers.length === 0 ? (
-            <div className="bg-slate-800/40 border border-dashed border-slate-700/80 rounded-3xl p-8 text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
-                <UserPlus size={24} />
-              </div>
-              <p className="text-sm font-bold text-slate-200">Nenhum membro encontrado</p>
-              {isLeader && (
-                <Button size="sm" onClick={handleOpenCreateMember} icon={<UserPlus size={16} />}>
-                  Adicionar Membro
-                </Button>
-              )}
-            </div>
+            <EmptyState
+              icon={UserPlus}
+              title={searchTerm ? "Nenhum membro encontrado" : "Nenhum membro cadastrado"}
+              description={
+                searchTerm
+                  ? "Nenhum integrante corresponde ao nome ou função pesquisada."
+                  : "Cadastre músicos, vocais e equipe técnica para compor suas escalas."
+              }
+              actionText={isLeader ? (searchTerm ? undefined : "Adicionar Membro") : undefined}
+              actionIcon={<UserPlus size={16} />}
+              onAction={handleOpenCreateMember}
+              secondaryActionText={searchTerm ? "Limpar Busca" : undefined}
+              onSecondaryAction={() => setSearchTerm('')}
+            />
           ) : (
             filteredMembers.map(member => (
               <MemberCard

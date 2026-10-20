@@ -23,36 +23,36 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   return (
     <div 
       onClick={() => onSelectTeam(team)}
-      className="bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 hover:border-blue-500/40 rounded-2xl p-4 shadow-sm space-y-3 transition-all text-left cursor-pointer active:scale-[0.99] group"
+      className="bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-slate-700/80 hover:border-blue-500/40 rounded-2xl p-4 shadow-xs space-y-3 transition-all text-left cursor-pointer active:scale-[0.98] select-none group"
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 shadow-inner flex-shrink-0">
             <Users size={18} />
           </div>
-          <div>
-            <h3 className="font-bold text-slate-100 text-base group-hover:text-blue-700 dark:text-blue-300 transition-colors">{team.name}</h3>
-            <p className="text-xs text-slate-400">{team.members.length} integrantes escalados</p>
+          <div className="min-w-0">
+            <h3 className="font-extrabold text-slate-900 dark:text-slate-100 text-base group-hover:text-blue-600 dark:text-blue-300 transition-colors truncate">{team.name}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{team.members.length} integrantes escalados</p>
           </div>
         </div>
 
-        {/* Ações de Edição e Indicador de Detalhes */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        {/* Ações de Edição com área de toque mínima de 44px */}
+        <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
           {isLeader && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onEditTeam(team);
               }}
-              className="p-2 rounded-xl bg-slate-900 text-slate-300 hover:text-blue-600 dark:text-blue-400 hover:bg-slate-700 border border-slate-700/80 text-xs font-semibold active:scale-95 transition-all"
+              className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/80 text-xs font-semibold active:scale-90 transition-all shadow-2xs"
               title="Editar Integrantes do Time"
             >
-              <Pencil size={14} />
+              <Pencil size={15} />
             </button>
           )}
 
-          <span className="text-slate-400 group-hover:text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-all p-1">
-            <ChevronRight size={16} />
+          <span className="text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all p-1">
+            <ChevronRight size={18} />
           </span>
         </div>
       </div>
@@ -60,7 +60,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
       {/* Amostra dos Membros do Time */}
       <div className="flex flex-wrap gap-1.5 pt-1">
         {team.members.length === 0 ? (
-          <div className="w-full bg-slate-950/60 p-2.5 rounded-xl border border-dashed border-slate-800 text-center">
+          <div className="w-full bg-slate-50 dark:bg-slate-950/60 p-2.5 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-center">
             <span className="text-xs text-slate-500 italic">Nenhum integrante associado. Toque para ver detalhes.</span>
           </div>
         ) : (
@@ -69,7 +69,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
             return (
               <span
                 key={idx}
-                className="inline-flex items-center gap-1 bg-slate-950/80 text-slate-200 text-xs px-2.5 py-1 rounded-lg border border-slate-800"
+                className="inline-flex items-center gap-1 bg-slate-50 dark:bg-slate-950/80 text-slate-700 dark:text-slate-200 text-xs px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800"
               >
                 <span>{memberName}</span>
                 {memberObj && (
@@ -82,7 +82,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
           })
         )}
         {team.members.length > 4 && (
-          <span className="inline-flex items-center bg-slate-900 text-slate-400 text-xs px-2 py-1 rounded-lg border border-slate-800 font-semibold">
+          <span className="inline-flex items-center bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 font-semibold">
             +{team.members.length - 4} mais
           </span>
         )}

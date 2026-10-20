@@ -286,3 +286,85 @@ html.light select optgroup {
 input, textarea, select {
   user-select: text;
 }
+
+/* ========================================================================= */
+/* DESIGN TOKENS & MAGIC UI / DESIGN SPELLS KEYFRAMES                        */
+/* ========================================================================= */
+:root {
+  --surface-primary: #0f172a;
+  --surface-elevated: #1e293b;
+  --surface-card: rgba(30, 41, 59, 0.9);
+  --border-subtle: rgba(51, 65, 85, 0.8);
+  --accent-glow: rgba(59, 130, 246, 0.25);
+}
+
+html.light {
+  --surface-primary: #f8fafc;
+  --surface-elevated: #ffffff;
+  --surface-card: #ffffff;
+  --border-subtle: #e2e8f0;
+  --accent-glow: rgba(37, 99, 235, 0.15);
+}
+
+@keyframes spinConic {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.magic-border-beam {
+  position: relative;
+  overflow: hidden;
+}
+
+.magic-border-beam::before {
+  content: '';
+  position: absolute;
+  top: -150%;
+  left: -150%;
+  width: 400%;
+  height: 400%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(59, 130, 246, 0.7) 40deg,
+    rgba(147, 51, 234, 0.7) 80deg,
+    transparent 120deg
+  );
+  animation: spinConic 7s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.magic-border-beam-inner {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes spellPop {
+  0% { transform: scale(0.92); opacity: 0; }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-spell-pop {
+  animation: spellPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes spellFloat {
+  0% {
+    transform: translate(0, 0) scale(0.6) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx, 20px), var(--ty, -60px)) scale(1.2) rotate(var(--tr, 45deg));
+    opacity: 0;
+  }
+}
+
+.animate-spell-particle {
+  animation: spellFloat 0.85s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}

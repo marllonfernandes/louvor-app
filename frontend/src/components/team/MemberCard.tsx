@@ -44,7 +44,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
   return (
     <div 
       onClick={() => onSelectMember(member)}
-      className="bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 hover:border-blue-500/40 rounded-2xl p-3.5 flex items-center justify-between shadow-sm transition-all text-left cursor-pointer active:scale-[0.99] group"
+      className="bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-slate-700/80 hover:border-blue-500/40 rounded-2xl p-3.5 flex items-center justify-between shadow-xs transition-all text-left cursor-pointer active:scale-[0.98] select-none group"
     >
       <div className="flex items-center gap-3.5 min-w-0 flex-1">
         {/* Avatar com Foto do Google / Galeria ou Gradiente com Iniciais */}
@@ -58,12 +58,12 @@ export const MemberCard: React.FC<MemberCardProps> = ({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h4 className="font-bold text-slate-100 text-base group-hover:text-blue-300 transition-colors truncate">
+            <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-base group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors truncate">
               {member.name}
             </h4>
             {isRoleLeader && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md flex-shrink-0">
-                <Crown size={11} className="text-amber-400" />
+              <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md flex-shrink-0">
+                <Crown size={11} className="text-amber-500 dark:text-amber-400" />
                 Líder
               </span>
             )}
@@ -71,12 +71,12 @@ export const MemberCard: React.FC<MemberCardProps> = ({
 
           <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
             {rolesList.filter(r => r !== 'Líder').map(r => (
-              <span key={r} className="text-[11px] text-blue-400 font-semibold bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">
+              <span key={r} className="text-[11px] text-blue-700 dark:text-blue-400 font-semibold bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-500/20">
                 {r}
               </span>
             ))}
             {member.phone && (
-              <span className="text-[11px] text-slate-400 truncate">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                 • {member.phone}
               </span>
             )}
@@ -84,18 +84,18 @@ export const MemberCard: React.FC<MemberCardProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-        {/* Botão WhatsApp */}
+      <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+        {/* Botão WhatsApp com área de toque mínima de 44px */}
         {waLink && (
           <a
             href={waLink}
             target="_blank"
             rel="noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="p-2.5 rounded-xl bg-blue-600/10 text-blue-400 hover:bg-blue-600/20 active:scale-95 transition-all border border-blue-500/20"
+            className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 active:scale-90 transition-all border border-emerald-500/20 shadow-2xs"
             title="Abrir WhatsApp"
           >
-            <MessageCircle size={16} />
+            <MessageCircle size={17} />
           </a>
         )}
 
@@ -105,15 +105,15 @@ export const MemberCard: React.FC<MemberCardProps> = ({
               e.stopPropagation();
               onEditMember(member);
             }}
-            className="p-2 rounded-xl text-slate-400 hover:text-blue-400 hover:bg-slate-700/80 active:scale-95 transition-all bg-slate-900 border border-slate-700/60"
+            className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/80 active:scale-90 transition-all bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60"
             title="Editar Integrante"
           >
             <Pencil size={15} />
           </button>
         )}
 
-        <span className="text-slate-400 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all p-1">
-          <ChevronRight size={16} />
+        <span className="text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all p-1">
+          <ChevronRight size={18} />
         </span>
       </div>
     </div>

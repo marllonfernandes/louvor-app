@@ -79,11 +79,11 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Botão de Central de Notificações (Sininho) */}
         <button
           onClick={onOpenNotifications}
-          className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center active:scale-95 transition-all shadow-sm shrink-0 relative cursor-pointer"
+          className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center active:scale-95 transition-all shadow-sm shrink-0 relative cursor-pointer"
           aria-label="Notificações"
           title="Notificações e alertas no celular"
         >
-          <Bell size={15} className={unreadNotificationsCount > 0 ? 'text-blue-600 dark:text-blue-400' : ''} />
+          <Bell size={16} className={unreadNotificationsCount > 0 ? 'text-blue-600 dark:text-blue-400' : ''} />
           {unreadNotificationsCount > 0 && (
             <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
               {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
@@ -94,23 +94,23 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Botão de Alternância de Tema */}
         <button
           onClick={toggleTheme}
-          className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center active:scale-95 transition-all shadow-sm shrink-0"
+          className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center active:scale-95 transition-all shadow-sm shrink-0 cursor-pointer"
           aria-label={theme === 'dark' ? 'Mudar para Tema Claro' : 'Mudar para Tema Escuro'}
         >
           {theme === 'dark' ? (
-            <Sun size={15} className="text-amber-400" />
+            <Sun size={16} className="text-amber-400" />
           ) : (
-            <Moon size={15} className="text-indigo-500" />
+            <Moon size={16} className="text-indigo-500" />
           )}
         </button>
 
         {/* Botão de Configurações */}
         <button
           onClick={onOpenSettings}
-          className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 flex items-center justify-center active:scale-95 transition-all shadow-sm shrink-0 relative"
+          className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 flex items-center justify-center active:scale-95 transition-all shadow-sm shrink-0 relative cursor-pointer"
           aria-label="Configurações"
         >
-          <Sliders size={15} />
+          <Sliders size={16} />
         </button>
       </div>
     </header>

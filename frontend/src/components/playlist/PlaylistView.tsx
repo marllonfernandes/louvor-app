@@ -12,6 +12,7 @@ import { ImportPlaylistModal } from './ImportPlaylistModal';
 import { DeleteGroupModal } from './DeleteGroupModal';
 import { CreateGroupModal } from './CreateGroupModal';
 import { Button } from '../ui/Button';
+import { EmptyState } from '../ui/EmptyState';
 import { useAuth } from '../../context/AuthContext';
 
 interface PlaylistViewProps {
@@ -377,35 +378,42 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
 
           {/* Lista de Músicas */}
           {filteredSongs.length === 0 ? (
-            <div className="bg-slate-800/40 border border-dashed border-slate-700/80 rounded-3xl p-8 text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center mx-auto">
-                <Disc3 size={24} />
-              </div>
-              <p className="text-sm font-bold text-slate-200">Nenhuma música encontrada</p>
-              <p className="text-xs text-slate-400">Cadastre músicas ou importe uma playlist do YouTube.</p>
-              <div className="flex justify-center gap-2 pt-1">
-                {isCurrentUserLeader && (
-                  <Button size="sm" onClick={() => setIsImportPlaylistOpen(true)} icon={<YoutubeIcon size={15} />}>
-                    Importar Playlist
-                  </Button>
-                )}
-                <Button 
-                  size="sm" 
-                  variant="secondary" 
-                  onClick={() => {
-                    if (isCurrentUserLeader) {
-                      setSongToEdit(null);
-                      setIsAddSongOpen(true);
-                    } else {
-                      setIsAddAdoptionOpen(true);
-                    }
-                  }} 
-                  icon={<Plus size={16} />}
-                >
-                  Nova Música
-                </Button>
-              </div>
-            </div>
+            <EmptyState
+              icon={Disc3}
+              title="Nenhuma música encontrada"
+              description={
+                searchTerm || selectedCategory !== 'all' || selectedKey !== 'all' || selectedGroup !== 'all'
+                  ? "Nenhum louvor corresponde aos filtros ou busca selecionada."
+                  : "Cadastre novas músicas ou importe uma playlist do YouTube para montar seu repertório."
+              }
+              actionText={isCurrentUserLeader ? "Cadastrar Música" : "Sugerir Louvor"}
+              actionIcon={<Plus size={16} />}
+              onAction={() => {
+                if (isCurrentUserLeader) {
+                  setSongToEdit(null);
+                  setIsAddSongOpen(true);
+                } else {
+                  setIsAddAdoptionOpen(true);
+                }
+              }}
+              secondaryActionText={
+                searchTerm || selectedCategory !== 'all' || selectedKey !== 'all' || selectedGroup !== 'all'
+                  ? "Limpar Filtros"
+                  : isCurrentUserLeader
+                  ? "Importar Playlist"
+                  : undefined
+              }
+              onSecondaryAction={() => {
+                if (searchTerm || selectedCategory !== 'all' || selectedKey !== 'all' || selectedGroup !== 'all') {
+                  setSearchTerm('');
+                  setSelectedCategory('all');
+                  setSelectedKey('all');
+                  setSelectedGroup('all');
+                } else if (isCurrentUserLeader) {
+                  setIsImportPlaylistOpen(true);
+                }
+              }}
+            />
           ) : (
             <div className="space-y-3">
               {filteredSongs.map(song => (

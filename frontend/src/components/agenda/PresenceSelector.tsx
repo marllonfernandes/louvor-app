@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Check, X, Clock } from 'lucide-react';
 import { ConfirmationStatus } from '../../types';
+import { ConfettiSpell } from '../patterns/ConfettiSpell';
 
 interface PresenceSelectorProps {
   status: ConfirmationStatus;
@@ -13,6 +14,7 @@ export const PresenceSelector: React.FC<PresenceSelectorProps> = ({
   onChange,
   size = 'md'
 }) => {
+  const [spellTarget, setSpellTarget] = useState<string | null>(null);
   const sizeConfig = {
     sm: {
       container: 'gap-1.5',
@@ -92,27 +94,41 @@ export const PresenceSelector: React.FC<PresenceSelectorProps> = ({
     <div className={`flex items-center w-full ${sizeConfig.container}`}>
       {options.map((opt) => {
         const isSelected = status === opt.id;
+        const isSpellActive = spellTarget === opt.id;
+
         return (
-          <button
-            key={opt.id}
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onChange(opt.id);
-            }}
-            className={`group flex-1 flex items-center justify-center gap-1.5 rounded-full font-bold tracking-tight transition-all duration-200 active:scale-95 select-none cursor-pointer border ${
-              sizeConfig.btn
-            } ${isSelected ? opt.activePillClass : opt.inactivePillClass}`}
-          >
-            <span
-              className={`rounded-full flex items-center justify-center shrink-0 transition-all duration-200 ${
-                sizeConfig.iconBadge
-              } ${isSelected ? opt.activeBadgeClass : opt.inactiveBadgeClass}`}
+          <div key={opt.id} className="relative flex-1">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (opt.id === 'accepted' && status !== 'accepted') {
+                  setSpellTarget('accepted');
+                }
+                onChange(opt.id);
+              }}
+              className={`group w-full flex items-center justify-center gap-1.5 rounded-full font-bold tracking-tight transition-all duration-200 active:scale-95 select-none cursor-pointer border ${
+                sizeConfig.btn
+              } ${isSelected ? opt.activePillClass : opt.inactivePillClass} ${
+                isSelected ? 'animate-spell-pop' : ''
+              }`}
             >
-              {opt.icon(sizeConfig.iconSize)}
-            </span>
-            <span className="truncate">{isSelected ? opt.activeLabel : opt.label}</span>
-          </button>
+              <span
+                className={`rounded-full flex items-center justify-center shrink-0 transition-all duration-200 ${
+                  sizeConfig.iconBadge
+                } ${isSelected ? opt.activeBadgeClass : opt.inactiveBadgeClass}`}
+              >
+                {opt.icon(sizeConfig.iconSize)}
+              </span>
+              <span className="truncate">{isSelected ? opt.activeLabel : opt.label}</span>
+            </button>
+            {opt.id === 'accepted' && (
+              <ConfettiSpell
+                active={isSpellActive}
+                onComplete={() => setSpellTarget(null)}
+              />
+            )}
+          </div>
         );
       })}
     </div>

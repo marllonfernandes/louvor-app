@@ -9,6 +9,7 @@ import { MetricsView } from './components/metrics/MetricsView';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { NotificationCenterModal } from './components/notifications/NotificationCenterModal';
 import { ToastContainer, ToastMessage } from './components/ui/Toast';
+import { AppLoadingSkeleton } from './components/ui/Skeleton';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginView } from './components/auth/LoginView';
 import { ReloadPrompt } from './components/pwa/ReloadPrompt';
@@ -421,11 +422,7 @@ export function AppContent() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <AppLoadingSkeleton />;
   }
 
   if (!currentUser || !userProfile) {

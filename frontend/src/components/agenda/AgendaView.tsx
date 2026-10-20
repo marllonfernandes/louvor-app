@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Calendar, History } from 'lucide-react';
 import { WorshipEvent, ConfirmationStatus, Song, Member, Team } from '../../types';
 import { EventCard } from './EventCard';
+import { HeroEventCard } from '../patterns/HeroEventCard';
 import { EventDetailModal } from './EventDetailModal';
 import { WhatsAppShareModal } from './WhatsAppShareModal';
 import { AddEventBottomSheet } from './AddEventBottomSheet';
 import { GenerateMonthModal } from './GenerateMonthModal';
 import { Button } from '../ui/Button';
+import { EmptyState } from '../ui/EmptyState';
 import { useAuth } from '../../context/AuthContext';
 
 interface AgendaViewProps {
@@ -146,13 +148,13 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
       </div>
 
       {/* Segmented Control: Próximos vs Realizados */}
-      <div className="grid grid-cols-2 p-1 bg-slate-950/90 rounded-2xl border border-slate-800 shadow-inner">
+      <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-950/90 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-inner">
         <button
           onClick={() => setTimelineTab('upcoming')}
-          className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
+          className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer min-h-[44px] ${
             timelineTab === 'upcoming'
               ? 'bg-blue-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           <Calendar size={15} />
@@ -161,10 +163,10 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
 
         <button
           onClick={() => setTimelineTab('past')}
-          className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
+          className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer min-h-[44px] ${
             timelineTab === 'past'
-              ? 'bg-slate-800 text-blue-600 dark:text-blue-400 border border-slate-700 shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700 shadow-md'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           <History size={15} />
@@ -181,7 +183,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
             placeholder="Buscar por evento ou equipe..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-950/90 border border-slate-700/80 rounded-2xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 shadow-inner"
+            className="w-full bg-white dark:bg-slate-950/90 border border-slate-200 dark:border-slate-700/80 rounded-2xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 shadow-inner"
           />
         </div>
 
@@ -203,7 +205,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
               className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
                 filterType === f.id
                   ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-slate-800/90 text-slate-400 hover:text-slate-200 border border-slate-700/60'
+                  : 'bg-white dark:bg-slate-800/90 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60'
               }`}
             >
               {f.label}
@@ -219,7 +221,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
               className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
                 filterMonth === 'all'
                   ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-slate-800/90 text-slate-400 hover:text-slate-200 border border-slate-700/60'
+                  : 'bg-white dark:bg-slate-800/90 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60'
               }`}
             >
               Todos os Meses
@@ -236,7 +238,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                   className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all capitalize ${
                     filterMonth === monthStr
                       ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-slate-800/90 text-slate-400 hover:text-slate-200 border border-slate-700/60'
+                      : 'bg-white dark:bg-slate-800/90 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60'
                   }`}
                 >
                   {label}
@@ -249,42 +251,84 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
 
       {/* Lista de Eventos Despoluída */}
       {filteredEvents.length === 0 ? (
-        <div className="bg-slate-800/40 border border-dashed border-slate-700/80 rounded-3xl p-8 text-center space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
-            {timelineTab === 'upcoming' ? <Calendar size={24} /> : <History size={24} />}
-          </div>
-          <div>
-            <p className="text-sm font-bold text-slate-200">
-              {timelineTab === 'upcoming' 
-                ? 'Nenhum próximo evento agendado' 
-                : 'Nenhum evento no histórico'}
-            </p>
-            <p className="text-xs text-slate-400 mt-1">
-              {timelineTab === 'upcoming'
+        activeEventsList.length === 0 ? (
+          <EmptyState
+            icon={timelineTab === 'upcoming' ? Calendar : History}
+            title={timelineTab === 'upcoming' ? 'Nenhuma escala agendada' : 'Nenhum evento no histórico'}
+            description={
+              timelineTab === 'upcoming'
                 ? 'Crie uma nova escala para o ministério de louvor.'
-                : 'Os eventos realizados aparecerão aqui.'}
-            </p>
-          </div>
-          {(timelineTab === 'upcoming' && isLeader) && (
-            <Button size="sm" onClick={handleOpenCreateEvent} icon={<Plus size={16} />}>
-              Criar Nova Escala
-            </Button>
-          )}
-        </div>
+                : 'Os eventos realizados aparecerão aqui.'
+            }
+            actionText={timelineTab === 'upcoming' && isLeader ? 'Criar Nova Escala' : undefined}
+            onAction={timelineTab === 'upcoming' && isLeader ? handleOpenCreateEvent : undefined}
+            actionIcon={<Plus size={16} />}
+          />
+        ) : (
+          <EmptyState
+            icon={Search}
+            title="Nenhum evento encontrado"
+            description="Nenhum evento corresponde à pesquisa ou aos filtros selecionados."
+            actionText="Limpar Filtros"
+            onAction={() => {
+              setSearchTerm('');
+              setFilterType('all');
+              setFilterMonth('all');
+            }}
+          />
+        )
       ) : (
         <div className="space-y-3">
-          {filteredEvents.map(event => (
-            <EventCard
-              key={event.id}
-              event={event}
-              songs={songs}
-              members={members}
-              onStatusChange={onStatusChange}
-              onSelectEvent={setSelectedEvent}
-              onShareWhatsApp={setShareEvent}
-              isPast={timelineTab === 'past'}
-            />
-          ))}
+          {/* Se estiver na aba Próximos e sem filtros ativos, destaca o mais iminente no HeroEventCard */}
+          {timelineTab === 'upcoming' && !searchTerm && filterType === 'all' && filterMonth === 'all' ? (
+            <>
+              <HeroEventCard
+                event={filteredEvents[0]}
+                songs={songs}
+                members={members}
+                onSelectEvent={setSelectedEvent}
+                onShareWhatsApp={setShareEvent}
+                onStatusChange={onStatusChange}
+                currentUserName={userProfile?.name}
+              />
+
+              {filteredEvents.length > 1 && (
+                <div className="pt-2 space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                    <h3 className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Demais Escalas Agendadas ({filteredEvents.length - 1})
+                    </h3>
+                  </div>
+
+                  {filteredEvents.slice(1).map(event => (
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      songs={songs}
+                      members={members}
+                      onStatusChange={onStatusChange}
+                      onSelectEvent={setSelectedEvent}
+                      onShareWhatsApp={setShareEvent}
+                      isPast={false}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            filteredEvents.map(event => (
+              <EventCard
+                key={event.id}
+                event={event}
+                songs={songs}
+                members={members}
+                onStatusChange={onStatusChange}
+                onSelectEvent={setSelectedEvent}
+                onShareWhatsApp={setShareEvent}
+                isPast={timelineTab === 'past'}
+              />
+            ))
+          )}
         </div>
       )}
 
