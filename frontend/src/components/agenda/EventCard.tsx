@@ -3,7 +3,7 @@ import { Calendar, Clock, MapPin, Share2, Music2, ChevronRight, CheckCircle2, Ch
 import { WorshipEvent, ConfirmationStatus, Song, Member } from '../../types';
 import { Badge } from '../ui/Badge';
 import { getEventTypeDefinition } from '../../utils/eventType';
-import { getEventBlocksOrder } from '../../utils/worshipEvent';
+import { getEventBlocksOrder, getEventSongItems, resolveEventSong } from '../../utils/worshipEvent';
 
 interface EventCardProps {
   event: WorshipEvent;
@@ -28,7 +28,7 @@ export const EventCard: React.FC<EventCardProps> = ({
   const declinedCount = confirmedEntries.filter(([_, s]) => s === 'declined').length;
   const pendingCount = confirmedEntries.filter(([_, s]) => s === 'pending').length;
 
-  const eventSongs = (event.songIds || []).map(id => songs.find(s => s.id === id)).filter(Boolean) as Song[];
+  const eventSongs = getEventSongItems(event).map(item => resolveEventSong(item, songs)).filter(Boolean) as Song[];
   const uniqueSongGroups = Array.from(new Set(eventSongs.map(s => s.group).filter(Boolean))) as string[];
   const typeDef = getEventTypeDefinition(event.type);
   const eventBlocks = getEventBlocksOrder(event);

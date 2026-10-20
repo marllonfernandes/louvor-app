@@ -14,6 +14,7 @@ import {
 import { doc, getDoc, collection, query, where, getDocs, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { auth, googleProvider, db, isFirestoreAvailable } from '../config/firebase';
 import { User } from '../types';
+import { isValidAvatarUrl } from '../utils/avatar';
 
 interface AuthContextType {
   currentUser: FirebaseUser | null;
@@ -123,6 +124,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               };
               
               await setDoc(userDocRef, newUserProfile);
+              if (inviteDoc.id !== user.uid) {
+                try {
+                  await deleteDoc(inviteDoc.ref);
+                } catch {
+                  // Ignora caso não tenha permissão de deletar documento antigo
+                }
+              }
             } else if (!user.email) {
               setError('Seu login não forneceu um email válido.');
               if (auth) await firebaseSignOut(auth);
@@ -137,6 +145,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setUserProfile(null);
               setLoading(false);
               return;
+            }
+          } else {
+            // Se o usuário já existe e ainda não tem URL de avatar válida salva no banco, aproveita a foto do Google
+            const existingData = userDocSnap.data();
+            if (!isValidAvatarUrl(existingData?.avatar) && user.photoURL) {
+              await setDoc(userDocRef, { avatar: user.photoURL }, { merge: true });
+            }
+
+            // Também sincroniza a foto do Google com qualquer outro registro do mesmo e-mail na coleção users
+            if (user.photoURL && !(querySnapshot as any).empty) {
+              for (const docSnap of (querySnapshot as any).docs) {
+                const docData = docSnap.data();
+                if (!isValidAvatarUrl(docData?.avatar)) {
+                  try {
+                    await setDoc(docSnap.ref, { avatar: user.photoURL, uid: user.uid }, { merge: true });
+                  } catch {
+                    // Ignora se regras de segurança restringirem escrita em outro doc
+                  }
+                }
+              }
             }
           }
 
@@ -155,7 +183,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
               }
               
-              setUserProfile({ id: snap.id, uid: user.uid, ...data, systemRole } as User);
+              setUserProfile({
+                id: snap.id,
+                uid: user.uid,
+                ...data,
+                avatar: isValidAvatarUrl(data.avatar) ? data.avatar : (user.photoURL || undefined),
+                systemRole
+              } as User);
             } else {
               setUserProfile(null);
             }

@@ -5,6 +5,8 @@ import { Button } from '../ui/Button';
 import { Users, Pencil, Trash2, MessageCircle } from 'lucide-react';
 import { formatPhoneNumberForWhatsApp } from '../../utils/whatsapp';
 import { useAuth } from '../../context/AuthContext';
+import { resolveMemberData } from '../../utils/avatar';
+import { MemberAvatar } from '../ui/MemberAvatar';
 
 interface TeamDetailModalProps {
   isOpen: boolean;
@@ -25,13 +27,25 @@ export const TeamDetailModal: React.FC<TeamDetailModalProps> = ({
 }) => {
   if (!team) return null;
 
-  const teamMembers = team.members
-    .map(name => allMembers.find(m => m.name === name || m.id === name))
-    .filter(Boolean) as Member[];
-
-  const { userProfile } = useAuth();
+  const { userProfile, currentUser } = useAuth();
   const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
   const isAdmin = userProfile?.systemRole === 'Admin';
+
+  const teamMembers = team.members.map(name => {
+    const { memberObj, avatarUrl } = resolveMemberData(
+      name,
+      allMembers,
+      userProfile,
+      currentUser?.photoURL
+    );
+    return {
+      id: memberObj?.id || name,
+      name: memberObj?.name || name,
+      role: memberObj?.role || 'Integrante',
+      phone: memberObj?.phone || '',
+      avatar: avatarUrl
+    };
+  });
 
   return (
     <BottomSheet
@@ -63,13 +77,6 @@ export const TeamDetailModal: React.FC<TeamDetailModalProps> = ({
           ) : (
             <div className="space-y-2">
               {teamMembers.map(m => {
-                const initials = m.name
-                  .split(' ')
-                  .slice(0, 2)
-                  .map(n => n[0])
-                  .join('')
-                  .toUpperCase();
-
                 const formattedPhone = formatPhoneNumberForWhatsApp(m.phone);
                 const waLink = formattedPhone ? `https://wa.me/${formattedPhone}` : null;
 
@@ -79,9 +86,12 @@ export const TeamDetailModal: React.FC<TeamDetailModalProps> = ({
                     className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 flex items-center justify-between shadow-sm"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-xl bg-slate-800 text-blue-600 dark:text-blue-400 font-bold text-xs flex items-center justify-center flex-shrink-0 border border-slate-700">
-                        {initials}
-                      </div>
+                      <MemberAvatar
+                        name={m.name}
+                        avatarUrl={m.avatar}
+                        size="sm"
+                        shape="rounded-xl"
+                      />
                       <div className="min-w-0">
                         <p className="font-bold text-slate-100 text-xs truncate">{m.name}</p>
                         <p className="text-[11px] text-slate-400 truncate">{m.role}</p>

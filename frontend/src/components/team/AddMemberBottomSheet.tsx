@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Member, MemberRole } from '../../types';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { User, Phone, Check, Crown, Sparkles, Mail, Shield, Eye, Edit2, Lock } from 'lucide-react';
+import { User, Phone, Check, Crown, Sparkles, Mail, Shield, Eye, Edit2, Lock, Camera, Trash2, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import {
+  DICEBEAR_STYLES,
+  compressImageToDataUrl,
+  isValidAvatarUrl,
+  isSamePersonName
+} from '../../utils/avatar';
+import { MemberAvatar } from '../ui/MemberAvatar';
 
 interface AddMemberBottomSheetProps {
   isOpen: boolean;
@@ -35,7 +42,7 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
   onSaveMember,
   memberToEdit
 }) => {
-  const { userProfile } = useAuth();
+  const { userProfile, currentUser } = useAuth();
   const isAdmin = userProfile?.systemRole === 'Admin';
   const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
 
@@ -44,6 +51,16 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
   const [selectedRoles, setSelectedRoles] = useState<string[]>(['Vocal']);
   const [phone, setPhone] = useState('');
   const [systemRole, setSystemRole] = useState<'Admin' | 'Editor' | 'Viewer'>('Viewer');
+  const [avatar, setAvatar] = useState<string>('');
+  const [avatarSeedSuffix, setAvatarSeedSuffix] = useState<number>(1);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const isEditingSelf = Boolean(
+    memberToEdit &&
+      (memberToEdit.id === userProfile?.id ||
+        (memberToEdit.email && userProfile?.email && memberToEdit.email.toLowerCase() === userProfile.email.toLowerCase()) ||
+        isSamePersonName(memberToEdit.name, userProfile?.name))
+  );
 
   useEffect(() => {
     if (memberToEdit) {
@@ -60,14 +77,33 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
       }
       setPhone(memberToEdit.phone || '');
       setSystemRole(memberToEdit.systemRole || (memberToEdit.roles?.includes('Líder') || memberToEdit.role?.includes('Líder') ? 'Editor' : 'Viewer'));
+      const initialAvatar = isValidAvatarUrl(memberToEdit.avatar)
+        ? memberToEdit.avatar!
+        : (isEditingSelf && currentUser?.photoURL ? currentUser.photoURL : '');
+      setAvatar(initialAvatar);
     } else {
       setName('');
       setEmail('');
       setSelectedRoles(['Vocal']);
       setPhone('');
       setSystemRole('Viewer');
+      setAvatar('');
     }
+    setAvatarSeedSuffix(1);
   }, [memberToEdit, isOpen]);
+
+  const handlePhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await compressImageToDataUrl(file, 180, 0.82);
+      setAvatar(compressed);
+    } catch (err) {
+      console.error('Erro ao comprimir foto:', err);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const toggleRole = (r: string) => {
     // Apenas líderes/admins podem se autodesignar Líder se já não possuíam o papel
@@ -103,6 +139,7 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
       roles: selectedRoles,
       systemRole: finalSystemRole,
       phone: phone.trim(),
+      avatar: avatar.trim() || undefined,
       active: memberToEdit?.active ?? true
     });
 
@@ -110,16 +147,136 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
   };
 
   const isEditing = Boolean(memberToEdit);
+  const baseSeed = `${name.trim() || 'Louvor'}-${avatarSeedSuffix}`;
 
   return (
     <BottomSheet
       isOpen={isOpen}
       onClose={onClose}
       title={isEditing ? "Editar Integrante" : "Cadastrar Novo Integrante"}
-      subtitle={isEditing ? "Atualize as funções, contatos e instrumentos" : "Adicione líderes, músicos, vocais e equipe técnica"}
+      subtitle={isEditing ? "Atualize foto, funções, contatos e instrumentos" : "Adicione líderes, músicos, vocais e equipe técnica"}
       maxHeight="max-h-[92vh]"
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-left">
+        {/* Seletor Moderno de Avatar (Foto da Galeria, Google ou Avatares Ilustrados DiceBear) */}
+        <div className="bg-slate-50/90 dark:bg-slate-950/80 p-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles size={13} className="text-blue-500" />
+              Foto / Avatar do Perfil
+            </label>
+            {avatar && (
+              <button
+                type="button"
+                onClick={() => setAvatar('')}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+              >
+                <Trash2 size={11} />
+                Usar Iniciais
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3.5">
+            {/* Preview Grande do Avatar */}
+            <div className="relative flex-shrink-0">
+              <MemberAvatar
+                name={name || 'Membro'}
+                avatarUrl={avatar}
+                size="lg"
+                shape="rounded-2xl"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-950 active:scale-90 transition-all cursor-pointer"
+                title="Enviar foto do celular ou computador"
+              >
+                <Camera size={13} />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoFileChange}
+                className="hidden"
+              />
+            </div>
+
+            {/* Botões Rápidos de Upload / Foto do Google */}
+            <div className="flex-1 min-w-0 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
+                >
+                  <Camera size={13} />
+                  <span>Enviar Foto</span>
+                </button>
+
+                {isEditingSelf && currentUser?.photoURL && (
+                  <button
+                    type="button"
+                    onClick={() => setAvatar(currentUser.photoURL!)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold border border-slate-300 dark:border-slate-700 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <span>Foto do Google</span>
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                Envie uma foto da galeria ou escolha um avatar ilustrado abaixo:
+              </p>
+            </div>
+          </div>
+
+          {/* Galeria Rápida de Avatares Ilustrados (DiceBear) */}
+          <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                Avatares Ilustrados (toque para escolher):
+              </span>
+              <button
+                type="button"
+                onClick={() => setAvatarSeedSuffix(prev => prev + 1)}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline active:scale-95 transition-all cursor-pointer"
+              >
+                <RefreshCw size={11} />
+                Gerar novas opções
+              </button>
+            </div>
+
+            <div className="grid grid-cols-5 gap-2">
+              {DICEBEAR_STYLES.map((styleOpt) => {
+                const presetUrl = styleOpt.buildUrl(baseSeed);
+                const isSelected = avatar === presetUrl;
+                return (
+                  <button
+                    key={styleOpt.id}
+                    type="button"
+                    onClick={() => setAvatar(presetUrl)}
+                    className={`flex flex-col items-center gap-1 p-1.5 rounded-xl border transition-all active:scale-95 cursor-pointer ${
+                      isSelected
+                        ? 'bg-blue-500/15 border-blue-500 ring-1 ring-blue-500/40'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-blue-400/50'
+                    }`}
+                  >
+                    <img
+                      src={presetUrl}
+                      alt={styleOpt.label}
+                      className="w-10 h-10 rounded-xl object-cover bg-slate-100 dark:bg-slate-800"
+                      loading="lazy"
+                    />
+                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 truncate max-w-full">
+                      {styleOpt.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
         <Input
           label="Nome Completo"
           placeholder="Ex: João Silva"

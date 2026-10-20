@@ -26,7 +26,8 @@ import {
   Mic,
   Layers,
   Heart,
-  Droplets
+  Droplets,
+  BookOpen
 } from 'lucide-react';
 import { SongSelectModal } from './SongSelectModal';
 import { MemberSelectModal } from './MemberSelectModal';
@@ -36,8 +37,10 @@ import {
   getEventBlocksOrder, 
   BLOCK_PRESETS, 
   COMMON_BLOCKS, 
-  sortMembersWithVocalsFirst 
+  sortMembersWithVocalsFirst,
+  resolveEventSong
 } from '../../utils/worshipEvent';
+import { CEIA_SUGGESTED_HYMNS, findHarpaHymnByNumber } from '../../utils/harpaCrista';
 
 interface AddEventBottomSheetProps {
   isOpen: boolean;
@@ -73,6 +76,12 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
   const [targetBlockForAdd, setTargetBlockForAdd] = useState<string | null>(null);
   const [isAddingCustomBlock, setIsAddingCustomBlock] = useState(false);
   const [newBlockInput, setNewBlockInput] = useState('');
+
+  // Estado para adicionar Hino da Harpa Cristã diretamente (ex: no bloco de Ceia)
+  const [harpaBlockOpen, setHarpaBlockOpen] = useState<string | null>(null);
+  const [harpaNumberInput, setHarpaNumberInput] = useState('');
+  const [harpaTitleInput, setHarpaTitleInput] = useState('');
+  const [harpaKeyInput, setHarpaKeyInput] = useState('');
 
   // Integrantes e Presença
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
@@ -205,6 +214,37 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
     setIsSongSelectOpen(true);
   };
 
+  const handleHarpaNumberChange = (val: string) => {
+    setHarpaNumberInput(val);
+    const match = findHarpaHymnByNumber(val);
+    if (match) {
+      setHarpaTitleInput(match.title);
+    }
+  };
+
+  const handleAddHarpaHymn = (blockName: string, numberStr: string, titleStr: string, keyStr = '') => {
+    const cleanNum = numberStr.trim();
+    const cleanTitle = titleStr.trim();
+    if (!cleanNum && !cleanTitle) return;
+
+    const newHarpaItem: EventSongItem = {
+      songId: `harpa_${cleanNum || Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      block: blockName,
+      isHarpa: true,
+      harpaNumber: cleanNum,
+      harpaTitle: cleanTitle || `Hino ${cleanNum}`,
+      harpaKey: keyStr.trim() || undefined,
+      ministers: [],
+      ministerName: '',
+      ministerAction: 'canta'
+    };
+
+    setSongItems(prev => [...prev, newHarpaItem]);
+    setHarpaNumberInput('');
+    setHarpaTitleInput('');
+    setHarpaKeyInput('');
+  };
+
   const handleConfirmSongs = (selectedIds: string[]) => {
     if (targetBlockForAdd) {
       // Músicas mantidas que pertencem a outros blocos
@@ -212,8 +252,10 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
 
       // Músicas atuais deste bloco
       const currentBlockItems = songItems.filter(i => (i.block || '') === targetBlockForAdd);
+      // Preserva hinos da Harpa Cristã já adicionados neste bloco
+      const currentBlockHarpaItems = currentBlockItems.filter(i => i.isHarpa || i.harpaTitle);
 
-      // Reconstrói itens do bloco preservando ministrantes se já existiam
+      // Reconstrói itens do catálogo deste bloco preservando ministrantes se já existiam
       const newBlockItems: EventSongItem[] = selectedIds.map(id => {
         const existing = currentBlockItems.find(i => i.songId === id) || songItems.find(i => i.songId === id);
         return {
@@ -225,9 +267,10 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
         };
       });
 
-      setSongItems([...otherBlockItems, ...newBlockItems]);
+      setSongItems([...otherBlockItems, ...currentBlockHarpaItems, ...newBlockItems]);
     } else {
-      // Modo geral (ou sem bloco específico)
+      // Modo geral (preserva hinos da Harpa já adicionados)
+      const existingHarpaItems = songItems.filter(i => i.isHarpa || i.harpaTitle);
       const newItems: EventSongItem[] = selectedIds.map(id => {
         const existing = songItems.find(i => i.songId === id);
         return {
@@ -238,7 +281,7 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
           ministerAction: existing?.ministerAction || 'canta'
         };
       });
-      setSongItems(newItems);
+      setSongItems([...existingHarpaItems, ...newItems]);
     }
     setTargetBlockForAdd(null);
   };
@@ -358,26 +401,39 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
   const selectableList = scheduledMemberObjs.length > 0 ? scheduledMemberObjs : members;
   const sortedSelectable = sortMembersWithVocalsFirst(selectableList);
 
-  // Renderizador de cada card de música
+  // Renderizador de cada card de música (suporta músicas do catálogo e Hinos da Harpa Cristã)
   const renderSongCard = (item: EventSongItem, globalIdx: number, displayIdx: number) => {
-    const song = songs.find(s => s.id === item.songId);
+    const song = resolveEventSong(item, songs);
     if (!song) return null;
-    const thumb = song.url ? getYoutubeThumbnail(song.url, 'hq') : null;
+    const isHarpaItem = Boolean(item.isHarpa || item.harpaTitle);
+    const thumb = !isHarpaItem && song.url ? getYoutubeThumbnail(song.url, 'hq') : null;
 
     return (
       <div
         key={`${song.id}-${globalIdx}`}
-        className="bg-slate-900 border border-slate-800/90 rounded-xl p-2.5 space-y-2 shadow-sm"
+        className={`bg-slate-900 border rounded-xl p-2.5 space-y-2 shadow-sm ${
+          isHarpaItem ? 'border-amber-500/35 bg-amber-950/10' : 'border-slate-800/90'
+        }`}
       >
         <div className="flex items-center justify-between gap-2.5">
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <span className="w-5 h-5 rounded-md bg-blue-600/20 text-blue-400 font-black text-[11px] flex items-center justify-center flex-shrink-0">
+            <span
+              className={`w-5 h-5 rounded-md font-black text-[11px] flex items-center justify-center flex-shrink-0 ${
+                isHarpaItem
+                  ? 'bg-amber-500/20 text-amber-400'
+                  : 'bg-blue-600/20 text-blue-400'
+              }`}
+            >
               {displayIdx}º
             </span>
 
             {thumb ? (
               <div className="w-9 h-9 rounded-lg overflow-hidden bg-slate-950 flex-shrink-0 border border-slate-800">
                 <img src={thumb} alt={song.title} className="w-full h-full object-cover" />
+              </div>
+            ) : isHarpaItem ? (
+              <div className="w-9 h-9 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 flex-shrink-0">
+                <BookOpen size={15} />
               </div>
             ) : (
               <div className="w-9 h-9 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center text-blue-400 flex-shrink-0">
@@ -386,15 +442,28 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
             )}
 
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-slate-100 truncate">{song.title}</p>
-              <p className="text-[11px] text-slate-400 truncate">{song.artist}</p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {isHarpaItem && item.harpaNumber && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-black shrink-0">
+                    Nº {item.harpaNumber}
+                  </span>
+                )}
+                <p className="text-xs font-bold text-slate-100 truncate">
+                  {isHarpaItem ? (item.harpaTitle || song.title) : song.title}
+                </p>
+              </div>
+              <p className="text-[11px] text-slate-400 truncate">
+                {isHarpaItem ? '📖 Harpa Cristã (Sem link obrigatório)' : song.artist}
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            <Badge variant="blue" size="sm" className="font-bold text-[10px]">
-              {song.key}
-            </Badge>
+            {song.key && (
+              <Badge variant="blue" size="sm" className="font-bold text-[10px]">
+                {song.key}
+              </Badge>
+            )}
 
             {/* Reordenar Músicas */}
             <div className="flex flex-col gap-0.5">
@@ -767,18 +836,7 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
             </div>
 
             {/* LISTAGEM DE REPERTÓRIO: POR BLOCOS OU SIMPLES */}
-            {songItems.length === 0 ? (
-              <div
-                onClick={() => handleOpenSongSelect()}
-                className="bg-slate-950/70 border border-dashed border-slate-800 hover:border-blue-500/40 p-4 rounded-2xl text-center space-y-2 cursor-pointer transition-all active:scale-[0.99] group"
-              >
-                <div className="w-10 h-10 rounded-xl bg-slate-900 text-blue-400 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
-                  <Music size={20} />
-                </div>
-                <p className="text-xs font-bold text-slate-200">Nenhuma música adicionada ainda</p>
-                <p className="text-[11px] text-slate-400">Toque aqui para escolher as músicas do culto ou selecione um modelo de momentos acima.</p>
-              </div>
-            ) : songBlocksOrder.length > 0 ? (
+            {songBlocksOrder.length > 0 ? (
               /* MODO POR BLOCOS (ABERTURA, BATISMO, CEIA...) */
               <div className="space-y-3">
                 {songBlocksOrder.map(blockName => {
@@ -786,15 +844,20 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
                     .map((item, idx) => ({ item, globalIdx: idx }))
                     .filter(({ item }) => (item.block || '').trim().toLowerCase() === blockName.toLowerCase());
 
+                  const isCeiaBlock = blockName.toLowerCase().includes('ceia');
+                  const isHarpaOpen = harpaBlockOpen === blockName;
+
                   return (
                     <div
                       key={blockName}
-                      className="bg-slate-950/90 border border-slate-800/90 rounded-2xl p-2.5 space-y-2 shadow-sm"
+                      className={`bg-slate-950/90 border rounded-2xl p-2.5 space-y-2.5 shadow-sm ${
+                        isCeiaBlock ? 'border-rose-500/35' : 'border-slate-800/90'
+                      }`}
                     >
                       {/* Cabeçalho do Bloco */}
-                      <div className="flex items-center justify-between pb-1 px-1 border-b border-slate-800/60">
+                      <div className="flex items-center justify-between pb-1.5 px-1 border-b border-slate-800/60 flex-wrap gap-1.5">
                         <div className="flex items-center gap-1.5">
-                          <Layers size={13} className="text-blue-400" />
+                          <Layers size={13} className={isCeiaBlock ? 'text-rose-400' : 'text-blue-400'} />
                           <span className="text-xs font-extrabold uppercase tracking-wider text-slate-100">
                             {blockName}
                           </span>
@@ -803,20 +866,40 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* Botão Harpa Cristã exclusivo/destacado no agrupamento de Ceia */}
+                          {isCeiaBlock && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setHarpaBlockOpen(isHarpaOpen ? null : blockName)
+                              }
+                              className={`text-[11px] font-bold px-2.5 py-1 rounded-full border flex items-center gap-1 active:scale-95 transition-all cursor-pointer ${
+                                isHarpaOpen
+                                  ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-xs'
+                                  : 'bg-amber-500/15 text-amber-300 border-amber-500/35 hover:bg-amber-500/25'
+                              }`}
+                              title="Adicionar hino da Harpa Cristã (Número e Nome, sem link obrigatório)"
+                            >
+                              <BookOpen size={12} />
+                              <span>+ Harpa Cristã</span>
+                            </button>
+                          )}
+
                           <button
                             type="button"
                             onClick={() => handleOpenSongSelect(blockName)}
-                            className="text-[11px] font-bold text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-2 py-0.5 rounded-lg border border-blue-500/20 flex items-center gap-0.5 active:scale-95 transition-all"
-                            title={`Adicionar músicas no bloco ${blockName}`}
+                            className="text-[11px] font-bold text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-2.5 py-1 rounded-full border border-blue-500/25 flex items-center gap-0.5 active:scale-95 transition-all cursor-pointer"
+                            title={`Adicionar músicas do catálogo no bloco ${blockName}`}
                           >
                             <Plus size={12} />
-                            <span>Adicionar</span>
+                            <span>+ Catálogo</span>
                           </button>
+
                           <button
                             type="button"
                             onClick={() => handleRemoveBlock(blockName)}
-                            className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
+                            className="p-1 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer"
                             title="Remover este bloco"
                           >
                             <Trash2 size={13} />
@@ -824,15 +907,137 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
                         </div>
                       </div>
 
+                      {/* Painel Rápido para Adicionar Hinos da Harpa Cristã na Ceia */}
+                      {isCeiaBlock && isHarpaOpen && (
+                        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-extrabold text-amber-300 flex items-center gap-1.5">
+                              <BookOpen size={13} />
+                              Adicionar Hino da Harpa Cristã (Sem link obrigatório)
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setHarpaBlockOpen(null)}
+                              className="text-slate-400 hover:text-slate-200 p-0.5 cursor-pointer"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+
+                          {/* Sugestões Rápidas de Hinos de Santa Ceia (1 toque) */}
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-slate-400">
+                              Toque rápido para adicionar hinos clássicos de Ceia:
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {CEIA_SUGGESTED_HYMNS.map(hymn => {
+                                const alreadyAdded = blockItemsWithGlobalIdx.some(
+                                  ({ item }) => item.isHarpa && item.harpaNumber === hymn.number
+                                );
+                                return (
+                                  <button
+                                    key={hymn.number}
+                                    type="button"
+                                    disabled={alreadyAdded}
+                                    onClick={() =>
+                                      handleAddHarpaHymn(blockName, hymn.number, hymn.title)
+                                    }
+                                    className={`text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all active:scale-95 cursor-pointer ${
+                                      alreadyAdded
+                                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 opacity-70 cursor-default'
+                                        : 'bg-slate-900/90 hover:bg-amber-500/20 text-amber-200 border-amber-500/30'
+                                    }`}
+                                  >
+                                    {alreadyAdded ? '✓ ' : '+ '}Nº {hymn.number} - {hymn.title}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Campos para Digitar Qualquer Número e Nome da Harpa */}
+                          <div className="grid grid-cols-12 gap-1.5 pt-1">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="Nº (ex: 301)"
+                              value={harpaNumberInput}
+                              onChange={e => handleHarpaNumberChange(e.target.value)}
+                              className="col-span-3 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Nome do hino (ex: Vem Cear)"
+                              value={harpaTitleInput}
+                              onChange={e => setHarpaTitleInput(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleAddHarpaHymn(
+                                    blockName,
+                                    harpaNumberInput,
+                                    harpaTitleInput,
+                                    harpaKeyInput
+                                  );
+                                }
+                              }}
+                              className="col-span-6 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Tom (opc)"
+                              value={harpaKeyInput}
+                              onChange={e => setHarpaKeyInput(e.target.value)}
+                              className="col-span-3 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              disabled={!harpaNumberInput.trim() && !harpaTitleInput.trim()}
+                              onClick={() =>
+                                handleAddHarpaHymn(
+                                  blockName,
+                                  harpaNumberInput,
+                                  harpaTitleInput,
+                                  harpaKeyInput
+                                )
+                              }
+                              className="px-3.5 py-1.5 rounded-full bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-slate-950 font-extrabold text-xs transition-all active:scale-95 cursor-pointer"
+                            >
+                              + Incluir Hino na Ceia
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Músicas deste bloco */}
                       {blockItemsWithGlobalIdx.length === 0 ? (
-                        <div
-                          onClick={() => handleOpenSongSelect(blockName)}
-                          className="p-3 text-center border border-dashed border-slate-800/80 rounded-xl cursor-pointer hover:border-blue-500/30 transition-colors"
-                        >
+                        <div className="p-3 text-center border border-dashed border-slate-800/80 rounded-xl space-y-2">
                           <p className="text-[11px] text-slate-400 italic">
-                            Nenhuma música em <span className="font-bold text-slate-300">{blockName}</span>. Toque para adicionar.
+                            Nenhuma música em <span className="font-bold text-slate-300">{blockName}</span>.
                           </p>
+                          <div className="flex items-center justify-center gap-2 flex-wrap">
+                            {isCeiaBlock && !isHarpaOpen && (
+                              <button
+                                type="button"
+                                onClick={() => setHarpaBlockOpen(blockName)}
+                                className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-[11px] font-bold active:scale-95 transition-all cursor-pointer"
+                              >
+                                <BookOpen size={12} />
+                                <span>Adicionar da Harpa Cristã</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenSongSelect(blockName)}
+                              className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border border-blue-500/30 text-[11px] font-bold active:scale-95 transition-all cursor-pointer"
+                            >
+                              <Plus size={12} />
+                              <span>Escolher do Catálogo</span>
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div className="space-y-1.5">
@@ -868,6 +1073,17 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
                     </div>
                   );
                 })()}
+              </div>
+            ) : songItems.length === 0 ? (
+              <div
+                onClick={() => handleOpenSongSelect()}
+                className="bg-slate-950/70 border border-dashed border-slate-800 hover:border-blue-500/40 p-4 rounded-2xl text-center space-y-2 cursor-pointer transition-all active:scale-[0.99] group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-slate-900 text-blue-400 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
+                  <Music size={20} />
+                </div>
+                <p className="text-xs font-bold text-slate-200">Nenhuma música adicionada ainda</p>
+                <p className="text-[11px] text-slate-400">Toque aqui para escolher as músicas do culto ou selecione um modelo de momentos acima.</p>
               </div>
             ) : (
               /* MODO SIMPLES (LISTA PADRÃO) */

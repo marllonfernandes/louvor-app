@@ -6,6 +6,8 @@ import { MessageCircle, Pencil, Trash2, Users, Phone, Crown } from 'lucide-react
 import { formatPhoneNumberForWhatsApp } from '../../utils/whatsapp';
 import { useAuth } from '../../context/AuthContext';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { isValidAvatarUrl, isSamePersonName } from '../../utils/avatar';
+import { MemberAvatar } from '../ui/MemberAvatar';
 
 interface MemberDetailModalProps {
   isOpen: boolean;
@@ -30,13 +32,6 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
 
   if (!member) return null;
 
-  const initials = member.name
-    .split(' ')
-    .slice(0, 2)
-    .map(n => n[0])
-    .join('')
-    .toUpperCase();
-
   const formattedPhone = formatPhoneNumberForWhatsApp(member.phone);
   const waLink = formattedPhone ? `https://wa.me/${formattedPhone}` : null;
 
@@ -45,12 +40,23 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
     : (member.role ? member.role.split(/[,/]/).map(r => r.trim()).filter(Boolean) : ['Vocal']);
 
   const isRoleLeader = rolesList.includes('Líder');
-  const memberTeams = teams.filter(t => t.members.includes(member.name));
+  const memberTeams = teams.filter(t => t.members.some(mName => isSamePersonName(mName, member.name)));
 
-  const { userProfile } = useAuth();
+  const { userProfile, currentUser } = useAuth();
   const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
   const isAdmin = userProfile?.systemRole === 'Admin';
-  const isSelf = userProfile?.id === member.id;
+  const isSelf = Boolean(
+    userProfile &&
+      (userProfile.id === member.id ||
+        (userProfile.email && member.email && userProfile.email.toLowerCase() === member.email.toLowerCase()) ||
+        isSamePersonName(userProfile.name, member.name))
+  );
+
+  const resolvedAvatar = isValidAvatarUrl(member.avatar)
+    ? member.avatar
+    : isSelf
+    ? (isValidAvatarUrl(userProfile?.avatar) ? userProfile?.avatar : currentUser?.photoURL)
+    : undefined;
 
   const handleSendInvite = () => {
     let currentToken = member.inviteToken;
@@ -82,13 +88,13 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
         <div className="space-y-4 text-left">
           {/* Card do Perfil do Membro */}
           <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex items-center gap-4">
-            <div className={`w-14 h-14 rounded-2xl font-black text-lg flex items-center justify-center flex-shrink-0 shadow-inner ${
-              isLeader
-                ? 'bg-gradient-to-br from-amber-900/60 to-slate-900 text-amber-400 border border-amber-500/50'
-                : 'bg-gradient-to-br from-slate-700 to-slate-800 text-blue-400 border border-slate-700'
-            }`}>
-              {initials}
-            </div>
+            <MemberAvatar
+              name={member.name}
+              avatarUrl={resolvedAvatar}
+              size="lg"
+              shape="rounded-2xl"
+              isLeader={isRoleLeader}
+            />
             <div className="min-w-0 flex-1">
               <h3 className="font-bold text-slate-100 text-base truncate">{member.name}</h3>
               <div className="flex flex-wrap gap-1.5 mt-1.5">

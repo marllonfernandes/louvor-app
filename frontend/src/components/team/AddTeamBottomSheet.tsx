@@ -4,6 +4,7 @@ import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Users, Check, Search, X } from 'lucide-react';
+import { MemberAvatar } from '../ui/MemberAvatar';
 
 interface AddTeamBottomSheetProps {
   isOpen: boolean;
@@ -224,9 +225,13 @@ export const AddTeamBottomSheet: React.FC<AddTeamBottomSheetProps> = ({
                         {isSelected && <Check size={14} className="stroke-[3]" />}
                       </div>
 
-                      <div className="w-8 h-8 rounded-lg bg-slate-800 text-blue-400 font-bold text-xs flex items-center justify-center flex-shrink-0 border border-slate-700">
-                        {initials}
-                      </div>
+                      <MemberAvatar
+                        name={m.name}
+                        avatarUrl={m.avatar}
+                        size="xs"
+                        shape="rounded-xl"
+                        className="w-8 h-8"
+                      />
 
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-bold text-slate-100 truncate">{m.name}</p>

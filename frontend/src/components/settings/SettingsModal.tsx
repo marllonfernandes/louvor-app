@@ -7,6 +7,7 @@ import { INITIAL_EVENTS, INITIAL_SONGS, INITIAL_MEMBERS, INITIAL_TEAMS } from '.
 import { seedFirestoreWithInitialData } from '../../services/firestoreService';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { MemberAvatar } from '../ui/MemberAvatar';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -20,10 +21,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onShowToast
 }) => {
   const { theme, setTheme } = useTheme();
-  const { userProfile, logout } = useAuth();
+  const { userProfile, currentUser, logout } = useAuth();
   const [isSeeding, setIsSeeding] = useState(false);
 
   const isAdmin = userProfile?.systemRole === 'Admin';
+  const profileAvatar = userProfile?.avatar || currentUser?.photoURL;
 
   const handleResetData = () => {
     if (confirm('Deseja restaurar os dados de demonstração no armazenamento local do navegador?')) {
@@ -80,13 +82,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {userProfile && (
           <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center shrink-0">
-                {userProfile.avatar ? (
-                  <img src={userProfile.avatar} alt={userProfile.name} className="w-full h-full object-cover" />
-                ) : (
-                  <UserIcon size={20} className="text-slate-400" />
-                )}
-              </div>
+              <MemberAvatar
+                name={userProfile.name}
+                avatarUrl={profileAvatar}
+                size="sm"
+                shape="rounded-full"
+                className="w-10 h-10"
+              />
               <div>
                 <h4 className="font-bold text-slate-100 text-sm leading-tight">{userProfile.name}</h4>
                 <p className="text-[11px] text-slate-400">{userProfile.email}</p>

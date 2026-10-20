@@ -1,6 +1,30 @@
 import { WorshipEvent, Member, Song, EventSongItem } from '../types';
 import { getEventTypeDefinition } from './eventType';
-import { getEventSongItems, getEventBlocksOrder, getSongMinisters, formatSongMinistersWhatsApp, formatDateBR } from './worshipEvent';
+import {
+  getEventSongItems,
+  getEventBlocksOrder,
+  getSongMinisters,
+  formatSongMinistersWhatsApp,
+  formatDateBR,
+  resolveEventSong
+} from './worshipEvent';
+
+function formatEventSongLineWhatsApp(it: EventSongItem & { song: Song }, prefix = '-'): string {
+  const s = it.song;
+  const ministerTag = formatSongMinistersWhatsApp(getSongMinisters(it));
+
+  if (it.isHarpa || it.harpaTitle) {
+    const numPart = it.harpaNumber?.trim() ? `Nº ${it.harpaNumber.trim()} - ` : '';
+    const titlePart = it.harpaTitle?.trim() || s.title;
+    const keyPart = it.harpaKey?.trim() ? ` (Tom: *${it.harpaKey.trim()}*)` : '';
+    return `${prefix} 📖 *Harpa Cristã: ${numPart}${titlePart}*${keyPart}${ministerTag}`;
+  }
+
+  const groupTag = s.group ? ` [📁 ${s.group}]` : '';
+  const keyTag = s.key ? ` (Tom: *${s.key}*)` : '';
+  const link = s.url ? `\n   ▶️ ${s.url}` : '';
+  return `${prefix} *${s.title}* - ${s.artist}${keyTag}${ministerTag}${groupTag}${link}`;
+}
 
 /**
  * Limpa o número de telefone e garante o formato internacional para o WhatsApp
@@ -35,11 +59,12 @@ export function createMemberReminderLink(member: Member, event: WorshipEvent, so
       return ms.some(m => m.name.trim().toLowerCase() === member.name.trim().toLowerCase());
     })
     .map(item => {
-      const song = songs.find(s => s.id === item.songId);
+      const song = resolveEventSong(item, songs);
       const myAssignment = getSongMinisters(item).find(m => m.name.trim().toLowerCase() === member.name.trim().toLowerCase());
       const action = myAssignment?.action === 'ministra' ? 'Ministrar' : 'Cantar';
       const blockStr = item.block ? ` [${item.block}]` : '';
-      return song ? `• ${song.title} (Tom: ${song.key})${blockStr} - ${action}` : null;
+      const keyStr = song?.key ? ` (Tom: ${song.key})` : '';
+      return song ? `• ${song.title}${keyStr}${blockStr} - ${action}` : null;
     })
     .filter(Boolean);
 
@@ -73,10 +98,10 @@ export function generateEventShareText(event: WorshipEvent, songs: Song[] = [], 
     }).join('\n');
   }
 
-  // Obter itens de música
+  // Obter itens de música (incluindo Hinos da Harpa Cristã)
   const items = getEventSongItems(event);
   const itemsWithSongs = items.map(item => {
-    const song = songs.find(s => s.id === item.songId);
+    const song = resolveEventSong(item, songs);
     return song ? { ...item, song } : null;
   }).filter(Boolean) as (EventSongItem & { song: Song })[];
 
@@ -107,13 +132,7 @@ export function generateEventShareText(event: WorshipEvent, songs: Song[] = [], 
         );
         if (blockSongs.length === 0) return;
 
-        const lines = blockSongs.map(it => {
-          const s = it.song;
-          const groupTag = s.group ? ` [📁 ${s.group}]` : '';
-          const ministerTag = formatSongMinistersWhatsApp(getSongMinisters(it));
-          const link = s.url ? `\n   ▶️ ${s.url}` : '';
-          return `- *${s.title}* - ${s.artist} (Tom: *${s.key}*)${ministerTag}${groupTag}${link}`;
-        }).join('\n');
+        const lines = blockSongs.map(it => formatEventSongLineWhatsApp(it, '-')).join('\n');
 
         blockSections.push(`*${blockName}:*\n${lines}`);
       });
@@ -121,13 +140,7 @@ export function generateEventShareText(event: WorshipEvent, songs: Song[] = [], 
       // Músicas que porventura não tenham bloco associado
       const unassignedSongs = itemsWithSongs.filter(i => !i.block?.trim());
       if (unassignedSongs.length > 0) {
-        const lines = unassignedSongs.map(it => {
-          const s = it.song;
-          const groupTag = s.group ? ` [📁 ${s.group}]` : '';
-          const ministerTag = formatSongMinistersWhatsApp(getSongMinisters(it));
-          const link = s.url ? `\n   ▶️ ${s.url}` : '';
-          return `- *${s.title}* - ${s.artist} (Tom: *${s.key}*)${ministerTag}${groupTag}${link}`;
-        }).join('\n');
+        const lines = unassignedSongs.map(it => formatEventSongLineWhatsApp(it, '-')).join('\n');
 
         blockSections.push(`*Louvor Geral:*\n${lines}`);
       }
@@ -135,13 +148,9 @@ export function generateEventShareText(event: WorshipEvent, songs: Song[] = [], 
       songsText = `\n\n🎵 *REPERTÓRIO / MÚSICAS:*\n\n` + blockSections.join('\n\n');
     } else {
       // Formato lista simples (quando não há blocos)
-      songsText = `\n\n🎵 *REPERTÓRIO / MÚSICAS:*\n` + itemsWithSongs.map((it, idx) => {
-        const s = it.song;
-        const groupTag = s.group ? ` [📁 ${s.group}]` : '';
-        const ministerTag = formatSongMinistersWhatsApp(getSongMinisters(it));
-        const link = s.url ? `\n   ▶️ ${s.url}` : '';
-        return `${idx + 1}. *${s.title}* - ${s.artist} (Tom: *${s.key}*)${ministerTag}${groupTag}${link}`;
-      }).join('\n');
+      songsText = `\n\n🎵 *REPERTÓRIO / MÚSICAS:*\n` + itemsWithSongs.map((it, idx) =>
+        formatEventSongLineWhatsApp(it, `${idx + 1}.`)
+      ).join('\n');
     }
   }
 

@@ -62,6 +62,25 @@ export function getEventSongItems(event: WorshipEvent): EventSongItem[] {
 }
 
 /**
+ * Resolve o objeto Song a partir de um EventSongItem (suporta músicas do catálogo e Hinos da Harpa Cristã)
+ */
+export function resolveEventSong(item: EventSongItem, songs: Song[]): Song | null {
+  if (item.isHarpa || item.harpaTitle) {
+    const numStr = item.harpaNumber?.trim() || '';
+    const titleStr = item.harpaTitle?.trim() || 'Hino da Harpa';
+    return {
+      id: item.songId || `harpa_${numStr || Date.now()}`,
+      title: numStr ? `Harpa Nº ${numStr} - ${titleStr}` : titleStr,
+      artist: 'Harpa Cristã',
+      url: '',
+      key: item.harpaKey?.trim() || '',
+      category: 'Santa Ceia'
+    };
+  }
+  return songs.find(s => s.id === item.songId) || null;
+}
+
+/**
  * Retorna os ministrantes/cantores de um louvor (suporta 1 ou 2 integrantes)
  */
 export function getSongMinisters(item: EventSongItem): SongVocalAssignment[] {

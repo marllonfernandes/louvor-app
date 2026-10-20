@@ -13,6 +13,10 @@ export interface EventSongItem {
   ministerName?: string; // Primeiro integrante (compatibilidade mantida)
   ministerAction?: 'canta' | 'ministra'; // Ação do primeiro integrante
   ministers?: SongVocalAssignment[]; // Lista de 1 ou 2 integrantes que vão cantar ou ministrar
+  isHarpa?: boolean; // Indica se é um hino da Harpa Cristã adicionado diretamente
+  harpaNumber?: string; // Número do hino da Harpa Cristã (ex: "301")
+  harpaTitle?: string; // Nome do hino da Harpa Cristã (ex: "Vem Cear")
+  harpaKey?: string; // Tom opcional do hino da Harpa Cristã (ex: "C")
 }
 
 export interface WorshipEvent {

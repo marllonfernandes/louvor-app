@@ -3,6 +3,8 @@ import { Member } from '../../types';
 import { MessageCircle, ChevronRight, Pencil, Crown } from 'lucide-react';
 import { formatPhoneNumberForWhatsApp } from '../../utils/whatsapp';
 import { useAuth } from '../../context/AuthContext';
+import { isValidAvatarUrl, isSamePersonName } from '../../utils/avatar';
+import { MemberAvatar } from '../ui/MemberAvatar';
 
 interface MemberCardProps {
   member: Member;
@@ -16,13 +18,6 @@ export const MemberCard: React.FC<MemberCardProps> = ({
   onSelectMember, 
   onEditMember
 }) => {
-  const initials = member.name
-    .split(' ')
-    .slice(0, 2)
-    .map(n => n[0])
-    .join('')
-    .toUpperCase();
-
   const formattedPhone = formatPhoneNumberForWhatsApp(member.phone);
   const waLink = formattedPhone ? `https://wa.me/${formattedPhone}` : null;
 
@@ -31,9 +26,20 @@ export const MemberCard: React.FC<MemberCardProps> = ({
     : (member.role ? member.role.split(/[,/]/).map(r => r.trim()).filter(Boolean) : ['Vocal']);
 
   const isRoleLeader = rolesList.includes('Líder');
-  const { userProfile } = useAuth();
+  const { userProfile, currentUser } = useAuth();
   const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
-  const isSelf = userProfile?.id === member.id;
+  const isSelf = Boolean(
+    userProfile &&
+      (userProfile.id === member.id ||
+        (userProfile.email && member.email && userProfile.email.toLowerCase() === member.email.toLowerCase()) ||
+        isSamePersonName(userProfile.name, member.name))
+  );
+
+  const resolvedAvatar = isValidAvatarUrl(member.avatar)
+    ? member.avatar
+    : isSelf
+    ? (isValidAvatarUrl(userProfile?.avatar) ? userProfile?.avatar : currentUser?.photoURL)
+    : undefined;
 
   return (
     <div 
@@ -41,14 +47,14 @@ export const MemberCard: React.FC<MemberCardProps> = ({
       className="bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 hover:border-blue-500/40 rounded-2xl p-3.5 flex items-center justify-between shadow-sm transition-all text-left cursor-pointer active:scale-[0.99] group"
     >
       <div className="flex items-center gap-3.5 min-w-0 flex-1">
-        {/* Avatar com Iniciais e Borda Especial de Líder */}
-        <div className={`w-11 h-11 rounded-2xl font-extrabold text-sm flex items-center justify-center flex-shrink-0 shadow-inner ${
-          isRoleLeader 
-            ? 'bg-gradient-to-br from-amber-900/60 to-slate-900 text-amber-400 border border-amber-500/50' 
-            : 'bg-gradient-to-br from-slate-700 to-slate-800 text-blue-400 border border-slate-700'
-        }`}>
-          {initials}
-        </div>
+        {/* Avatar com Foto do Google / Galeria ou Gradiente com Iniciais */}
+        <MemberAvatar
+          name={member.name}
+          avatarUrl={resolvedAvatar}
+          size="md"
+          shape="rounded-2xl"
+          isLeader={isRoleLeader}
+        />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">

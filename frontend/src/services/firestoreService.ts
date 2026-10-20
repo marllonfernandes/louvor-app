@@ -12,6 +12,7 @@ import {
 import { db, isFirestoreAvailable } from '../config/firebase';
 import { WorshipEvent, Song, Member, Team, ConfirmationStatus, AdoptionSong } from '../types';
 import { INITIAL_EVENTS, INITIAL_SONGS, INITIAL_MEMBERS, INITIAL_TEAMS, INITIAL_ADOPTION_SONGS } from './mockData';
+import { isValidAvatarUrl, isSamePersonName } from '../utils/avatar';
 
 const STORAGE_KEYS = {
   EVENTS: 'louvor_app_events',
@@ -518,17 +519,45 @@ export async function deleteAdoptionSong(songId: string): Promise<void> {
 
 // ----------------- MEMBROS -----------------
 
+function normalizeMembersList(rawList: Member[]): Member[] {
+  // 1. Limpa campos avatar que contenham iniciais antigas (ex: "EB", "FE") em vez de URL de imagem válida
+  const sanitized = rawList.map(m => ({
+    ...m,
+    avatar: isValidAvatarUrl(m.avatar) ? m.avatar!.trim() : undefined
+  }));
+
+  // 2. Se houver mais de um registro do mesmo usuário (ex: convite por email + doc UID do login Google),
+  // garante que a foto do login Google seja propagada para todos os registros correspondentes
+  return sanitized.map(member => {
+    if (member.avatar) return member;
+    const matchWithPhoto = sanitized.find(
+      other =>
+        other.id !== member.id &&
+        Boolean(other.avatar) &&
+        ((member.email &&
+          other.email &&
+          member.email.trim().toLowerCase() === other.email.trim().toLowerCase()) ||
+          isSamePersonName(member.name, other.name))
+    );
+    if (matchWithPhoto?.avatar) {
+      return { ...member, avatar: matchWithPhoto.avatar };
+    }
+    return member;
+  });
+}
+
 export function subscribeToMembers(callback: (members: Member[]) => void): () => void {
   if (isFirestoreAvailable && db) {
     try {
       const q = collection(db, 'users');
       return onSnapshot(q, (snapshot) => {
-        const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Member));
+        const rawList = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Member));
+        const list = normalizeMembersList(rawList);
         setLocal(STORAGE_KEYS.MEMBERS, list);
         callback(list);
       }, (error) => {
         console.warn('[Firestore Members] Erro ao sincronizar membros:', error.message, error);
-        callback(getLocal<Member[]>(STORAGE_KEYS.MEMBERS, INITIAL_MEMBERS));
+        callback(normalizeMembersList(getLocal<Member[]>(STORAGE_KEYS.MEMBERS, INITIAL_MEMBERS)));
       });
     } catch (err) {
       console.warn('[Firestore Members] Erro ao registrar listener:', err);
@@ -536,7 +565,7 @@ export function subscribeToMembers(callback: (members: Member[]) => void): () =>
   }
 
   localListeners.members.add(callback);
-  callback(getLocal<Member[]>(STORAGE_KEYS.MEMBERS, INITIAL_MEMBERS));
+  callback(normalizeMembersList(getLocal<Member[]>(STORAGE_KEYS.MEMBERS, INITIAL_MEMBERS)));
   return () => {
     localListeners.members.delete(callback);
   };

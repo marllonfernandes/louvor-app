@@ -15,89 +15,81 @@ export const PresenceSelector: React.FC<PresenceSelectorProps> = ({
 }) => {
   const sizeConfig = {
     sm: {
-      container: 'p-1 rounded-xl gap-1',
-      btn: 'h-7 px-2 text-[11px]',
-      iconSize: 13
+      container: 'gap-1.5',
+      btn: 'h-8 px-2.5 text-[11px]',
+      iconBadge: 'w-4 h-4',
+      iconSize: 10
     },
     md: {
-      container: 'p-1.5 rounded-2xl gap-1.5',
-      btn: 'h-8 sm:h-9 px-2.5 sm:px-3 text-xs',
-      iconSize: 14
+      container: 'gap-2',
+      btn: 'h-9 px-3 text-xs',
+      iconBadge: 'w-5 h-5',
+      iconSize: 12
     },
     lg: {
-      container: 'p-1.5 rounded-2xl gap-1.5',
+      container: 'gap-2',
       btn: 'h-10 px-3.5 text-xs sm:text-sm',
-      iconSize: 16
+      iconBadge: 'w-5 h-5',
+      iconSize: 13
     }
   }[size];
 
   const options: {
     id: ConfirmationStatus;
     label: string;
-    icon: (iconSize: number, isSelected: boolean) => React.ReactNode;
-    activeClass: string;
-    inactiveHover: string;
+    activeLabel: string;
+    icon: (iconSize: number) => React.ReactNode;
+    activeBadgeClass: string;
+    inactiveBadgeClass: string;
+    activePillClass: string;
+    inactivePillClass: string;
   }[] = [
     {
       id: 'accepted',
-      label: 'Confirmar',
-      icon: (s, isSelected) => (
-        <Check
-          size={s}
-          className={`stroke-[2.5] transition-colors ${
-            isSelected
-              ? 'text-emerald-800 dark:text-emerald-300'
-              : 'text-emerald-600/70 dark:text-emerald-400/70 group-hover:text-emerald-700 dark:group-hover:text-emerald-300'
-          }`}
-        />
-      ),
-      activeClass:
-        'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-300 font-bold shadow-sm ring-1 ring-emerald-300/80 dark:ring-emerald-500/40 border border-emerald-300 dark:border-emerald-500/50 scale-[1.01]',
-      inactiveHover:
-        'text-slate-600 dark:text-slate-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-50/60 dark:hover:bg-emerald-500/10 hover:border-emerald-200 dark:hover:border-emerald-500/30'
+      label: 'Vou',
+      activeLabel: 'Confirmado',
+      icon: (s) => <Check size={s} className="stroke-[3]" />,
+      activeBadgeClass:
+        'bg-emerald-500 text-white shadow-xs shadow-emerald-500/30',
+      inactiveBadgeClass:
+        'bg-emerald-500/15 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-500/25',
+      activePillClass:
+        'bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-200 border-emerald-400/80 dark:border-emerald-500/50 ring-1 ring-emerald-400/40 dark:ring-emerald-500/30 shadow-xs',
+      inactivePillClass:
+        'bg-slate-100/90 dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 border-slate-200/90 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-500/40 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-50/50 dark:hover:bg-emerald-500/10'
     },
     {
       id: 'declined',
       label: 'Não vou',
-      icon: (s, isSelected) => (
-        <X
-          size={s}
-          className={`stroke-[2.5] transition-colors ${
-            isSelected
-              ? 'text-rose-800 dark:text-rose-300'
-              : 'text-rose-600/70 dark:text-rose-400/70 group-hover:text-rose-700 dark:group-hover:text-rose-300'
-          }`}
-        />
-      ),
-      activeClass:
-        'bg-rose-50 dark:bg-rose-500/20 text-rose-900 dark:text-rose-300 font-bold shadow-sm ring-1 ring-rose-300/80 dark:ring-rose-500/40 border border-rose-300 dark:border-rose-500/50 scale-[1.01]',
-      inactiveHover:
-        'text-slate-600 dark:text-slate-400 hover:text-rose-800 dark:hover:text-rose-300 hover:bg-rose-50/60 dark:hover:bg-rose-500/10 hover:border-rose-200 dark:hover:border-rose-500/30'
+      activeLabel: 'Não vou',
+      icon: (s) => <X size={s} className="stroke-[3]" />,
+      activeBadgeClass:
+        'bg-rose-500 text-white shadow-xs shadow-rose-500/30',
+      inactiveBadgeClass:
+        'bg-rose-500/15 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 group-hover:bg-rose-500/25',
+      activePillClass:
+        'bg-rose-500/15 dark:bg-rose-500/20 text-rose-900 dark:text-rose-200 border-rose-400/80 dark:border-rose-500/50 ring-1 ring-rose-400/40 dark:ring-rose-500/30 shadow-xs',
+      inactivePillClass:
+        'bg-slate-100/90 dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 border-slate-200/90 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-500/40 hover:text-rose-800 dark:hover:text-rose-300 hover:bg-rose-50/50 dark:hover:bg-rose-500/10'
     },
     {
       id: 'pending',
       label: 'Pendente',
-      icon: (s, isSelected) => (
-        <Clock
-          size={s}
-          className={`stroke-[2.2] transition-colors ${
-            isSelected
-              ? 'text-amber-800 dark:text-amber-300'
-              : 'text-amber-600/70 dark:text-amber-400/70 group-hover:text-amber-700 dark:group-hover:text-amber-300'
-          }`}
-        />
-      ),
-      activeClass:
-        'bg-amber-50 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 font-bold shadow-sm ring-1 ring-amber-300/80 dark:ring-amber-500/40 border border-amber-300 dark:border-amber-500/50 scale-[1.01]',
-      inactiveHover:
-        'text-slate-600 dark:text-slate-400 hover:text-amber-800 dark:hover:text-amber-300 hover:bg-amber-50/60 dark:hover:bg-amber-500/10 hover:border-amber-200 dark:hover:border-amber-500/30'
+      activeLabel: 'Pendente',
+      icon: (s) => <Clock size={s} className="stroke-[2.5]" />,
+      activeBadgeClass:
+        'bg-amber-500 text-slate-950 shadow-xs shadow-amber-500/30',
+      inactiveBadgeClass:
+        'bg-amber-500/15 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 group-hover:bg-amber-500/25',
+      activePillClass:
+        'bg-amber-500/15 dark:bg-amber-500/20 text-amber-900 dark:text-amber-200 border-amber-400/80 dark:border-amber-500/50 ring-1 ring-amber-400/40 dark:ring-amber-500/30 shadow-xs',
+      inactivePillClass:
+        'bg-slate-100/90 dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 border-slate-200/90 dark:border-slate-800 hover:border-amber-300 dark:hover:border-amber-500/40 hover:text-amber-800 dark:hover:text-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-500/10'
     }
   ];
 
   return (
-    <div
-      className={`flex items-center w-full bg-slate-100/90 dark:bg-slate-950/90 border border-slate-200/90 dark:border-slate-800 shadow-inner transition-colors ${sizeConfig.container}`}
-    >
+    <div className={`flex items-center w-full ${sizeConfig.container}`}>
       {options.map((opt) => {
         const isSelected = status === opt.id;
         return (
@@ -108,16 +100,18 @@ export const PresenceSelector: React.FC<PresenceSelectorProps> = ({
               e.stopPropagation();
               onChange(opt.id);
             }}
-            className={`group flex-1 flex items-center justify-center gap-1.5 rounded-xl font-bold tracking-tight transition-all duration-150 active:scale-[0.97] select-none cursor-pointer border ${
+            className={`group flex-1 flex items-center justify-center gap-1.5 rounded-full font-bold tracking-tight transition-all duration-200 active:scale-95 select-none cursor-pointer border ${
               sizeConfig.btn
-            } ${
-              isSelected
-                ? opt.activeClass
-                : `bg-white/80 dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800/80 ${opt.inactiveHover}`
-            }`}
+            } ${isSelected ? opt.activePillClass : opt.inactivePillClass}`}
           >
-            {opt.icon(sizeConfig.iconSize, isSelected)}
-            <span className="truncate">{opt.label}</span>
+            <span
+              className={`rounded-full flex items-center justify-center shrink-0 transition-all duration-200 ${
+                sizeConfig.iconBadge
+              } ${isSelected ? opt.activeBadgeClass : opt.inactiveBadgeClass}`}
+            >
+              {opt.icon(sizeConfig.iconSize)}
+            </span>
+            <span className="truncate">{isSelected ? opt.activeLabel : opt.label}</span>
           </button>
         );
       })}

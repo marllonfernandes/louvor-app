@@ -12,7 +12,13 @@ import {
   MessageSquare, 
   Folder,
   Mic,
-  Layers
+  Layers,
+  Check,
+  X,
+  ChevronRight,
+  Sparkles,
+  ArrowLeftRight,
+  BookOpen
 } from 'lucide-react';
 import { WorshipEvent, Song, Member, ConfirmationStatus, EventSongItem } from '../../types';
 import { BottomSheet } from '../ui/BottomSheet';
@@ -24,6 +30,8 @@ import { createMemberReminderLink } from '../../utils/whatsapp';
 import { getYoutubeThumbnail } from '../../utils/youtube';
 import { useAuth } from '../../context/AuthContext';
 import { getEventTypeDefinition } from '../../utils/eventType';
+import { getAvatarGradient, isSamePersonName, resolveMemberData } from '../../utils/avatar';
+import { MemberAvatar } from '../ui/MemberAvatar';
 import { 
   getEventSongItems, 
   getEventBlocksOrder, 
@@ -33,7 +41,8 @@ import {
   addMinisterToSong,
   removeMinisterFromSong,
   toggleSongMinisterAction,
-  formatDateBR
+  formatDateBR,
+  resolveEventSong
 } from '../../utils/worshipEvent';
 
 interface EventDetailModalProps {
@@ -65,12 +74,27 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 }) => {
   const [justificationMember, setJustificationMember] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'repertoire' | 'team' | 'details'>('repertoire');
+  const [teamFilter, setTeamFilter] = useState<'all' | ConfirmationStatus>('all');
+  const [blockFilter, setBlockFilter] = useState<string>('all');
 
   if (!event) return null;
 
+  const getRoleEmoji = (roleStr: string) => {
+    const r = roleStr.toLowerCase();
+    if (r.includes('líder') || r.includes('lider')) return '👑';
+    if (r.includes('ministro') || r.includes('vocal') || r.includes('backing')) return '🎤';
+    if (r.includes('teclado') || r.includes('piano')) return '🎹';
+    if (r.includes('bateria') || r.includes('percuss')) return '🥁';
+    if (r.includes('baixo') || r.includes('violão') || r.includes('violao') || r.includes('guitarra')) return '🎸';
+    if (r.includes('sax') || r.includes('metal') || r.includes('metais')) return '🎷';
+    if (r.includes('som') || r.includes('sonoplastia')) return '🎚️';
+    if (r.includes('mídia') || r.includes('midia') || r.includes('proje')) return '💻';
+    return '🎵';
+  };
+
   const items = getEventSongItems(event);
   const itemsWithSongs = items.map((item, globalIndex) => {
-    const song = songs.find(s => s.id === item.songId);
+    const song = resolveEventSong(item, songs);
     return song ? { item, song, globalIndex } : null;
   }).filter(Boolean) as { item: EventSongItem; song: Song; globalIndex: number }[];
 
@@ -91,12 +115,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
   const typeDef = getEventTypeDefinition(event.type);
 
-  const { userProfile } = useAuth();
+  const { userProfile, currentUser } = useAuth();
   const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
   const isAdmin = userProfile?.systemRole === 'Admin';
 
-  const currentUserObj = members.find(m => m.name === userProfile?.name);
-  const isUserMinistro = (currentUserObj?.role || '').toLowerCase().includes('ministro');
+  const currentUserObj = members.find(m => isSamePersonName(m.name, userProfile?.name));
+  const isUserMinistro = (currentUserObj?.role || userProfile?.role || '').toLowerCase().includes('ministro');
 
   const handleStatusChangeClick = (memberName: string, status: ConfirmationStatus) => {
     if (status === 'declined') {
@@ -168,7 +192,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   };
 
   const renderSongRow = (item: EventSongItem, song: Song, displayIdx: number, globalIndex: number) => {
-    const songThumb = song.url ? getYoutubeThumbnail(song.url, 'hq') : null;
+    const isHarpaItem = Boolean(item.isHarpa || item.harpaTitle);
+    const songThumb = !isHarpaItem && song.url ? getYoutubeThumbnail(song.url, 'hq') : null;
     const ministers = getSongMinisters(item);
     const currentUserName = userProfile?.name?.trim() || '';
     const isUserAlreadyAssigned = Boolean(
@@ -177,92 +202,170 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
     const canManageMinister = Boolean(onSaveEvent);
     const canAddMore = ministers.length < 2;
 
+    const cardBorderClass = isHarpaItem
+      ? 'border-amber-500/35 dark:border-amber-500/35'
+      : ministers.length > 0
+      ? 'border-blue-500/30 dark:border-blue-500/30'
+      : 'border-slate-200/90 dark:border-slate-800/90';
+
     return (
       <div
         key={`${song.id}-${globalIndex}`}
-        className="bg-slate-50/70 dark:bg-slate-950/80 border border-slate-200/90 dark:border-slate-800 rounded-xl p-2.5 space-y-2.5 shadow-sm"
+        className={`bg-white/95 dark:bg-slate-950/85 border ${cardBorderClass} rounded-2xl p-3.5 space-y-3 shadow-xs transition-all`}
       >
+        {/* Topo do Card: Capa/Avatar da Música com Ordem + Título/Artista + Pill de Tom */}
         <div
           onClick={() => {
+            if (isHarpaItem) return;
             onClose();
             onSelectSong(song);
           }}
-          className="flex items-center justify-between cursor-pointer transition-all active:scale-98 gap-3"
+          className={`flex items-center justify-between transition-all gap-3 group ${
+            isHarpaItem ? 'cursor-default' : 'cursor-pointer active:scale-[0.99]'
+          }`}
         >
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <span className="w-5 h-5 rounded-full bg-slate-800 text-slate-400 font-bold text-[11px] flex items-center justify-center flex-shrink-0">
-              {displayIdx}
-            </span>
-            {songThumb ? (
-              <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-900 flex-shrink-0 border border-slate-700/60">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            {/* Capa estilo Avatar Mobile com Número da Ordem Flutuante */}
+            <div className="relative flex-shrink-0">
+              {songThumb ? (
                 <img
                   src={songThumb}
                   alt={song.title}
-                  className="w-full h-full object-cover"
+                  className="w-12 h-12 rounded-2xl object-cover border border-white/20 dark:border-slate-700 shadow-sm bg-slate-900"
                   loading="lazy"
                 />
-              </div>
-            ) : (
-              <div className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-blue-400 flex-shrink-0">
-                <Music size={16} />
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
+              ) : isHarpaItem ? (
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-md shadow-amber-500/20 border border-white/20">
+                  <BookOpen size={18} />
+                </div>
+              ) : (
+                <div
+                  className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${getAvatarGradient(
+                    song.title
+                  )} text-white flex items-center justify-center shadow-md border border-white/20`}
+                >
+                  <Music size={18} />
+                </div>
+              )}
+
+              {/* Badge Circular com Número da Faixa no Canto */}
+              <span
+                className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full ring-2 ring-white dark:ring-slate-950 font-black text-[10px] flex items-center justify-center shadow-xs ${
+                  isHarpaItem ? 'bg-amber-500 text-slate-950' : 'bg-blue-600 text-white'
+                }`}
+              >
+                {displayIdx}
+              </span>
+            </div>
+
+            <div className="min-w-0 flex-1 space-y-1">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <p className="text-xs font-bold text-slate-100 truncate">{song.title}</p>
+                {isHarpaItem && item.harpaNumber && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/35 text-[10px] font-black shrink-0">
+                    Nº {item.harpaNumber}
+                  </span>
+                )}
+                <p
+                  className={`text-[15px] font-extrabold text-slate-900 dark:text-slate-100 leading-tight truncate transition-colors ${
+                    !isHarpaItem ? 'group-hover:text-blue-600 dark:group-hover:text-blue-400' : ''
+                  }`}
+                >
+                  {isHarpaItem ? (item.harpaTitle || song.title) : song.title}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                  {isHarpaItem ? '📖 Harpa Cristã' : song.artist}
+                </span>
                 {song.group && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 text-[10px] font-medium shrink-0">
-                    <Folder size={10} className="text-purple-400" />
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30 text-[10px] font-bold shrink-0">
+                    <Folder size={10} className="text-purple-500 dark:text-purple-400" />
                     {song.group}
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-slate-400 truncate">{song.artist}</p>
             </div>
           </div>
-          <Badge variant="blue" size="sm" className="flex-shrink-0">
-            Tom: {song.key}
-          </Badge>
+
+          {/* Cápsula de Tom + Indicador de Cifra */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {song.key && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-800 dark:text-blue-300 border border-blue-500/30 text-[11px] font-extrabold shadow-2xs">
+                <span>🎵</span>
+                <span>Tom: {song.key}</span>
+              </span>
+            )}
+            {!isHarpaItem && (
+              <ChevronRight size={15} className="text-slate-400 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+            )}
+          </div>
         </div>
 
-        {/* Linha de Atribuição de Vocal / Ministrante (1 ou 2 integrantes) */}
-        <div className="pt-2 border-t border-slate-200/90 dark:border-slate-800/80 space-y-2">
+        {/* Rodapé do Card: Vocais / Ministrantes com Avatares e Botões em Cápsula */}
+        <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/80 space-y-2.5">
           {/* Integrantes já escalados neste louvor */}
           {ministers.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="space-y-1.5">
               {ministers.map((m, mIdx) => {
-                const isThisUser = Boolean(
-                  currentUserName && m.name.toLowerCase() === currentUserName.toLowerCase()
+                const { avatarUrl: ministerAvatarUrl, isCurrentUser: isThisUser } = resolveMemberData(
+                  m.name,
+                  members,
+                  userProfile,
+                  currentUser?.photoURL
                 );
                 const canModifyThis = canManageMinister && (isLeader || isAdmin || isThisUser);
+                const isMinistra = m.action === 'ministra';
 
                 return (
                   <div
                     key={`${m.name}-${mIdx}`}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] ${
-                      m.action === 'ministra'
-                        ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200/90 dark:border-amber-500/25 text-amber-900 dark:text-amber-300'
-                        : 'bg-blue-50 dark:bg-blue-500/10 border-blue-200/90 dark:border-blue-500/25 text-blue-900 dark:text-blue-300'
+                    className={`flex items-center justify-between gap-2 p-2 rounded-xl border text-xs ${
+                      isMinistra
+                        ? 'bg-amber-500/10 dark:bg-amber-500/10 border-amber-400/40 dark:border-amber-500/30'
+                        : 'bg-blue-500/10 dark:bg-blue-500/10 border-blue-400/40 dark:border-blue-500/30'
                     }`}
                   >
-                    <Mic size={12} className={m.action === 'ministra' ? 'text-amber-700 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'} />
-                    <span className="font-bold">
-                      {m.action === 'ministra' ? 'Ministra:' : 'Canta:'}
-                    </span>
-                    <span className="text-slate-900 dark:text-white font-extrabold">{m.name}</span>
+                    {/* Mini Avatar + Nome e Papel no Louvor */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="relative flex-shrink-0">
+                        <MemberAvatar
+                          name={m.name}
+                          avatarUrl={ministerAvatarUrl}
+                          size="xs"
+                          shape="rounded-full"
+                        />
+                      </div>
 
+                      <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                        <span
+                          className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                            isMinistra
+                              ? 'bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-500/30'
+                              : 'bg-blue-500/20 text-blue-900 dark:text-blue-300 border border-blue-500/30'
+                          }`}
+                        >
+                          {isMinistra ? '🔥 Ministra' : '🎤 Canta'}
+                        </span>
+                        <span className="text-slate-900 dark:text-white font-extrabold text-xs truncate">
+                          {m.name}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Ações Modernas em Cápsula */}
                     {canModifyThis && (
-                      <div className="flex items-center gap-1 ml-1.5 pl-1.5 border-l border-slate-300 dark:border-slate-700/60">
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleToggleMinisterAction(globalIndex, mIdx);
                           }}
-                          className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 active:scale-95 transition-all"
+                          className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/90 hover:bg-white dark:bg-slate-900/90 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 active:scale-95 transition-all cursor-pointer shadow-2xs"
                           title="Alternar entre Canta e Ministra"
                         >
-                          Mudar p/ {m.action === 'ministra' ? 'Canta' : 'Ministra'}
+                          <ArrowLeftRight size={10} />
+                          <span>{isMinistra ? 'Canta' : 'Ministra'}</span>
                         </button>
                         <button
                           type="button"
@@ -270,10 +373,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                             e.stopPropagation();
                             handleRemoveMinister(globalIndex, mIdx);
                           }}
-                          className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 active:scale-95 transition-all"
-                          title="Desmarcar integrante"
+                          className="w-6 h-6 rounded-full flex items-center justify-center bg-rose-500/15 hover:bg-rose-500/25 text-rose-700 dark:text-rose-300 border border-rose-500/30 active:scale-90 transition-all cursor-pointer"
+                          title="Remover integrante deste louvor"
                         >
-                          Desmarcar
+                          <X size={12} className="stroke-[2.5]" />
                         </button>
                       </div>
                     )}
@@ -283,23 +386,27 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </div>
           )}
 
-          {/* Opções para adicionar vocal/ministro quando houver menos de 2 */}
+          {/* Opções em Cápsula para adicionar vocal/ministro quando houver menos de 2 */}
           {canManageMinister && canAddMore && (
-            <div className="flex items-center gap-2 flex-wrap justify-between">
-              {/* Botões rápidos para o usuário logado: Vou Cantar E Vou Ministrar */}
+            <div className="flex items-center gap-1.5 flex-wrap justify-between">
+              {/* Botões em Cápsula para o usuário logado: Vou Cantar e Vou Ministrar */}
               {currentUserName && !isUserAlreadyAssigned ? (
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleAddMinister(globalIndex, currentUserName, 'canta');
                     }}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-xl bg-blue-50/90 hover:bg-blue-100/90 dark:bg-blue-500/15 dark:hover:bg-blue-500/25 text-blue-800 dark:text-blue-300 border border-blue-200/90 dark:border-blue-500/30 active:scale-95 transition-all shadow-none"
+                    className="group flex-1 h-8 px-2.5 rounded-full flex items-center justify-center gap-1.5 text-[11px] font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-900 dark:text-blue-200 border border-blue-400/50 dark:border-blue-500/40 active:scale-95 transition-all cursor-pointer"
                     title="Dizer que você vai cantar este louvor"
                   >
-                    <Mic size={12} className="text-blue-600 dark:text-blue-400" />
-                    <span>{ministers.length > 0 ? '+ Vou Cantar Junto' : '🎤 Vou Cantar'}</span>
+                    <span className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                      <Mic size={10} />
+                    </span>
+                    <span className="truncate">
+                      {ministers.length > 0 ? '+ Cantar Junto' : 'Vou Cantar'}
+                    </span>
                   </button>
 
                   <button
@@ -308,11 +415,15 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                       e.stopPropagation();
                       handleAddMinister(globalIndex, currentUserName, 'ministra');
                     }}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-xl bg-amber-50/90 hover:bg-amber-100/90 dark:bg-amber-500/15 dark:hover:bg-amber-500/25 text-amber-900 dark:text-amber-300 border border-amber-200/90 dark:border-amber-500/30 active:scale-95 transition-all shadow-none"
+                    className="group flex-1 h-8 px-2.5 rounded-full flex items-center justify-center gap-1.5 text-[11px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-400/50 dark:border-amber-500/40 active:scale-95 transition-all cursor-pointer"
                     title="Dizer que você vai ministrar este louvor"
                   >
-                    <Mic size={12} className="text-amber-600 dark:text-amber-400" />
-                    <span>{ministers.length > 0 ? '+ Vou Ministrar Junto' : '🎤 Vou Ministrar'}</span>
+                    <span className="w-4 h-4 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 shadow-2xs">
+                      <Sparkles size={10} />
+                    </span>
+                    <span className="truncate">
+                      {ministers.length > 0 ? '+ Ministrar Junto' : 'Vou Ministrar'}
+                    </span>
                   </button>
                 </div>
               ) : ministers.length === 0 ? (
@@ -321,7 +432,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 <span className="text-[11px] text-slate-500 italic">Pode adicionar até 2 vocais</span>
               )}
 
-              {/* Seletor dropdown para escolher qualquer integrante da equipe: APENAS LÍDER OU ADMIN */}
+              {/* Seletor em Cápsula para escolher qualquer integrante da equipe: APENAS LÍDER OU ADMIN */}
               {(isLeader || isAdmin) && (
                 <select
                   value=""
@@ -329,7 +440,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     e.stopPropagation();
                     if (e.target.value) handleAddMinister(globalIndex, e.target.value, 'canta');
                   }}
-                  className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-700 dark:text-slate-300 focus:outline-none focus:border-blue-500 max-w-[170px] truncate"
+                  className="h-8 bg-slate-100/90 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 rounded-full px-3 text-[11px] font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:border-blue-500 max-w-[165px] truncate cursor-pointer"
                 >
                   <option value="">
                     {ministers.length === 0 ? '+ Escolher vocal...' : '+ 2º vocal...'}
@@ -372,8 +483,9 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const confirmedCount = confirmedEntries.filter(([_, st]) => st === 'accepted').length;
   const pendingCount = confirmedEntries.filter(([_, st]) => st === 'pending').length;
   const declinedCount = confirmedEntries.filter(([_, st]) => st === 'declined').length;
-  const isCurrentUserScheduled = Boolean(userProfile?.name && confirmedMemberNames.includes(userProfile.name));
-  const currentUserStatus = userProfile?.name ? event.confirmed?.[userProfile.name] : undefined;
+  const scheduledUserKey = confirmedMemberNames.find(name => isSamePersonName(name, userProfile?.name));
+  const isCurrentUserScheduled = Boolean(scheduledUserKey);
+  const currentUserStatus = scheduledUserKey ? event.confirmed?.[scheduledUserKey] : undefined;
 
   return (
     <>
@@ -416,7 +528,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           </div>
 
           {/* Seletor Rápido de Presença para o Usuário Logado (se escalado) */}
-          {isCurrentUserScheduled && userProfile?.name && (
+          {isCurrentUserScheduled && scheduledUserKey && (
             <div className="bg-blue-50/70 dark:bg-gradient-to-r dark:from-blue-950/40 dark:to-slate-950/70 p-2.5 rounded-2xl border border-blue-200 dark:border-blue-500/30 space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
@@ -433,7 +545,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               </div>
               <PresenceSelector
                 status={currentUserStatus || 'pending'}
-                onChange={(newStatus) => handleStatusChangeClick(userProfile.name!, newStatus)}
+                onChange={(newStatus) => handleStatusChangeClick(scheduledUserKey, newStatus)}
                 size="sm"
               />
             </div>
@@ -493,67 +605,138 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
           {/* CONTEÚDO DA ABA 1: REPERTÓRIO */}
           {activeTab === 'repertoire' && (
-            <div className="space-y-2.5 pt-1">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <Music size={13} className="text-blue-400" />
-                  Repertório ({itemsWithSongs.length})
-                </span>
-                <span className="text-[11px] text-slate-400">
-                  Toque na música para abrir a cifra
-                </span>
-              </div>
+            <div className="space-y-3.5 pt-1">
+              {(() => {
+                const songsWithVocalCount = itemsWithSongs.filter(
+                  ({ item }) => getSongMinisters(item).length > 0
+                ).length;
+
+                return (
+                  <div className="bg-slate-50/90 dark:bg-slate-950/90 p-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 space-y-2.5 shadow-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <Music size={14} className="text-blue-600 dark:text-blue-400" />
+                        <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                          Repertório do Culto ({itemsWithSongs.length})
+                        </span>
+                      </div>
+                      {itemsWithSongs.length > 0 && (
+                        <span className="text-[11px] font-black text-blue-700 dark:text-blue-300 bg-blue-500/15 px-2.5 py-0.5 rounded-full border border-blue-500/25">
+                          {songsWithVocalCount}/{itemsWithSongs.length} com vocal
+                        </span>
+                      )}
+                    </div>
+
+                    {itemsWithSongs.length > 0 && (
+                      <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-800/90 overflow-hidden">
+                        <div
+                          style={{
+                            width: `${(songsWithVocalCount / Math.max(1, itemsWithSongs.length)) * 100}%`
+                          }}
+                          className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Toque no card da música para abrir a cifra e ouvir
+                      </span>
+                    </div>
+
+                    {hasBlocks && orderedBlocks.length > 0 && (
+                      <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setBlockFilter('all')}
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all active:scale-95 border cursor-pointer ${
+                            blockFilter === 'all'
+                              ? 'bg-blue-600 text-white border-blue-500 shadow-2xs'
+                              : 'bg-white/80 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800'
+                          }`}
+                        >
+                          Todos ({itemsWithSongs.length})
+                        </button>
+                        {orderedBlocks.map(bName => {
+                          const count = itemsWithSongs.filter(
+                            i => (i.item.block || '').trim().toLowerCase() === bName.toLowerCase()
+                          ).length;
+                          if (count === 0) return null;
+                          return (
+                            <button
+                              key={bName}
+                              type="button"
+                              onClick={() => setBlockFilter(bName)}
+                              className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all active:scale-95 border cursor-pointer ${
+                                blockFilter.toLowerCase() === bName.toLowerCase()
+                                  ? 'bg-blue-600 text-white border-blue-500 shadow-2xs'
+                                  : 'bg-white/80 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800'
+                              }`}
+                            >
+                              {bName} ({count})
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {itemsWithSongs.length === 0 ? (
-                <div className="p-6 text-center bg-slate-950/40 rounded-2xl border border-slate-800/60 space-y-2">
-                  <Music size={24} className="mx-auto text-slate-600" />
-                  <p className="text-xs text-slate-400 italic">Nenhuma música adicionada a este culto ainda.</p>
+                <div className="p-6 text-center bg-slate-50/70 dark:bg-slate-950/40 rounded-2xl border border-slate-200/80 dark:border-slate-800/60 space-y-2">
+                  <Music size={24} className="mx-auto text-slate-500 dark:text-slate-600" />
+                  <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                    Nenhuma música adicionada a este culto ainda.
+                  </p>
                 </div>
               ) : hasBlocks ? (
                 <div className="space-y-3">
-                  {orderedBlocks.map(blockName => {
-                    const blockItems = itemsWithSongs.filter(
-                      i => (i.item.block || '').trim().toLowerCase() === blockName.toLowerCase()
-                    );
-                    if (blockItems.length === 0) return null;
+                  {orderedBlocks
+                    .filter(b => blockFilter === 'all' || b.toLowerCase() === blockFilter.toLowerCase())
+                    .map(blockName => {
+                      const blockItems = itemsWithSongs.filter(
+                        i => (i.item.block || '').trim().toLowerCase() === blockName.toLowerCase()
+                      );
+                      if (blockItems.length === 0) return null;
 
-                    return (
-                      <div key={blockName} className="space-y-2 bg-slate-950/60 p-2.5 rounded-2xl border border-slate-800/80">
-                        <div className="flex items-center justify-between px-1">
-                          <span className="text-xs font-black uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
-                            <Layers size={13} />
-                            {blockName}
-                          </span>
-                          <span className="text-[10px] font-bold text-slate-400 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">
-                            {blockItems.length} {blockItems.length === 1 ? 'música' : 'músicas'}
-                          </span>
-                        </div>
+                      return (
+                        <div key={blockName} className="space-y-2.5 bg-slate-50/60 dark:bg-slate-950/50 p-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80">
+                          <div className="flex items-center justify-between px-1">
+                            <span className="text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                              <Layers size={13} />
+                              {blockName}
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-800">
+                              {blockItems.length} {blockItems.length === 1 ? 'música' : 'músicas'}
+                            </span>
+                          </div>
 
-                        <div className="space-y-2">
-                          {blockItems.map(({ item, song, globalIndex }, idx) => 
-                            renderSongRow(item, song, idx + 1, globalIndex)
-                          )}
+                          <div className="space-y-2.5">
+                            {blockItems.map(({ item, song, globalIndex }, idx) => 
+                              renderSongRow(item, song, idx + 1, globalIndex)
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
 
                   {/* Louvores sem bloco atribuído */}
-                  {(() => {
+                  {blockFilter === 'all' && (() => {
                     const unassigned = itemsWithSongs.filter(i => !i.item.block?.trim());
                     if (unassigned.length === 0) return null;
                     return (
-                      <div className="space-y-2 bg-slate-950/60 p-2.5 rounded-2xl border border-slate-800/80">
+                      <div className="space-y-2.5 bg-slate-50/60 dark:bg-slate-950/50 p-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80">
                         <div className="flex items-center justify-between px-1">
-                          <span className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                          <span className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
                             <Layers size={13} />
                             Louvor Geral
                           </span>
-                          <span className="text-[10px] font-bold text-slate-400 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">
+                          <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-800">
                             {unassigned.length}
                           </span>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-2.5">
                           {unassigned.map(({ item, song, globalIndex }, idx) => 
                             renderSongRow(item, song, idx + 1, globalIndex)
                           )}
@@ -563,7 +746,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   })()}
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {itemsWithSongs.map(({ item, song, globalIndex }, idx) => 
                     renderSongRow(item, song, idx + 1, globalIndex)
                   )}
@@ -574,105 +757,291 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
           {/* CONTEÚDO DA ABA 2: ESCALA & PRESENÇA */}
           {activeTab === 'team' && (
-            <div className="space-y-3 pt-1">
-              {/* Resumo de Presença */}
-              <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 rounded-xl">
-                  <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold uppercase">Confirmados</p>
-                  <p className="text-base font-extrabold text-slate-900 dark:text-white">{confirmedCount}</p>
+            <div className="space-y-3.5 pt-1">
+              {/* Card Moderno de Progresso & Filtros Mobile */}
+              <div className="bg-slate-50/90 dark:bg-slate-950/90 p-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 space-y-3 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                      Confirmações da Equipe
+                    </span>
+                  </div>
+                  <span className="text-xs font-black text-emerald-700 dark:text-emerald-400 bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/25">
+                    {confirmedCount} de {confirmedEntries.length} ({Math.round((confirmedCount / Math.max(1, confirmedEntries.length)) * 100)}%)
+                  </span>
                 </div>
-                <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl">
-                  <p className="text-[10px] text-amber-800 dark:text-amber-400 font-bold uppercase">Pendentes</p>
-                  <p className="text-base font-extrabold text-slate-900 dark:text-white">{pendingCount}</p>
+
+                {/* Barra de Progresso Multi-segmento */}
+                <div className="h-2 w-full rounded-full bg-slate-200 dark:bg-slate-800/90 overflow-hidden flex gap-0.5 p-0.5">
+                  {confirmedCount > 0 && (
+                    <div
+                      style={{ width: `${(confirmedCount / Math.max(1, confirmedEntries.length)) * 100}%` }}
+                      className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                    />
+                  )}
+                  {pendingCount > 0 && (
+                    <div
+                      style={{ width: `${(pendingCount / Math.max(1, confirmedEntries.length)) * 100}%` }}
+                      className="h-full bg-amber-400 rounded-full transition-all duration-500"
+                    />
+                  )}
+                  {declinedCount > 0 && (
+                    <div
+                      style={{ width: `${(declinedCount / Math.max(1, confirmedEntries.length)) * 100}%` }}
+                      className="h-full bg-rose-500 rounded-full transition-all duration-500"
+                    />
+                  )}
                 </div>
-                <div className="bg-rose-500/10 border border-rose-500/20 p-2 rounded-xl">
-                  <p className="text-[10px] text-rose-700 dark:text-rose-400 font-bold uppercase">Não vão</p>
-                  <p className="text-base font-extrabold text-slate-900 dark:text-white">{declinedCount}</p>
+
+                {/* Pills Interativos de Filtro */}
+                <div className="grid grid-cols-4 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setTeamFilter('all')}
+                    className={`py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all active:scale-95 border flex flex-col items-center justify-center cursor-pointer ${
+                      teamFilter === 'all'
+                        ? 'bg-blue-600 text-white border-blue-500 shadow-xs shadow-blue-500/20'
+                        : 'bg-white/80 dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 border-slate-200/90 dark:border-slate-800 hover:border-blue-400/40'
+                    }`}
+                  >
+                    <span className="text-[10px] opacity-85">Todos</span>
+                    <span className="text-sm font-black leading-tight">{confirmedEntries.length}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTeamFilter('accepted')}
+                    className={`py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all active:scale-95 border flex flex-col items-center justify-center cursor-pointer ${
+                      teamFilter === 'accepted'
+                        ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-400 dark:border-emerald-500/60 ring-1 ring-emerald-400/30'
+                        : 'bg-emerald-500/5 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/15'
+                    }`}
+                  >
+                    <span className="text-[10px]">Confirmados</span>
+                    <span className="text-sm font-black leading-tight text-slate-900 dark:text-white">{confirmedCount}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTeamFilter('pending')}
+                    className={`py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all active:scale-95 border flex flex-col items-center justify-center cursor-pointer ${
+                      teamFilter === 'pending'
+                        ? 'bg-amber-500/20 text-amber-900 dark:text-amber-300 border-amber-400 dark:border-amber-500/60 ring-1 ring-amber-400/30'
+                        : 'bg-amber-500/5 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/15'
+                    }`}
+                  >
+                    <span className="text-[10px]">Pendentes</span>
+                    <span className="text-sm font-black leading-tight text-slate-900 dark:text-white">{pendingCount}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTeamFilter('declined')}
+                    className={`py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all active:scale-95 border flex flex-col items-center justify-center cursor-pointer ${
+                      teamFilter === 'declined'
+                        ? 'bg-rose-500/20 text-rose-800 dark:text-rose-300 border-rose-400 dark:border-rose-500/60 ring-1 ring-rose-400/30'
+                        : 'bg-rose-500/5 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20 hover:bg-rose-500/15'
+                    }`}
+                  >
+                    <span className="text-[10px]">Não vão</span>
+                    <span className="text-sm font-black leading-tight text-slate-900 dark:text-white">{declinedCount}</span>
+                  </button>
                 </div>
               </div>
 
-              {/* Lista de Integrantes */}
+              {/* Lista de Integrantes em Cards Mobile Modernos */}
               {confirmedEntries.length === 0 ? (
-                <p className="text-xs text-slate-500 italic bg-slate-950/40 p-4 rounded-xl border border-slate-800/60 text-center">
+                <p className="text-xs text-slate-500 italic bg-slate-950/40 p-4 rounded-2xl border border-slate-800/60 text-center">
                   Nenhum integrante escalado para este culto.
                 </p>
               ) : (
-                <div className="space-y-2">
-                  {confirmedEntries.map(([memberName, status]) => {
-                    const memberObj = members.find(m => m.name === memberName);
-                    const waLink = memberObj ? createMemberReminderLink(memberObj, event, songs) : '';
-                    const initials = memberName
-                      .split(' ')
-                      .slice(0, 2)
-                      .map(n => n[0])
-                      .join('')
-                      .toUpperCase();
-                    
-                    const justification = event.justifications?.[memberName];
+                <div className="space-y-2.5">
+                  {confirmedEntries
+                    .filter(([_, st]) => teamFilter === 'all' || st === teamFilter)
+                    .map(([memberName, status]) => {
+                      const { memberObj, avatarUrl, isCurrentUser: isMe } = resolveMemberData(
+                        memberName,
+                        members,
+                        userProfile,
+                        currentUser?.photoURL
+                      );
+                      const waLink = memberObj ? createMemberReminderLink(memberObj, event, songs) : '';
+                      
+                      const justification = event.justifications?.[memberName];
+                      const roleList = memberObj?.roles?.length
+                        ? memberObj.roles
+                        : memberObj?.role
+                        ? memberObj.role.split(/[,/]/).map(r => r.trim()).filter(Boolean)
+                        : isMe && userProfile?.roles?.length
+                        ? userProfile.roles
+                        : isMe && userProfile?.role
+                        ? userProfile.role.split(/[,/]/).map(r => r.trim()).filter(Boolean)
+                        : [];
 
-                    return (
-                      <div
-                        key={memberName}
-                        className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2 shadow-sm text-xs"
-                      >
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8 rounded-xl bg-slate-800 text-blue-400 font-bold text-xs flex items-center justify-center flex-shrink-0 border border-slate-700">
-                              {initials}
+                      const isRoleLeader = roleList.includes('Líder');
+
+                      const cardBorderClass =
+                        status === 'accepted'
+                          ? 'border-emerald-500/30 dark:border-emerald-500/30'
+                          : status === 'declined'
+                          ? 'border-rose-500/30 dark:border-rose-500/30'
+                          : 'border-slate-200/90 dark:border-slate-800/90';
+
+                      return (
+                        <div
+                          key={memberName}
+                          className={`bg-white/95 dark:bg-slate-950/85 p-3.5 rounded-2xl border ${cardBorderClass} space-y-3 shadow-xs transition-all text-xs`}
+                        >
+                          {/* Topo do Card: Avatar com Status + Info + Botão Rápido WhatsApp */}
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              {/* Avatar Moderno com Badge de Status Flutuante */}
+                              <div className="relative flex-shrink-0">
+                                <MemberAvatar
+                                  name={memberName}
+                                  avatarUrl={avatarUrl}
+                                  size="md"
+                                  shape="rounded-2xl"
+                                  isLeader={isRoleLeader}
+                                />
+
+                                {/* Indicador de Status no Canto do Avatar */}
+                                <span
+                                  className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full ring-2 ring-white dark:ring-slate-950 flex items-center justify-center shadow-xs ${
+                                    status === 'accepted'
+                                      ? 'bg-emerald-500 text-white'
+                                      : status === 'declined'
+                                      ? 'bg-rose-500 text-white'
+                                      : 'bg-amber-400 text-slate-950'
+                                  }`}
+                                  title={
+                                    status === 'accepted'
+                                      ? 'Confirmado'
+                                      : status === 'declined'
+                                      ? 'Não vai'
+                                      : 'Pendente'
+                                  }
+                                >
+                                  {status === 'accepted' ? (
+                                    <Check size={11} className="stroke-[3]" />
+                                  ) : status === 'declined' ? (
+                                    <X size={11} className="stroke-[3]" />
+                                  ) : (
+                                    <Clock size={11} className="stroke-[2.5]" />
+                                  )}
+                                </span>
+                              </div>
+
+                              {/* Nome, Funções em Pills e Telefone */}
+                              <div className="min-w-0 space-y-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <p className="font-extrabold text-slate-900 dark:text-slate-100 text-[15px] leading-tight truncate">
+                                    {memberName}
+                                  </p>
+                                  {isMe && (
+                                    <span className="text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30">
+                                      Você
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {roleList.length > 0 ? (
+                                    roleList.slice(0, 2).map(roleItem => (
+                                      <span
+                                        key={roleItem}
+                                        className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-800"
+                                      >
+                                        <span>{getRoleEmoji(roleItem)}</span>
+                                        <span>{roleItem}</span>
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/90 dark:border-slate-800">
+                                      🎵 Integrante
+                                    </span>
+                                  )}
+
+                                  {memberObj?.phone && (
+                                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                      • {memberObj.phone}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <p className="font-bold text-slate-100 text-sm truncate">{memberName}</p>
-                              {memberObj && (
-                                <p className="text-[11px] text-slate-400 truncate">{memberObj.role} • {memberObj.phone}</p>
+
+                            {/* Botão Circular Moderno do WhatsApp */}
+                            {waLink && (
+                              <a
+                                href={waLink}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-9 h-9 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 active:scale-90 transition-all shrink-0 shadow-2xs"
+                                title={`Enviar lembrete para ${memberName} no WhatsApp`}
+                              >
+                                <MessageCircle size={16} />
+                              </a>
+                            )}
+                          </div>
+
+                          {/* Rodapé do Card: Controles de Presença em Cápsulas ou Badge de Status */}
+                          {(isAdmin || isMe) ? (
+                            <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
+                              <PresenceSelector
+                                status={status}
+                                onChange={(newStatus) => handleStatusChangeClick(memberName, newStatus)}
+                                size="sm"
+                              />
+                              {status === 'declined' && justification && (
+                                <div className="flex items-center gap-1.5 bg-rose-500/5 dark:bg-slate-900/70 p-2 rounded-xl border border-rose-500/20 dark:border-slate-800">
+                                  <MessageSquare size={12} className="text-rose-500 dark:text-slate-400 shrink-0" />
+                                  <span className="text-slate-700 dark:text-slate-300 font-medium text-[11px]">
+                                    Justificativa: {justification}
+                                  </span>
+                                </div>
                               )}
                             </div>
-                          </div>
+                          ) : (
+                            <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 flex-wrap">
+                              <span
+                                className={`inline-flex items-center gap-1.5 text-[11px] font-extrabold px-2.5 py-1 rounded-full border ${
+                                  status === 'accepted'
+                                    ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30'
+                                    : status === 'declined'
+                                    ? 'bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30'
+                                    : 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30'
+                                }`}
+                              >
+                                {status === 'accepted' ? (
+                                  <Check size={11} className="stroke-[3]" />
+                                ) : status === 'declined' ? (
+                                  <X size={11} className="stroke-[3]" />
+                                ) : (
+                                  <Clock size={11} className="stroke-[2.5]" />
+                                )}
+                                <span>
+                                  {status === 'accepted'
+                                    ? 'Presença Confirmada'
+                                    : status === 'declined'
+                                    ? 'Não poderá comparecer'
+                                    : 'Aguardando confirmação'}
+                                </span>
+                              </span>
 
-                          {waLink && (
-                            <a
-                              href={waLink}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1 rounded-xl border border-emerald-500/20 active:scale-95 transition-all"
-                              title="Avisar no WhatsApp"
-                            >
-                              <MessageCircle size={13} />
-                              <span>Lembrar</span>
-                            </a>
+                              {status === 'declined' && justification && (
+                                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/60 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-800">
+                                  <MessageSquare size={11} className="text-slate-500 dark:text-slate-400" />
+                                  <span className="text-slate-700 dark:text-slate-300 font-medium text-[11px]">
+                                    {justification}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
-
-                        {/* Seletor Amplo de Presença */}
-                        {(isAdmin || userProfile?.name === memberName) ? (
-                          <>
-                            <PresenceSelector
-                              status={status}
-                              onChange={(newStatus) => handleStatusChangeClick(memberName, newStatus)}
-                              size="sm"
-                            />
-                            {status === 'declined' && justification && (
-                              <div className="flex items-center gap-1.5 mt-2 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-                                <MessageSquare size={12} className="text-slate-400" />
-                                <span className="text-slate-300 font-medium">{justification}</span>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div className="pt-1 flex flex-col gap-1">
-                            <div className="text-xs font-bold text-slate-400">
-                              Status: {status === 'accepted' ? 'Confirmado' : status === 'declined' ? 'Não vai' : 'Pendente'}
-                            </div>
-                            {status === 'declined' && justification && (
-                              <div className="flex items-center gap-1.5 bg-slate-900/60 p-2 rounded-lg border border-slate-800 w-fit">
-                                <MessageSquare size={12} className="text-slate-400" />
-                                <span className="text-slate-300 font-medium">{justification}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               )}
             </div>
