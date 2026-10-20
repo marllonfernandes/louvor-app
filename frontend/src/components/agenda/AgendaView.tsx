@@ -183,6 +183,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
             { id: 'ensaio', label: 'Ensaios' },
             { id: 'jovens', label: 'Jovens' },
             { id: 'ceia', label: 'Santa Ceia' },
+            { id: 'batismo', label: 'Batismo' },
             { id: 'especial', label: 'Especiais' }
           ].map(f => (
             <button
@@ -290,7 +291,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
       <EventDetailModal
         isOpen={Boolean(selectedEvent)}
         onClose={() => setSelectedEvent(null)}
-        event={selectedEvent}
+        event={selectedEvent ? (events.find(e => e.id === selectedEvent.id) || selectedEvent) : null}
         songs={songs}
         members={members}
         onStatusChange={onStatusChange}
@@ -298,12 +299,13 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
         onShareWhatsApp={setShareEvent}
         onSelectSong={onSelectSong}
         onEditEvent={handleOpenEditEvent}
+        onSaveEvent={onSaveEvent}
       />
 
       <WhatsAppShareModal
         isOpen={Boolean(shareEvent)}
         onClose={() => setShareEvent(null)}
-        event={shareEvent}
+        event={shareEvent ? (events.find(e => e.id === shareEvent.id) || shareEvent) : null}
         songs={songs}
         members={members}
       />

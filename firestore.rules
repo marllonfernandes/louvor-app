@@ -70,10 +70,10 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isEditorOrAdmin();
       
-      // Permite edição completa para Líderes/Admins e atualização de presença/justificativa para qualquer integrante
+      // Permite edição completa para Líderes/Admins e atualização de presença/justificativa/músicas para qualquer integrante
       allow update: if isEditorOrAdmin() || (
         isAuthenticated() && 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmed', 'justifications'])
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmed', 'justifications', 'songItems', 'songIds'])
       );
       
       allow delete: if isAdmin();

@@ -24,9 +24,8 @@ export const WhatsAppShareModal: React.FC<WhatsAppShareModalProps> = ({
 
   if (!event) return null;
 
-  const eventSongs = (event.songIds || []).map(id => songs.find(s => s.id === id)).filter(Boolean) as Song[];
-  const shareText = generateEventShareText(event, eventSongs, members);
-  const waLink = createShareWhatsAppGroupLink(event, eventSongs, members);
+  const shareText = generateEventShareText(event, songs, members);
+  const waLink = createShareWhatsAppGroupLink(event, songs, members);
 
   const handleCopy = async () => {
     try {

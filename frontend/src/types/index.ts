@@ -1,6 +1,19 @@
 export type ConfirmationStatus = 'accepted' | 'declined' | 'pending';
 
-export type EventType = 'culto' | 'ensaio' | 'congresso' | 'especial' | 'jovens' | 'ceia' | 'outro';
+export type EventType = 'culto' | 'ensaio' | 'congresso' | 'especial' | 'jovens' | 'ceia' | 'batismo' | 'outro';
+
+export interface SongVocalAssignment {
+  name: string;
+  action?: 'canta' | 'ministra';
+}
+
+export interface EventSongItem {
+  songId: string;
+  block?: string; // Ex: 'Abertura', 'Ceia', 'Batismo', 'Ministração'
+  ministerName?: string; // Primeiro integrante (compatibilidade mantida)
+  ministerAction?: 'canta' | 'ministra'; // Ação do primeiro integrante
+  ministers?: SongVocalAssignment[]; // Lista de 1 ou 2 integrantes que vão cantar ou ministrar
+}
 
 export interface WorshipEvent {
   id: string;
@@ -12,7 +25,9 @@ export interface WorshipEvent {
   team?: string;
   confirmed: Record<string, ConfirmationStatus>; // { [userId]: 'accepted' | 'declined' | 'pending' }
   justifications?: Record<string, string>; // { [userId]: 'Trabalho' }
-  songIds?: string[]; // IDs das músicas escaladas para este culto
+  songIds?: string[]; // IDs das músicas escaladas para este culto (compatibilidade mantida)
+  songItems?: EventSongItem[]; // Músicas estruturadas com momentos/blocos e ministrante do vocal
+  songBlocksOrder?: string[]; // Ordem personalizada dos blocos (ex: ['Abertura', 'Batismo', 'Ceia'])
   notes?: string;
   createdAt?: number;
 }

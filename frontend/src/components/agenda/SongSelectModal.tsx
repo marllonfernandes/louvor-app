@@ -12,6 +12,8 @@ interface SongSelectModalProps {
   songs: Song[];
   selectedSongIds: string[];
   onConfirm: (selectedSongIds: string[]) => void;
+  title?: string;
+  subtitle?: string;
 }
 
 const CATEGORIES: ('Todas' | SongCategory)[] = [
@@ -29,7 +31,9 @@ export const SongSelectModal: React.FC<SongSelectModalProps> = ({
   onClose,
   songs,
   selectedSongIds,
-  onConfirm
+  onConfirm,
+  title,
+  subtitle
 }) => {
   const [selectionMode, setSelectionMode] = useState<'individual' | 'group'>('individual');
   const [tempSelectedIds, setTempSelectedIds] = useState<string[]>([]);
@@ -124,8 +128,8 @@ export const SongSelectModal: React.FC<SongSelectModalProps> = ({
     <BottomSheet
       isOpen={isOpen}
       onClose={onClose}
-      title="Selecionar Músicas do Culto"
-      subtitle="Escolha músicas individualmente ou associe grupos completos de repertório"
+      title={title || "Selecionar Músicas do Culto"}
+      subtitle={subtitle || "Escolha músicas individualmente ou associe grupos completos de repertório"}
       maxHeight="max-h-[92vh]"
     >
       <div className="flex flex-col h-full space-y-3.5 text-left">

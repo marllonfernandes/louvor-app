@@ -1,8 +1,9 @@
 import React from 'react';
-import { Calendar, Clock, MapPin, Share2, Music2, ChevronRight, CheckCircle2, Check, X, Clock3, Folder } from 'lucide-react';
+import { Calendar, Clock, MapPin, Share2, Music2, ChevronRight, CheckCircle2, Check, X, Clock3, Folder, Layers } from 'lucide-react';
 import { WorshipEvent, ConfirmationStatus, Song, Member } from '../../types';
 import { Badge } from '../ui/Badge';
 import { getEventTypeDefinition } from '../../utils/eventType';
+import { getEventBlocksOrder } from '../../utils/worshipEvent';
 
 interface EventCardProps {
   event: WorshipEvent;
@@ -30,6 +31,7 @@ export const EventCard: React.FC<EventCardProps> = ({
   const eventSongs = (event.songIds || []).map(id => songs.find(s => s.id === id)).filter(Boolean) as Song[];
   const uniqueSongGroups = Array.from(new Set(eventSongs.map(s => s.group).filter(Boolean))) as string[];
   const typeDef = getEventTypeDefinition(event.type);
+  const eventBlocks = getEventBlocksOrder(event);
 
   // Formata data amigável (ex: Dom, 01 Mar)
   const formatDateFriendly = (dateStr: string) => {
@@ -47,8 +49,8 @@ export const EventCard: React.FC<EventCardProps> = ({
       onClick={() => onSelectEvent(event)}
       className={`border border-l-4 ${typeDef.borderClass} rounded-2xl p-4 shadow-sm space-y-3 transition-all text-left cursor-pointer active:scale-[0.99] group ${
         isPast 
-          ? 'bg-slate-900/70 border-slate-800 hover:border-slate-700 opacity-90' 
-          : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700/80 hover:border-blue-500/40 shadow-slate-950/20'
+          ? 'bg-slate-50 dark:bg-slate-900/70 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 opacity-90' 
+          : 'bg-white dark:bg-slate-800/90 hover:bg-slate-50/80 dark:hover:bg-slate-800 border-slate-200/90 dark:border-slate-700/80 hover:border-blue-400/40 dark:hover:border-blue-500/40 shadow-slate-200/50 dark:shadow-slate-950/20'
       }`}
     >
       {/* Linha Superior: Time, Tipo e Ação Rápida de WhatsApp */}
@@ -63,9 +65,15 @@ export const EventCard: React.FC<EventCardProps> = ({
               <span>{typeDef.label}</span>
             </span>
           )}
+          {eventBlocks.length > 0 && (
+            <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 flex items-center gap-1 shadow-sm">
+              <Layers size={11} className="text-blue-600 dark:text-blue-400" />
+              <span>{eventBlocks.join(' • ')}</span>
+            </span>
+          )}
           {isPast && (
-            <span className="text-[10px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700 flex items-center gap-1">
-              <CheckCircle2 size={11} className="text-slate-400" />
+            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 flex items-center gap-1">
+              <CheckCircle2 size={11} className="text-slate-500 dark:text-slate-400" />
               Realizado
             </span>
           )}
@@ -86,20 +94,20 @@ export const EventCard: React.FC<EventCardProps> = ({
 
       {/* Título, Data e Horário */}
       <div className="pt-0.5">
-        <h3 className="text-base sm:text-lg font-bold text-slate-100 group-hover:text-blue-300 transition-colors truncate">
+        <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors truncate">
           {event.title}
         </h3>
-        <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-slate-300">
-          <span className="inline-flex items-center gap-1.5 text-blue-400 font-bold">
+        <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-slate-600 dark:text-slate-300">
+          <span className="inline-flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-bold">
             <Calendar size={14} />
             {formatDateFriendly(event.date)}
           </span>
-          <span className="inline-flex items-center gap-1 text-slate-300 font-semibold">
-            <Clock size={14} className="text-slate-400" />
+          <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 font-semibold">
+            <Clock size={14} className="text-slate-500 dark:text-slate-400" />
             {event.time}
           </span>
           {event.location && (
-            <span className="inline-flex items-center gap-1 text-slate-400 truncate max-w-[140px]">
+            <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-400 truncate max-w-[140px]">
               <MapPin size={13} />
               {event.location}
             </span>
@@ -108,43 +116,43 @@ export const EventCard: React.FC<EventCardProps> = ({
       </div>
 
       {/* Rodapé Limpo: Resumo de Presença com Cores Padrão, Qtd Músicas e Indicador */}
-      <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-700/50 text-xs">
+      <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-200 dark:border-slate-700/50 text-xs">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold text-[11px]">
+          <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold text-[11px]">
             <Check size={11} className="stroke-[3]" />
             {acceptedCount} Confirmado{acceptedCount === 1 ? '' : 's'}
           </span>
           {declinedCount > 0 && (
-            <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-md font-bold text-[11px]">
+            <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-md font-bold text-[11px]">
               <X size={11} className="stroke-[3]" />
               {declinedCount} Não vai
             </span>
           )}
           {pendingCount > 0 && (
-            <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md font-bold text-[11px]">
+            <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md font-bold text-[11px]">
               <Clock3 size={11} />
               {pendingCount} Pendente
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-2 text-slate-300 font-medium">
+        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
           {uniqueSongGroups.length > 0 && (
             <span
-              className="inline-flex items-center gap-1 bg-purple-500/10 text-purple-300 border border-purple-500/25 px-2 py-0.5 rounded-md text-[11px] max-w-[120px] truncate"
+              className="inline-flex items-center gap-1 bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/25 px-2 py-0.5 rounded-md text-[11px] max-w-[120px] truncate"
               title={`Grupo: ${uniqueSongGroups.join(', ')}`}
             >
-              <Folder size={11} className="text-purple-400 shrink-0" />
+              <Folder size={11} className="text-purple-600 dark:text-purple-400 shrink-0" />
               <span className="truncate">{uniqueSongGroups.join(', ')}</span>
             </span>
           )}
           {eventSongs.length > 0 && (
-            <span className="inline-flex items-center gap-1 bg-slate-950 px-2 py-0.5 rounded-md border border-slate-700 text-[11px]">
-              <Music2 size={12} className="text-blue-400" />
+            <span className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-950 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 text-[11px] text-slate-700 dark:text-slate-300 font-semibold">
+              <Music2 size={12} className="text-blue-600 dark:text-blue-400" />
               {eventSongs.length}
             </span>
           )}
-          <span className="text-blue-400 text-xs font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+          <span className="text-blue-600 dark:text-blue-400 text-xs font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
             Ver detalhes
             <ChevronRight size={14} />
           </span>

@@ -22,11 +22,11 @@ export const Button: React.FC<ButtonProps> = ({
   const base = "inline-flex items-center justify-center font-bold rounded-2xl transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:pointer-events-none select-none cursor-pointer";
 
   const variants = {
-    primary: "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-950/40 border border-blue-500/30",
-    secondary: "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:bg-slate-700/80",
-    danger: "bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-950/40 border border-rose-500/30",
-    ghost: "bg-transparent hover:bg-slate-800/60 text-slate-400 hover:text-slate-200",
-    whatsapp: "bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-950/50"
+    primary: "bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-900/20 dark:shadow-blue-950/40 border border-blue-500/30",
+    secondary: "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 active:bg-slate-200 dark:active:bg-slate-700/80",
+    danger: "bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-900/20 dark:shadow-rose-950/40 border border-rose-500/30",
+    ghost: "bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200",
+    whatsapp: "bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-900/20 dark:shadow-blue-950/50"
   };
 
   const sizes = {

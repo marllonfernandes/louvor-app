@@ -42,34 +42,61 @@ export const PresenceSelector: React.FC<PresenceSelectorProps> = ({
       id: 'accepted',
       label: 'Confirmar',
       icon: (s, isSelected) => (
-        <Check size={s} className={`stroke-[3] ${isSelected ? 'text-white' : 'text-emerald-400/70 group-hover:text-emerald-300'}`} />
+        <Check
+          size={s}
+          className={`stroke-[2.5] transition-colors ${
+            isSelected
+              ? 'text-emerald-800 dark:text-emerald-300'
+              : 'text-emerald-600/70 dark:text-emerald-400/70 group-hover:text-emerald-700 dark:group-hover:text-emerald-300'
+          }`}
+        />
       ),
-      activeClass: 'bg-emerald-600 text-white font-extrabold shadow-md shadow-emerald-950/50 ring-1 ring-emerald-400/60 border border-emerald-500 scale-[1.02]',
-      inactiveHover: 'text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/10 hover:border-emerald-500/30'
+      activeClass:
+        'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-300 font-bold shadow-sm ring-1 ring-emerald-300/80 dark:ring-emerald-500/40 border border-emerald-300 dark:border-emerald-500/50 scale-[1.01]',
+      inactiveHover:
+        'text-slate-600 dark:text-slate-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-50/60 dark:hover:bg-emerald-500/10 hover:border-emerald-200 dark:hover:border-emerald-500/30'
     },
     {
       id: 'declined',
       label: 'Não vou',
       icon: (s, isSelected) => (
-        <X size={s} className={`stroke-[3] ${isSelected ? 'text-white' : 'text-rose-400/70 group-hover:text-rose-300'}`} />
+        <X
+          size={s}
+          className={`stroke-[2.5] transition-colors ${
+            isSelected
+              ? 'text-rose-800 dark:text-rose-300'
+              : 'text-rose-600/70 dark:text-rose-400/70 group-hover:text-rose-700 dark:group-hover:text-rose-300'
+          }`}
+        />
       ),
-      activeClass: 'bg-rose-600 text-white font-extrabold shadow-md shadow-rose-950/50 ring-1 ring-rose-400/60 border border-rose-500 scale-[1.02]',
-      inactiveHover: 'text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 hover:border-rose-500/30'
+      activeClass:
+        'bg-rose-50 dark:bg-rose-500/20 text-rose-900 dark:text-rose-300 font-bold shadow-sm ring-1 ring-rose-300/80 dark:ring-rose-500/40 border border-rose-300 dark:border-rose-500/50 scale-[1.01]',
+      inactiveHover:
+        'text-slate-600 dark:text-slate-400 hover:text-rose-800 dark:hover:text-rose-300 hover:bg-rose-50/60 dark:hover:bg-rose-500/10 hover:border-rose-200 dark:hover:border-rose-500/30'
     },
     {
       id: 'pending',
       label: 'Pendente',
       icon: (s, isSelected) => (
-        <Clock size={s} className={`stroke-[2.5] ${isSelected ? 'text-slate-950' : 'text-amber-400/70 group-hover:text-amber-300'}`} />
+        <Clock
+          size={s}
+          className={`stroke-[2.2] transition-colors ${
+            isSelected
+              ? 'text-amber-800 dark:text-amber-300'
+              : 'text-amber-600/70 dark:text-amber-400/70 group-hover:text-amber-700 dark:group-hover:text-amber-300'
+          }`}
+        />
       ),
-      activeClass: 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-950/50 ring-1 ring-amber-300/80 border border-amber-400 scale-[1.02]',
-      inactiveHover: 'text-slate-400 hover:text-amber-300 hover:bg-amber-500/10 hover:border-amber-500/30'
+      activeClass:
+        'bg-amber-50 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 font-bold shadow-sm ring-1 ring-amber-300/80 dark:ring-amber-500/40 border border-amber-300 dark:border-amber-500/50 scale-[1.01]',
+      inactiveHover:
+        'text-slate-600 dark:text-slate-400 hover:text-amber-800 dark:hover:text-amber-300 hover:bg-amber-50/60 dark:hover:bg-amber-500/10 hover:border-amber-200 dark:hover:border-amber-500/30'
     }
   ];
 
   return (
     <div
-      className={`flex items-center w-full bg-slate-950/90 border border-slate-800 shadow-inner transition-colors ${sizeConfig.container}`}
+      className={`flex items-center w-full bg-slate-100/90 dark:bg-slate-950/90 border border-slate-200/90 dark:border-slate-800 shadow-inner transition-colors ${sizeConfig.container}`}
     >
       {options.map((opt) => {
         const isSelected = status === opt.id;
@@ -86,7 +113,7 @@ export const PresenceSelector: React.FC<PresenceSelectorProps> = ({
             } ${
               isSelected
                 ? opt.activeClass
-                : `bg-slate-900/60 border-slate-800/80 ${opt.inactiveHover}`
+                : `bg-white/80 dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800/80 ${opt.inactiveHover}`
             }`}
           >
             {opt.icon(sizeConfig.iconSize, isSelected)}
