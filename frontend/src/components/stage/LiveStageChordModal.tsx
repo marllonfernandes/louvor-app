@@ -154,7 +154,7 @@ export const LiveStageChordModal: React.FC<LiveStageChordModalProps> = ({
   const nextSong = currentIndex >= 0 && currentIndex < setlistSongs.length - 1 ? setlistSongs[currentIndex + 1] : null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-surface flex flex-col text-on-surface animate-fade-in overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+    <div className="fixed inset-0 z-[60] bg-surface flex flex-col text-on-surface animate-fade-in overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
       {/* Top Bar Fixa de Palco */}
       <header className="h-16 px-4 bg-surface/95 backdrop-blur-xl border-b border-outline-variant/30 flex items-center justify-between gap-2 flex-shrink-0 pt-safe z-10 shadow-md">
         <button

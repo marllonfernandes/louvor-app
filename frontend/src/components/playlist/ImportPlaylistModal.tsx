@@ -149,6 +149,33 @@ export const ImportPlaylistModal: React.FC<ImportPlaylistModalProps> = ({
       title="Importar Playlist do YouTube"
       subtitle="Cole o link da playlist para importar todas as músicas em lote"
       maxHeight="max-h-[92vh]"
+      footer={
+        items.length > 0 ? (
+          <div className="flex gap-2 w-full">
+            <Button
+              type="button"
+              variant="secondary"
+              fullWidth
+              onClick={() => {
+                handleReset();
+                onClose();
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              fullWidth
+              disabled={selectedCount === 0}
+              onClick={handleConfirmImport}
+              icon={<Sparkles size={15} />}
+            >
+              Importar {selectedCount} Músicas
+            </Button>
+          </div>
+        ) : undefined
+      }
     >
       <div className="space-y-4 text-left">
         {/* Formulário de Busca da Playlist */}
@@ -339,31 +366,6 @@ export const ImportPlaylistModal: React.FC<ImportPlaylistModalProps> = ({
                   </div>
                 </div>
               ))}
-            </div>
-
-            {/* Rodapé com Ação de Importação */}
-            <div className="pt-3 border-t border-slate-800 flex gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                fullWidth
-                onClick={() => {
-                  handleReset();
-                  onClose();
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                fullWidth
-                disabled={selectedCount === 0}
-                onClick={handleConfirmImport}
-                icon={<Sparkles size={15} />}
-              >
-                Importar {selectedCount} Músicas
-              </Button>
             </div>
           </div>
         )}

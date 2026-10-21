@@ -131,6 +131,26 @@ export const SongSelectModal: React.FC<SongSelectModalProps> = ({
       title={title || "Selecionar Músicas do Culto"}
       subtitle={subtitle || "Escolha músicas individualmente ou associe grupos completos de repertório"}
       maxHeight="max-h-[92vh]"
+      footer={
+        <div className="flex gap-2.5 w-full">
+          <Button
+            type="button"
+            variant="secondary"
+            fullWidth
+            onClick={onClose}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            fullWidth
+            onClick={handleApply}
+          >
+            Confirmar ({tempSelectedIds.length})
+          </Button>
+        </div>
+      }
     >
       <div className="flex flex-col h-full space-y-3.5 text-left">
         {/* Alternador de Modo: Individual vs Por Grupo */}
@@ -491,26 +511,6 @@ export const SongSelectModal: React.FC<SongSelectModalProps> = ({
             </div>
           </>
         )}
-
-        {/* Rodapé Fixo */}
-        <div className="pt-3 border-t border-slate-800 flex gap-2.5">
-          <Button
-            type="button"
-            variant="secondary"
-            fullWidth
-            onClick={onClose}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            fullWidth
-            onClick={handleApply}
-          >
-            Confirmar ({tempSelectedIds.length})
-          </Button>
-        </div>
       </div>
     </BottomSheet>
   );

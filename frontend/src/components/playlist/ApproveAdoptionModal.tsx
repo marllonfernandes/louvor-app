@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AdoptionSong, Song, Member, SongCategory } from '../../types';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
@@ -30,6 +30,16 @@ export const ApproveAdoptionModal: React.FC<ApproveAdoptionModalProps> = ({
   const [finalKey, setFinalKey] = useState('C');
   const [finalCategory, setFinalCategory] = useState<SongCategory>('Adoração');
   const [notes, setNotes] = useState('');
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  const handleSaveClick = (e: React.MouseEvent) => {
+    if (formRef.current) {
+      if (!formRef.current.reportValidity()) {
+        e.preventDefault();
+        return;
+      }
+    }
+  };
 
   const { userProfile } = useAuth();
   const leaderName = userProfile?.name || 'Líder de Louvor';
@@ -76,8 +86,26 @@ export const ApproveAdoptionModal: React.FC<ApproveAdoptionModalProps> = ({
       title="Aprovação do Líder de Louvor"
       subtitle="Defina o tom oficial e inclua esta canção no repertório principal"
       maxHeight="max-h-[92vh]"
+      footer={
+        <div className="flex gap-2 w-full">
+          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="approve-adoption-song-form"
+            variant="primary"
+            fullWidth
+            className="bg-amber-600 hover:bg-amber-500 border-amber-400 text-slate-950 font-black shadow-md"
+            icon={<CheckCircle2 size={16} />}
+            onClick={handleSaveClick}
+          >
+            Aprovar e Publicar no Repertório
+          </Button>
+        </div>
+      }
     >
-      <form onSubmit={handleSubmit} className="space-y-4 text-left">
+      <form id="approve-adoption-song-form" ref={formRef} onSubmit={handleSubmit} className="space-y-4 text-left pb-2">
         {/* Banner de Aprovação com Votos */}
         <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-2xl flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -170,22 +198,6 @@ export const ApproveAdoptionModal: React.FC<ApproveAdoptionModalProps> = ({
             rows={2}
             className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-blue-500 resize-none"
           />
-        </div>
-
-        {/* Ações */}
-        <div className="flex gap-2 pt-2 border-t border-slate-800">
-          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            fullWidth
-            className="bg-amber-600 hover:bg-amber-500 border-amber-400 text-slate-950 font-black shadow-md"
-            icon={<CheckCircle2 size={16} />}
-          >
-            Aprovar e Publicar no Repertório
-          </Button>
         </div>
       </form>
     </BottomSheet>

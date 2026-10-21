@@ -54,6 +54,41 @@ export const TeamDetailModal: React.FC<TeamDetailModalProps> = ({
       onClose={onClose}
       title={team.name}
       subtitle={`Equipe de Louvor • ${team.members.length} integrantes`}
+      footer={
+        isLeader ? (
+          <div className="flex items-center gap-2 w-full">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-1 min-h-[42px] px-3.5 text-xs font-bold"
+              onClick={() => {
+                onClose();
+                onEditTeam(team);
+              }}
+              icon={<Pencil size={15} />}
+            >
+              Editar Equipe
+            </Button>
+
+            {isAdmin && (
+              <Button
+                variant="danger"
+                size="sm"
+                className="min-h-[42px] px-3.5 text-xs font-bold flex-shrink-0"
+                onClick={() => {
+                  if (confirm(`Deseja realmente remover o time "${team.name}"?`)) {
+                    onDeleteTeam(team.id);
+                    onClose();
+                  }
+                }}
+                icon={<Trash2 size={15} />}
+              >
+                Excluir
+              </Button>
+            )}
+          </div>
+        ) : undefined
+      }
     >
       <div className="space-y-4 text-left">
         {/* Descrição do Time (se houver) */}
@@ -116,41 +151,6 @@ export const TeamDetailModal: React.FC<TeamDetailModalProps> = ({
             </div>
           )}
         </div>
-
-        {/* Rodapé de Ações */}
-        {isLeader && (
-          <div className="pt-3 border-t border-slate-800 flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="flex-1 min-h-[42px] px-3.5 text-xs font-bold"
-              onClick={() => {
-                onClose();
-                onEditTeam(team);
-              }}
-              icon={<Pencil size={15} />}
-            >
-              Editar Equipe
-            </Button>
-
-            {isAdmin && (
-              <Button
-                variant="danger"
-                size="sm"
-                className="min-h-[42px] px-3.5 text-xs font-bold flex-shrink-0"
-                onClick={() => {
-                  if (confirm(`Deseja realmente remover o time "${team.name}"?`)) {
-                    onDeleteTeam(team.id);
-                    onClose();
-                  }
-                }}
-                icon={<Trash2 size={15} />}
-              >
-                Excluir
-              </Button>
-            )}
-          </div>
-        )}
       </div>
     </BottomSheet>
   );

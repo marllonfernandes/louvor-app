@@ -58,6 +58,16 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
   const [avatarSeedSuffix, setAvatarSeedSuffix] = useState<number>(1);
   const [sendInviteWhatsApp, setSendInviteWhatsApp] = useState(true);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  const handleSaveClick = (e: React.MouseEvent) => {
+    if (formRef.current) {
+      if (!formRef.current.reportValidity()) {
+        e.preventDefault();
+        return;
+      }
+    }
+  };
 
   const isEditingSelf = Boolean(
     memberToEdit &&
@@ -172,8 +182,24 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
       title={isEditing ? "Editar Integrante" : "Cadastrar Novo Integrante"}
       subtitle={isEditing ? "Atualize foto, funções, contatos e instrumentos" : "Adicione líderes, músicos, vocais e equipe técnica"}
       maxHeight="max-h-[92vh]"
+      footer={
+        <div className="flex gap-2 w-full">
+          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="add-member-form"
+            variant="primary"
+            fullWidth
+            onClick={handleSaveClick}
+          >
+            {isEditing ? "Salvar Alterações" : "Salvar Integrante"}
+          </Button>
+        </div>
+      }
     >
-      <form onSubmit={handleSubmit} className="space-y-4 text-left">
+      <form id="add-member-form" ref={formRef} onSubmit={handleSubmit} className="space-y-4 text-left pb-2">
         {/* Seletor Moderno de Avatar (Foto da Galeria, Google ou Avatares Ilustrados DiceBear) */}
         <div className="bg-slate-50/90 dark:bg-slate-950/80 p-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 space-y-3">
           <div className="flex items-center justify-between">
@@ -429,15 +455,6 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
             <span>Enviar link de convite no WhatsApp automaticamente</span>
           </label>
         )}
-
-        <div className="flex gap-2 pt-2 border-t border-slate-800">
-          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" variant="primary" fullWidth>
-            {isEditing ? "Salvar Alterações" : "Salvar Integrante"}
-          </Button>
-        </div>
       </form>
     </BottomSheet>
   );

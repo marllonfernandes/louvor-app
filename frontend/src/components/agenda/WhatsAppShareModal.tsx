@@ -43,15 +43,8 @@ export const WhatsAppShareModal: React.FC<WhatsAppShareModalProps> = ({
       onClose={onClose}
       title="Compartilhar no WhatsApp"
       subtitle="Escala formatada para enviar no grupo do ministério"
-    >
-      <div className="space-y-4 text-left">
-        {/* Preview do texto formatado */}
-        <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 font-mono text-xs text-slate-300 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto select-all">
-          {shareText}
-        </div>
-
-        {/* Botões de Ação */}
-        <div className="space-y-2 pt-2">
+      footer={
+        <div className="space-y-2 w-full">
           <a
             href={waLink}
             target="_blank"
@@ -70,6 +63,13 @@ export const WhatsAppShareModal: React.FC<WhatsAppShareModalProps> = ({
           >
             {copied ? 'Copiado para a Área de Transferência!' : 'Copiar Texto da Escala'}
           </Button>
+        </div>
+      }
+    >
+      <div className="space-y-4 text-left">
+        {/* Preview do texto formatado */}
+        <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 font-mono text-xs text-slate-300 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto select-all">
+          {shareText}
         </div>
       </div>
     </BottomSheet>

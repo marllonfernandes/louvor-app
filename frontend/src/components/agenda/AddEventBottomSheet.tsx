@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { WorshipEvent, Team, Song, Member, EventType, ConfirmationStatus, EventSongItem } from '../../types';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
@@ -89,6 +89,16 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
   const [memberStatuses, setMemberStatuses] = useState<Record<string, ConfirmationStatus>>({});
   const [notes, setNotes] = useState('');
   const [activeTab, setActiveTab] = useState<'info' | 'repertoire' | 'team'>('info');
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  const handleSaveClick = (e: React.MouseEvent) => {
+    if (formRef.current) {
+      if (!formRef.current.reportValidity()) {
+        e.preventDefault();
+        return;
+      }
+    }
+  };
 
   // Modais de Seleção Avançada
   const [isSongSelectOpen, setIsSongSelectOpen] = useState(false);
@@ -554,8 +564,24 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
         title={isEditing ? "Editar Evento / Escala" : "Criar Novo Evento de Louvor"}
         subtitle={isEditing ? "Atualize dados, presença dos integrantes e repertório" : "Defina data, time de louvor e setlist do culto"}
         maxHeight="max-h-[92vh]"
+        footer={
+          <div className="flex gap-2 w-full">
+            <Button type="button" variant="secondary" fullWidth onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form="add-event-form"
+              variant="primary"
+              fullWidth
+              onClick={handleSaveClick}
+            >
+              {isEditing ? "Salvar Alterações" : "Criar Evento"}
+            </Button>
+          </div>
+        }
       >
-        <form onSubmit={handleSubmit} className="space-y-3.5 text-left">
+        <form id="add-event-form" ref={formRef} onSubmit={handleSubmit} className="space-y-3.5 text-left pb-2">
           {/* Navegação por Abas no Criar/Editar estilo Segmented Control iOS */}
           <div className="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-2xl border border-slate-800/80 sticky top-0 z-10 backdrop-blur-md shadow-inner">
             <button
@@ -1269,15 +1295,6 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
           </div>
         )}
 
-        {/* Rodapé Fixo com Botões de Ação */}
-        <div className="flex gap-2 pt-2 border-t border-slate-800">
-          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" variant="primary" fullWidth>
-            {isEditing ? "Salvar Alterações" : "Criar Evento"}
-          </Button>
-        </div>
         </form>
       </BottomSheet>
 

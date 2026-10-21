@@ -36,6 +36,16 @@ export const AddAdoptionSongModal: React.FC<AddAdoptionSongModalProps> = ({
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [ytDetails, setYtDetails] = useState<YoutubeDetails | null>(null);
   const [autoFilled, setAutoFilled] = useState(false);
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  const handleSaveClick = (e: React.MouseEvent) => {
+    if (formRef.current) {
+      if (!formRef.current.reportValidity()) {
+        e.preventDefault();
+        return;
+      }
+    }
+  };
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -114,8 +124,25 @@ export const AddAdoptionSongModal: React.FC<AddAdoptionSongModalProps> = ({
       title="Sugerir Música para Adoção"
       subtitle="Sugira uma nova canção para a equipe votar e o líder aprovar"
       maxHeight="max-h-[92vh]"
+      footer={
+        <div className="flex gap-2 w-full">
+          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="add-adoption-song-form"
+            variant="primary"
+            fullWidth
+            icon={<Sparkles size={15} />}
+            onClick={handleSaveClick}
+          >
+            Enviar para Votação
+          </Button>
+        </div>
+      }
     >
-      <form onSubmit={handleSubmit} className="space-y-4 text-left">
+      <form id="add-adoption-song-form" ref={formRef} onSubmit={handleSubmit} className="space-y-4 text-left pb-2">
         {/* Link do YouTube */}
         <Input
           label="Link do YouTube (Opcional)"
@@ -224,15 +251,6 @@ export const AddAdoptionSongModal: React.FC<AddAdoptionSongModalProps> = ({
             rows={2}
             className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-blue-500 resize-none"
           />
-        </div>
-
-        <div className="flex gap-2 pt-2 border-t border-slate-800">
-          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" variant="primary" fullWidth icon={<Sparkles size={15} />}>
-            Enviar para Votação
-          </Button>
         </div>
       </form>
     </BottomSheet>

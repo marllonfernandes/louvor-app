@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -39,6 +39,16 @@ export const NoticeModal: React.FC<NoticeModalProps> = ({
   const [shareWhatsApp, setShareWhatsApp] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  const handleSaveClick = (e: React.MouseEvent) => {
+    if (formRef.current) {
+      if (!formRef.current.reportValidity()) {
+        e.preventDefault();
+        return;
+      }
+    }
+  };
 
   useEffect(() => {
     if (noticeToEdit) {
@@ -103,8 +113,39 @@ export const NoticeModal: React.FC<NoticeModalProps> = ({
       onClose={onClose}
       title={noticeToEdit ? 'Editar Aviso' : 'Novo Aviso no Mural'}
       subtitle="Publique avisos, alinhamentos e lembretes para a equipe"
+      footer={
+        <div className="flex items-center gap-2 w-full">
+          {noticeToEdit && onDelete && (
+            <button
+              type="button"
+              onClick={() => setShowConfirmDelete(true)}
+              disabled={isSubmitting}
+              className="p-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all flex items-center justify-center active:scale-95 cursor-pointer shrink-0"
+              title="Excluir aviso"
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
+
+          <Button
+            type="submit"
+            form="notice-form"
+            variant="primary"
+            fullWidth
+            disabled={isSubmitting || !title.trim() || !message.trim()}
+            icon={shareWhatsApp ? <MessageCircle size={18} className="text-emerald-300" /> : <Check size={18} />}
+            onClick={handleSaveClick}
+          >
+            {isSubmitting
+              ? 'Salvando...'
+              : shareWhatsApp
+              ? 'Salvar e Abrir WhatsApp'
+              : 'Salvar Aviso'}
+          </Button>
+        </div>
+      }
     >
-      <form onSubmit={handleSubmit} className="space-y-4 text-left">
+      <form id="notice-form" ref={formRef} onSubmit={handleSubmit} className="space-y-4 text-left pb-2">
         {/* Seletor de Categoria */}
         <div>
           <label className="block text-xs font-bold text-slate-300 dark:text-slate-300 uppercase tracking-wider mb-2">
@@ -215,35 +256,6 @@ export const NoticeModal: React.FC<NoticeModalProps> = ({
               className="w-4 h-4 rounded text-emerald-600 bg-slate-800 border-slate-700 focus:ring-emerald-500 cursor-pointer"
             />
           </label>
-        </div>
-
-        {/* Botões de Ação */}
-        <div className="flex items-center gap-2 pt-2">
-          {noticeToEdit && onDelete && (
-            <button
-              type="button"
-              onClick={() => setShowConfirmDelete(true)}
-              disabled={isSubmitting}
-              className="p-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all flex items-center justify-center active:scale-95"
-              title="Excluir aviso"
-            >
-              <Trash2 size={18} />
-            </button>
-          )}
-
-          <Button
-            type="submit"
-            variant="primary"
-            fullWidth
-            disabled={isSubmitting || !title.trim() || !message.trim()}
-            icon={shareWhatsApp ? <MessageCircle size={18} className="text-emerald-300" /> : <Check size={18} />}
-          >
-            {isSubmitting
-              ? 'Salvando...'
-              : shareWhatsApp
-              ? 'Salvar e Abrir WhatsApp'
-              : 'Salvar Aviso'}
-          </Button>
         </div>
       </form>
 

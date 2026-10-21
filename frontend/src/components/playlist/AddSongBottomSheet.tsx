@@ -39,6 +39,16 @@ export const AddSongBottomSheet: React.FC<AddSongBottomSheetProps> = ({
   const [autoFilled, setAutoFilled] = useState(false);
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  const handleSaveClick = (e: React.MouseEvent) => {
+    if (formRef.current) {
+      if (!formRef.current.reportValidity()) {
+        e.preventDefault();
+        return;
+      }
+    }
+  };
 
   useEffect(() => {
     if (songToEdit) {
@@ -158,8 +168,24 @@ export const AddSongBottomSheet: React.FC<AddSongBottomSheetProps> = ({
       onClose={onClose}
       title={isEditing ? "Editar Louvor" : "Adicionar Louvor ao Repertório"}
       subtitle={isEditing ? "Atualize o tom base, link do YouTube ou instruções" : "Cadastre o título, tom base, link do YouTube e andamento"}
+      footer={
+        <div className="flex gap-2 w-full">
+          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="add-song-form"
+            variant="primary"
+            fullWidth
+            onClick={handleSaveClick}
+          >
+            {isEditing ? "Salvar Alterações" : "Salvar Música"}
+          </Button>
+        </div>
+      }
     >
-      <form onSubmit={handleSubmit} className="space-y-4 text-left">
+      <form id="add-song-form" ref={formRef} onSubmit={handleSubmit} className="space-y-4 text-left pb-2">
         {/* Link do YouTube (Primeiro ou destacado para auto-preenchimento rápido) */}
         <div>
           <Input
@@ -403,16 +429,6 @@ export const AddSongBottomSheet: React.FC<AddSongBottomSheetProps> = ({
             rows={2}
             className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-blue-500 resize-none"
           />
-        </div>
-
-        {/* Ações */}
-        <div className="flex gap-2 pt-2">
-          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" variant="primary" fullWidth>
-            {isEditing ? "Salvar Alterações" : "Salvar Música"}
-          </Button>
         </div>
       </form>
     </BottomSheet>

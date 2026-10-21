@@ -7,6 +7,7 @@ interface BottomSheetProps {
   title?: string;
   subtitle?: string;
   children: React.ReactNode;
+  footer?: React.ReactNode;
   maxHeight?: string;
 }
 
@@ -16,6 +17,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   title,
   subtitle,
   children,
+  footer,
   maxHeight = 'max-h-[90vh]'
 }) => {
   useEffect(() => {
@@ -32,7 +34,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
+    <div className="fixed inset-0 z-[60] flex items-stretch sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
       {/* Backdrop com blur nativo */}
       <div 
         className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
@@ -55,7 +57,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-200/80 dark:bg-slate-800/80 hover:bg-slate-300 dark:hover:bg-slate-700 border border-slate-300 dark:border-transparent active:scale-95 transition-all shrink-0"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-200/80 dark:bg-slate-800/80 hover:bg-slate-300 dark:hover:bg-slate-700 border border-slate-300 dark:border-transparent active:scale-95 transition-all shrink-0 cursor-pointer"
             aria-label="Fechar janela"
             title="Fechar"
           >
@@ -64,9 +66,16 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         </div>
 
         {/* Corpo do conteúdo com scroll fluido */}
-        <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain flex-1">
+        <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain flex-1 min-h-0">
           {children}
         </div>
+
+        {/* Rodapé Fixo quando fornecido */}
+        {footer && (
+          <div className="px-4 sm:px-5 py-3 sm:py-3.5 border-t border-slate-800/80 bg-slate-900/98 backdrop-blur shrink-0 z-20">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

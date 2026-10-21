@@ -500,6 +500,46 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         onClose={onClose}
         title={event.title}
         subtitle={`Escala: ${event.team || 'Escala Avulsa'}`}
+        footer={
+          <div className="grid grid-cols-2 gap-2 w-full">
+            <Button
+              variant="whatsapp"
+              size="sm"
+              className="min-h-[42px] text-xs font-bold shadow-md"
+              onClick={() => {
+                onClose();
+                onShareWhatsApp(event);
+              }}
+              icon={<Share2 size={15} />}
+            >
+              WhatsApp
+            </Button>
+
+            {isLeader ? (
+              <Button
+                variant="primary"
+                size="sm"
+                className="min-h-[42px] text-xs font-bold shadow-md"
+                onClick={() => {
+                  onClose();
+                  onEditEvent(event);
+                }}
+                icon={<Edit3 size={15} />}
+              >
+                Editar Escala
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="min-h-[42px] text-xs font-bold"
+                onClick={onClose}
+              >
+                Fechar
+              </Button>
+            )}
+          </div>
+        }
       >
         <div className="space-y-3.5 text-left">
           {/* Cabeçalho Compacto: Tipo do Culto, Data/Hora, Status do Usuário & Ações */}
@@ -1142,46 +1182,6 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               )}
             </div>
           )}
-
-          {/* Rodapé Fixo com Ações Rápidas */}
-          <div className="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2">
-            <Button
-              variant="whatsapp"
-              size="sm"
-              className="min-h-[42px] text-xs font-bold shadow-md"
-              onClick={() => {
-                onClose();
-                onShareWhatsApp(event);
-              }}
-              icon={<Share2 size={15} />}
-            >
-              WhatsApp
-            </Button>
-
-            {isLeader ? (
-              <Button
-                variant="primary"
-                size="sm"
-                className="min-h-[42px] text-xs font-bold shadow-md"
-                onClick={() => {
-                  onClose();
-                  onEditEvent(event);
-                }}
-                icon={<Edit3 size={15} />}
-              >
-                Editar Escala
-              </Button>
-            ) : (
-              <Button
-                variant="secondary"
-                size="sm"
-                className="min-h-[42px] text-xs font-bold"
-                onClick={onClose}
-              >
-                Fechar
-              </Button>
-            )}
-          </div>
         </div>
       </BottomSheet>
       <JustificationModal

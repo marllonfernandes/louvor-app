@@ -104,7 +104,7 @@ export const MetronomeModal: React.FC<MetronomeModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-container-lowest/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-surface-container-lowest/80 backdrop-blur-md animate-fade-in">
       <div className="w-full max-w-sm rounded-3xl bg-surface-container-high border border-outline-variant/30 p-6 shadow-2xl flex flex-col gap-5 text-on-surface">
         {/* Header */}
         <div className="flex items-center justify-between">

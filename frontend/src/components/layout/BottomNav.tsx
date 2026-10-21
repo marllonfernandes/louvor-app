@@ -46,7 +46,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
   return (
     <nav 
-      className="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface-container/85 backdrop-blur-xl shadow-[0_-1px_12px_rgba(0,0,0,0.25)] border-t border-outline-variant/20"
+      className="fixed bottom-0 inset-x-0 z-40 pb-safe bg-surface-container/85 backdrop-blur-xl shadow-[0_-1px_12px_rgba(0,0,0,0.25)] border-t border-outline-variant/20"
       data-active-classes="text-primary font-bold"
     >
       <div className="h-16 max-w-md mx-auto flex items-center justify-around px-gutter">

@@ -31,6 +31,11 @@ export const JustificationModal: React.FC<JustificationModalProps> = ({
       onClose={onClose}
       title="Justificativa de Ausência"
       subtitle={`Por que ${memberName} não poderá participar?`}
+      footer={
+        <Button variant="secondary" className="w-full" onClick={onClose} icon={<X size={16} />}>
+          Cancelar
+        </Button>
+      }
     >
       <div className="space-y-3 p-2 text-left">
         <p className="text-sm text-slate-300 mb-4">
@@ -50,11 +55,6 @@ export const JustificationModal: React.FC<JustificationModalProps> = ({
               {option}
             </button>
           ))}
-        </div>
-        <div className="pt-4 mt-2 border-t border-slate-800">
-          <Button variant="secondary" className="w-full" onClick={onClose} icon={<X size={16} />}>
-            Cancelar
-          </Button>
         </div>
       </div>
     </BottomSheet>

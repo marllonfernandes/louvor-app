@@ -117,6 +117,30 @@ export const GenerateMonthModal: React.FC<GenerateMonthModalProps> = ({
       title="Gerar Agenda do Mês"
       subtitle="Escolha o mês e selecione quais cultos e ensaios deseja criar"
       maxHeight="max-h-[92vh]"
+      footer={
+        <div className="flex gap-2 w-full">
+          <Button
+            type="button"
+            variant="secondary"
+            fullWidth
+            onClick={onClose}
+            disabled={isGenerating}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            fullWidth
+            onClick={handleGenerate}
+            disabled={selectedCount === 0 || isGenerating}
+            isLoading={isGenerating}
+            icon={<Wand2 size={16} />}
+          >
+            Gerar {selectedCount} Evento{selectedCount === 1 ? '' : 's'}
+          </Button>
+        </div>
+      }
     >
       <div className="space-y-4 text-left">
         {/* Seletor de Mês e Ano */}
@@ -268,30 +292,6 @@ export const GenerateMonthModal: React.FC<GenerateMonthModalProps> = ({
             </div>
           </div>
         )}
-
-        {/* Rodapé com Ações */}
-        <div className="pt-3 border-t border-slate-800 flex gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            fullWidth
-            onClick={onClose}
-            disabled={isGenerating}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            fullWidth
-            onClick={handleGenerate}
-            disabled={selectedCount === 0 || isGenerating}
-            isLoading={isGenerating}
-            icon={<Wand2 size={16} />}
-          >
-            Gerar {selectedCount} Evento{selectedCount === 1 ? '' : 's'}
-          </Button>
-        </div>
       </div>
     </BottomSheet>
   );

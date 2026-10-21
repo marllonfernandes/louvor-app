@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FolderPlus, Search, Check, X, Disc3 } from 'lucide-react';
 import { Song } from '../../types';
 import { BottomSheet } from '../ui/BottomSheet';
@@ -25,6 +25,16 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   const [groupName, setGroupName] = useState(initialGroupName);
   const [selectedSongIds, setSelectedSongIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  const handleSaveClick = (e: React.MouseEvent) => {
+    if (formRef.current) {
+      if (!formRef.current.reportValidity()) {
+        e.preventDefault();
+        return;
+      }
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -75,8 +85,25 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
       title={initialGroupName ? "Editar Grupo de Repertório" : "Novo Grupo de Repertório"}
       subtitle="Agrupe músicas para ocasiões especiais (ex: Congresso Varões, Jovens, etc.)"
       maxHeight="max-h-[90vh]"
+      footer={
+        <div className="flex gap-2 w-full">
+          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="create-group-form"
+            variant="primary"
+            fullWidth
+            disabled={!groupName.trim()}
+            onClick={handleSaveClick}
+          >
+            {initialGroupName ? "Atualizar Grupo" : "Salvar Grupo"}
+          </Button>
+        </div>
+      }
     >
-      <form onSubmit={handleSubmit} className="space-y-4 text-left">
+      <form id="create-group-form" ref={formRef} onSubmit={handleSubmit} className="space-y-4 text-left pb-2">
         {/* Nome do Grupo */}
         <Input
           label="Nome do Grupo"
@@ -182,16 +209,6 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               })
             )}
           </div>
-        </div>
-
-        {/* Rodapé com Ações */}
-        <div className="flex gap-2 pt-2 border-t border-slate-800">
-          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" variant="primary" fullWidth disabled={!groupName.trim()}>
-            {initialGroupName ? "Atualizar Grupo" : "Salvar Grupo"}
-          </Button>
         </div>
       </form>
     </BottomSheet>

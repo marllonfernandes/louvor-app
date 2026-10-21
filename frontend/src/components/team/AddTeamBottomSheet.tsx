@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Team, Member } from '../../types';
 import { BottomSheet } from '../ui/BottomSheet';
 import { Button } from '../ui/Button';
@@ -34,6 +34,16 @@ export const AddTeamBottomSheet: React.FC<AddTeamBottomSheetProps> = ({
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  const handleSaveClick = (e: React.MouseEvent) => {
+    if (formRef.current) {
+      if (!formRef.current.reportValidity()) {
+        e.preventDefault();
+        return;
+      }
+    }
+  };
 
   useEffect(() => {
     if (teamToEdit) {
@@ -109,8 +119,24 @@ export const AddTeamBottomSheet: React.FC<AddTeamBottomSheetProps> = ({
       title={isEditing ? "Editar Equipe de Louvor" : "Criar Equipe / Time de Louvor"}
       subtitle={isEditing ? "Adicione ou remova integrantes desta equipe" : "Agrupe os músicos em times fixos (ex: Time Alfa, Jovens)"}
       maxHeight="max-h-[92vh]"
+      footer={
+        <div className="flex gap-2 w-full">
+          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="add-team-form"
+            variant="primary"
+            fullWidth
+            onClick={handleSaveClick}
+          >
+            {isEditing ? "Salvar Alterações" : "Criar Equipe"}
+          </Button>
+        </div>
+      }
     >
-      <form onSubmit={handleSubmit} className="space-y-4 text-left">
+      <form id="add-team-form" ref={formRef} onSubmit={handleSubmit} className="space-y-4 text-left pb-2">
         <Input
           label="Nome da Equipe"
           placeholder="Ex: Time Alfa (Domingo Noite)"
@@ -247,15 +273,6 @@ export const AddTeamBottomSheet: React.FC<AddTeamBottomSheetProps> = ({
               })
             )}
           </div>
-        </div>
-
-        <div className="flex gap-2 pt-2 border-t border-slate-800">
-          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" variant="primary" fullWidth>
-            {isEditing ? "Salvar Alterações" : "Criar Equipe"}
-          </Button>
         </div>
       </form>
     </BottomSheet>

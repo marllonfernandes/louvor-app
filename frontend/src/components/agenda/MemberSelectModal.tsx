@@ -105,6 +105,26 @@ export const MemberSelectModal: React.FC<MemberSelectModalProps> = ({
       title={title}
       subtitle={subtitle}
       maxHeight="max-h-[92vh]"
+      footer={
+        <div className="flex gap-2.5 w-full">
+          <Button
+            type="button"
+            variant="secondary"
+            fullWidth
+            onClick={onClose}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            fullWidth
+            onClick={handleApply}
+          >
+            Confirmar ({tempSelectedNames.length})
+          </Button>
+        </div>
+      }
     >
       <div className="flex flex-col h-full space-y-3.5 text-left">
         {/* Barra de Busca */}
@@ -273,26 +293,6 @@ export const MemberSelectModal: React.FC<MemberSelectModalProps> = ({
               );
             })
           )}
-        </div>
-
-        {/* Rodapé Fixo */}
-        <div className="pt-3 border-t border-slate-800 flex gap-2.5">
-          <Button
-            type="button"
-            variant="secondary"
-            fullWidth
-            onClick={onClose}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            fullWidth
-            onClick={handleApply}
-          >
-            Confirmar ({tempSelectedNames.length})
-          </Button>
         </div>
       </div>
     </BottomSheet>

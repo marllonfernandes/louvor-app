@@ -42,6 +42,56 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
       onClose={onClose}
       title={song.title}
       subtitle={song.artist}
+      footer={
+        <div className="flex flex-wrap items-center gap-2 w-full">
+          {song.url && (
+            <a
+              href={song.url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 inline-flex items-center justify-center font-bold text-xs px-3.5 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white gap-1.5 shadow-md active:scale-95 transition-all min-h-[42px]"
+            >
+              <YoutubeIcon size={16} />
+              <span>YouTube</span>
+              <ExternalLink size={12} className="opacity-70" />
+            </a>
+          )}
+
+          {isLeader && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="flex-1 min-h-[42px] px-3.5 text-xs font-bold"
+                onClick={() => {
+                  onClose();
+                  onEditSong(song);
+                }}
+                icon={<Pencil size={15} />}
+              >
+                Editar
+              </Button>
+
+              {isAdmin && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  className="min-h-[42px] px-3.5 text-xs font-bold flex-shrink-0"
+                  onClick={() => {
+                    if (confirm(`Deseja realmente remover "${song.title}" do repertório?`)) {
+                      onDeleteSong(song.id);
+                      onClose();
+                    }
+                  }}
+                  icon={<Trash2 size={15} />}
+                >
+                  Excluir
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      }
     >
       <div className="space-y-4 text-left">
         {/* Ferramenta de Transposição de Tom */}
@@ -155,58 +205,6 @@ export const SongDetailModal: React.FC<SongDetailModalProps> = ({
             <p className="text-xs text-slate-300 leading-relaxed">{song.notes}</p>
           </div>
         )}
-
-        {/* Links Externos e Ações */}
-        <div className="pt-2 space-y-2 border-t border-slate-800">
-          <div className="flex items-center gap-2">
-            {song.url && (
-              <a
-                href={song.url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 inline-flex items-center justify-center font-bold text-xs px-3.5 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white gap-1.5 shadow-md active:scale-95 transition-all min-h-[42px]"
-              >
-                <YoutubeIcon size={16} />
-                <span>Abrir no YouTube</span>
-                <ExternalLink size={12} className="opacity-70" />
-              </a>
-            )}
-
-            {isLeader && (
-              <>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="flex-1 min-h-[42px] px-3.5 text-xs font-bold"
-                  onClick={() => {
-                    onClose();
-                    onEditSong(song);
-                  }}
-                  icon={<Pencil size={15} />}
-                >
-                  Editar
-                </Button>
-
-                {isAdmin && (
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    className="min-h-[42px] px-3.5 text-xs font-bold flex-shrink-0"
-                    onClick={() => {
-                      if (confirm(`Deseja realmente remover "${song.title}" do repertório?`)) {
-                        onDeleteSong(song.id);
-                        onClose();
-                      }
-                    }}
-                    icon={<Trash2 size={15} />}
-                  >
-                    Excluir
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
-        </div>
       </div>
     </BottomSheet>
   );

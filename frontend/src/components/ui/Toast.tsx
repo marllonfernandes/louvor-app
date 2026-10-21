@@ -16,7 +16,7 @@ interface ToastProps {
 export const ToastContainer: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
   return (
     <div 
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4 pointer-events-none space-y-2"
+      className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-full max-w-sm px-4 pointer-events-none space-y-2"
       style={{
         paddingTop: 'env(safe-area-inset-top, 0px)'
       }}
