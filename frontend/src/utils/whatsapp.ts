@@ -1,4 +1,4 @@
-import { WorshipEvent, Member, Song, EventSongItem } from '../types';
+import { WorshipEvent, Member, Song, EventSongItem, TeamNotice } from '../types';
 import { getEventTypeDefinition } from './eventType';
 import {
   getEventSongItems,
@@ -169,5 +169,33 @@ export function generateEventShareText(event: WorshipEvent, songs: Song[] = [], 
 
 export function createShareWhatsAppGroupLink(event: WorshipEvent, songs: Song[] = [], members: Member[] = []): string {
   const text = generateEventShareText(event, songs, members);
+  return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+}
+
+/**
+ * Formata o aviso do Mural da Equipe para compartilhamento no WhatsApp
+ */
+export function generateNoticeShareText(notice: TeamNotice): string {
+  const categoryLabels: Record<string, string> = {
+    geral: '📢 Aviso Geral',
+    ensaio: '🎸 Ensaio',
+    urgente: '🚨 Urgente',
+    evento: '🗓 Evento Especial',
+    escala: '📋 Escala',
+  };
+  const cat = categoryLabels[notice.category] || '📢 Aviso';
+  const highlight = notice.highlightText ? `\n\n⚠️ *Lembrete:* ${notice.highlightText}` : '';
+  const author = notice.authorName ? `✍️ _Por ${notice.authorName}_\n` : '';
+
+  return `📢 *MURAL DA EQUIPE - MINISTÉRIO DE LOUVOR* 🎶\n\n` +
+    `*${notice.title}* [${cat}]\n` +
+    author +
+    `\n` +
+    `${notice.message}` +
+    highlight;
+}
+
+export function createShareNoticeWhatsAppLink(notice: TeamNotice): string {
+  const text = generateNoticeShareText(notice);
   return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
 }

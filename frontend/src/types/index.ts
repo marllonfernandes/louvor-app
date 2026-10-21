@@ -144,6 +144,22 @@ export interface Team {
 
 export type TabType = 'inicio' | 'agenda' | 'playlist' | 'team' | 'metrics' | 'settings';
 
+export type NoticeCategory = 'geral' | 'ensaio' | 'urgente' | 'evento' | 'escala';
+
+export interface TeamNotice {
+  id: string;
+  title: string;
+  message: string;
+  category: NoticeCategory;
+  authorName: string;
+  authorId?: string;
+  createdAt: number;
+  updatedAt?: number;
+  pinned?: boolean;
+  highlightText?: string;
+  highlightIcon?: string;
+}
+
 export interface SyncStatus {
   isOnline: boolean;
   isFirestoreConnected: boolean;

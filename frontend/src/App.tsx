@@ -39,7 +39,11 @@ import {
   deleteMember, 
   subscribeToTeams, 
   saveTeam, 
-  deleteTeam 
+  deleteTeam,
+  subscribeToNotices,
+  saveNotice,
+  deleteNotice,
+  togglePinNotice
 } from './services/firestoreService';
 import {
   subscribeToNotifications,
@@ -48,7 +52,8 @@ import {
   notifyPresenceChanged
 } from './services/notificationService';
 import { isSamePersonName } from './utils/avatar';
-import { WorshipEvent, Song, Member, Team, TabType, ConfirmationStatus, AdoptionSong, AppNotification } from './types';
+import { createShareNoticeWhatsAppLink } from './utils/whatsapp';
+import { WorshipEvent, Song, Member, Team, TabType, ConfirmationStatus, AdoptionSong, AppNotification, TeamNotice } from './types';
 
 export function AppContent() {
   const { currentUser, userProfile, loading } = useAuth();
@@ -58,6 +63,7 @@ export function AppContent() {
   const [adoptionSongs, setAdoptionSongs] = useState<AdoptionSong[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [notices, setNotices] = useState<TeamNotice[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -85,6 +91,7 @@ export function AppContent() {
     const unsubAdoptionSongs = subscribeToAdoptionSongs(data => setAdoptionSongs(data));
     const unsubMembers = subscribeToMembers(data => setMembers(data));
     const unsubTeams = subscribeToTeams(data => setTeams(data));
+    const unsubNotices = subscribeToNotices(data => setNotices(data));
     const unsubNotifications = subscribeToNotifications(data => setNotifications(data));
 
     return () => {
@@ -93,6 +100,7 @@ export function AppContent() {
       unsubAdoptionSongs();
       unsubMembers();
       unsubTeams();
+      unsubNotices();
       unsubNotifications();
     };
   }, [currentUser]);
@@ -420,6 +428,49 @@ export function AppContent() {
     }
   };
 
+  // Handlers para o Mural da Equipe
+  const handleSaveNotice = async (notice: Omit<TeamNotice, 'id'> & { id?: string }, shareWhatsApp = false) => {
+    try {
+      const isEditing = Boolean(notice.id);
+      const savedId = await saveNotice(notice);
+      addToast(
+        isEditing ? 'Aviso Atualizado' : 'Aviso Publicado',
+        isEditing ? 'O comunicado do mural foi alterado.' : 'Novo comunicado adicionado ao mural da equipe!',
+        'success'
+      );
+
+      if (shareWhatsApp) {
+        const fullNotice: TeamNotice = {
+          ...notice,
+          id: savedId,
+          createdAt: notice.createdAt || Date.now()
+        };
+        const waUrl = createShareNoticeWhatsAppLink(fullNotice);
+        window.open(waUrl, '_blank');
+      }
+    } catch (err) {
+      addToast('Erro', 'Não foi possível salvar o aviso no mural.', 'error');
+    }
+  };
+
+  const handleDeleteNotice = async (noticeId: string) => {
+    try {
+      await deleteNotice(noticeId);
+      addToast('Aviso Removido', 'O comunicado foi removido do mural.', 'info');
+    } catch (err) {
+      addToast('Erro', 'Falha ao excluir o aviso.', 'error');
+    }
+  };
+
+  const handleTogglePinNotice = async (noticeId: string, currentPinned?: boolean) => {
+    try {
+      await togglePinNotice(noticeId, currentPinned);
+      addToast('Mural Atualizado', currentPinned ? 'Aviso desafixado.' : 'Aviso fixado no topo do mural!', 'info');
+    } catch (err) {
+      addToast('Erro', 'Falha ao alterar fixação do aviso.', 'error');
+    }
+  };
+
   const handleSelectSongFromEvent = (song: Song) => {
     setSelectedSongFromEvent(song);
     setActiveTab('playlist');
@@ -468,6 +519,7 @@ export function AppContent() {
             events={events}
             songs={songs}
             members={members}
+            notices={notices}
             onSelectEvent={(ev) => {
               setActiveTab('agenda');
               setSelectedEventFromNotification(ev);
@@ -478,6 +530,9 @@ export function AppContent() {
             onChangeTab={setActiveTab}
             onOpenNotifications={() => setIsNotificationsOpen(true)}
             unreadNotificationsCount={unreadNotificationsCount}
+            onSaveNotice={handleSaveNotice}
+            onDeleteNotice={handleDeleteNotice}
+            onTogglePinNotice={handleTogglePinNotice}
           />
         )}
 

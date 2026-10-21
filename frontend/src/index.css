@@ -139,6 +139,48 @@ html.light .text-tertiary {
   color: #6b21a8 !important;
 }
 
+html.light .text-error {
+  color: #dc2626 !important; /* Red-600 vibrante e legível no tema claro */
+}
+
+html.light .text-on-error {
+  color: #ffffff !important;
+}
+
+html.light .text-on-error-container {
+  color: #991b1b !important; /* Red-800 com excelente contraste */
+}
+
+html.light .bg-error {
+  background-color: #dc2626 !important;
+}
+
+html.light .bg-error\/10,
+html.light .bg-error\/15,
+html.light .bg-error\/20 {
+  background-color: #fee2e2 !important; /* Red-100 suave */
+}
+
+html.light .bg-error-container {
+  background-color: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+html.light .bg-error-container\/10,
+html.light .bg-error-container\/15,
+html.light .bg-error-container\/20,
+html.light .bg-error-container\/30,
+html.light .bg-error-container\/40 {
+  background-color: #fee2e2 !important;
+}
+
+html.light .border-error,
+html.light .border-error\/20,
+html.light .border-error\/30,
+html.light .border-error\/40 {
+  border-color: #fca5a5 !important;
+}
+
 html.light .border-outline {
   border-color: #cbd5e1 !important;
 }

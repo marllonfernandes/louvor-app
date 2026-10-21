@@ -142,7 +142,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
             <button 
               onClick={handleLogout}
-              className="w-10 h-10 rounded-xl bg-error-container/20 text-error flex items-center justify-center hover:bg-error-container/40 transition-colors active:scale-95"
+              className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center justify-center hover:bg-rose-500/20 transition-colors active:scale-95"
               title="Sair da Conta"
             >
               <LogOut size={17} />
@@ -202,7 +202,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="flex items-center gap-2">
                   <h4 className="font-headline-sm text-sm font-bold text-on-surface">Diagnóstico & Logs</h4>
                   {errorsCount > 0 ? (
-                    <span className="text-[10px] bg-error-container/40 text-error px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                    <span className="text-[10px] bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/20 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                       <AlertTriangle size={10} />
                       {errorsCount} {errorsCount === 1 ? 'erro' : 'erros'}
                     </span>
@@ -277,7 +277,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onClick={() => setLogFilter('errors')}
                     className={`text-[11px] px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
                       logFilter === 'errors'
-                        ? 'bg-error-container text-error'
+                        ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30'
                         : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
                     }`}
                   >
@@ -301,7 +301,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       type="button"
                       onClick={handleClearLogs}
-                      className="p-1 rounded-lg bg-surface-container-high hover:bg-error-container/20 text-on-surface-variant hover:text-error transition-all active:scale-95 border border-outline-variant/20"
+                      className="p-1 rounded-lg bg-surface-container-high hover:bg-rose-500/10 text-on-surface-variant hover:text-rose-600 dark:hover:text-rose-400 transition-all active:scale-95 border border-outline-variant/20"
                       title="Limpar logs locais"
                     >
                       <Trash2 size={13} />
@@ -334,7 +334,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={entry.id}
                         className={`p-2.5 rounded-xl border text-xs transition-all ${
                           isError
-                            ? 'bg-error-container/10 border-error/30 text-on-surface'
+                            ? 'bg-rose-500/10 border-rose-500/30 text-on-surface'
                             : isWarn
                             ? 'bg-amber-500/10 border-amber-500/30 text-on-surface'
                             : 'bg-surface-container-low border-outline-variant/15 text-on-surface'
@@ -344,11 +344,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-[10px] font-mono text-on-surface-variant">{time}</span>
                             <span
-                              className={`text-[9px] uppercase font-black px-1.5 py-0.2 rounded font-mono ${
+                              className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${
                                 isError
-                                  ? 'bg-error/20 text-error'
+                                  ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
                                   : isWarn
-                                  ? 'bg-amber-500/20 text-amber-400'
+                                  ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
                                   : 'bg-primary-container/30 text-primary'
                               }`}
                             >

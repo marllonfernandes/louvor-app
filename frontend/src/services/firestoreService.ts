@@ -10,8 +10,8 @@ import {
   getDocs
 } from 'firebase/firestore';
 import { db, isFirestoreAvailable } from '../config/firebase';
-import { WorshipEvent, Song, Member, Team, ConfirmationStatus, AdoptionSong } from '../types';
-import { INITIAL_EVENTS, INITIAL_SONGS, INITIAL_MEMBERS, INITIAL_TEAMS, INITIAL_ADOPTION_SONGS } from './mockData';
+import { WorshipEvent, Song, Member, Team, ConfirmationStatus, AdoptionSong, TeamNotice } from '../types';
+import { INITIAL_EVENTS, INITIAL_SONGS, INITIAL_MEMBERS, INITIAL_TEAMS, INITIAL_ADOPTION_SONGS, INITIAL_NOTICES } from './mockData';
 import { isValidAvatarUrl, isSamePersonName } from '../utils/avatar';
 import { appLogger } from '../utils/logger';
 
@@ -21,6 +21,7 @@ const STORAGE_KEYS = {
   ADOPTION_SONGS: 'louvor_app_adoption_songs',
   MEMBERS: 'louvor_app_members',
   TEAMS: 'louvor_app_teams',
+  NOTICES: 'louvor_app_notices',
 };
 
 // Listeners locais para sincronização reativa quando em modo LocalStorage
@@ -30,7 +31,8 @@ const localListeners = {
   songs: new Set<Listener<Song[]>>(),
   adoptionSongs: new Set<Listener<AdoptionSong[]>>(),
   members: new Set<Listener<Member[]>>(),
-  teams: new Set<Listener<Team[]>>()
+  teams: new Set<Listener<Team[]>>(),
+  notices: new Set<Listener<TeamNotice[]>>()
 };
 
 // Funções utilitárias de LocalStorage
@@ -702,6 +704,124 @@ export async function deleteTeam(teamId: string): Promise<void> {
   const updated = list.filter(t => t.id !== teamId);
   setLocal(STORAGE_KEYS.TEAMS, updated);
   localListeners.teams.forEach(l => l(updated));
+}
+
+// ----------------- MURAL DA EQUIPE (NOTICES) -----------------
+
+export function subscribeToNotices(callback: (notices: TeamNotice[]) => void): () => void {
+  if (isFirestoreAvailable && db) {
+    try {
+      const q = collection(db, 'notices');
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const notices: TeamNotice[] = [];
+        snapshot.forEach((doc) => {
+          notices.push({ id: doc.id, ...doc.data() } as TeamNotice);
+        });
+        notices.sort((a, b) => {
+          if (a.pinned && !b.pinned) return -1;
+          if (!a.pinned && b.pinned) return 1;
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        });
+        setLocal(STORAGE_KEYS.NOTICES, notices);
+        callback(notices);
+      }, (error) => {
+        appLogger.warn('FIRESTORE', `Erro ao sincronizar avisos em tempo real: ${error.message}`, error);
+        callback(getLocal<TeamNotice[]>(STORAGE_KEYS.NOTICES, INITIAL_NOTICES));
+      });
+      return unsubscribe;
+    } catch (err) {
+      appLogger.warn('FIRESTORE', 'Erro ao registrar listener de avisos', err);
+    }
+  }
+
+  localListeners.notices.add(callback);
+  const currentNotices = getLocal<TeamNotice[]>(STORAGE_KEYS.NOTICES, INITIAL_NOTICES);
+  currentNotices.sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+  callback(currentNotices);
+  return () => {
+    localListeners.notices.delete(callback);
+  };
+}
+
+export async function saveNotice(notice: Omit<TeamNotice, 'id'> & { id?: string }): Promise<string> {
+  const id = notice.id || `notice_${Date.now()}`;
+  const now = Date.now();
+  const newNotice: TeamNotice = {
+    ...notice,
+    id,
+    createdAt: notice.createdAt || now,
+    updatedAt: now
+  };
+  const cleaned = cleanForFirestore(newNotice);
+
+  if (isFirestoreAvailable && db) {
+    try {
+      await setDoc(doc(db, 'notices', id), cleaned);
+      appLogger.info('FIRESTORE', `Aviso ${id} salvo com sucesso`);
+    } catch (e: any) {
+      appLogger.error('FIRESTORE', 'Erro no Firestore ao salvar aviso do mural', e);
+      throw e;
+    }
+  }
+
+  const list = getLocal<TeamNotice[]>(STORAGE_KEYS.NOTICES, INITIAL_NOTICES);
+  const index = list.findIndex(n => n.id === id);
+  const updated = index >= 0 ? list.map(n => n.id === id ? newNotice : n) : [newNotice, ...list];
+  updated.sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+  setLocal(STORAGE_KEYS.NOTICES, updated);
+  localListeners.notices.forEach(l => l(updated));
+
+  return id;
+}
+
+export async function deleteNotice(noticeId: string): Promise<void> {
+  // Sempre remove localmente para resposta imediata na interface
+  const list = getLocal<TeamNotice[]>(STORAGE_KEYS.NOTICES, INITIAL_NOTICES);
+  const updated = list.filter(n => n.id !== noticeId);
+  setLocal(STORAGE_KEYS.NOTICES, updated);
+  localListeners.notices.forEach(l => l(updated));
+
+  if (isFirestoreAvailable && db && !noticeId.startsWith('notice_default_')) {
+    try {
+      await deleteDoc(doc(db, 'notices', noticeId));
+      appLogger.info('FIRESTORE', `Aviso ${noticeId} deletado com sucesso`);
+    } catch (e: any) {
+      appLogger.error('FIRESTORE', 'Erro ao deletar aviso no Firestore', e);
+      throw e;
+    }
+  }
+}
+
+export async function togglePinNotice(noticeId: string, currentPinned?: boolean): Promise<void> {
+  const newPinned = !currentPinned;
+
+  const list = getLocal<TeamNotice[]>(STORAGE_KEYS.NOTICES, INITIAL_NOTICES);
+  const updated = list.map(n => n.id === noticeId ? { ...n, pinned: newPinned } : n);
+  updated.sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+  setLocal(STORAGE_KEYS.NOTICES, updated);
+  localListeners.notices.forEach(l => l(updated));
+
+  if (isFirestoreAvailable && db && !noticeId.startsWith('notice_default_')) {
+    try {
+      await setDoc(doc(db, 'notices', noticeId), { pinned: newPinned, updatedAt: Date.now() }, { merge: true });
+      appLogger.info('FIRESTORE', `Aviso ${noticeId} fixação alterada para ${newPinned}`);
+    } catch (e: any) {
+      appLogger.error('FIRESTORE', 'Erro ao fixar aviso no Firestore', e);
+      throw e;
+    }
+  }
 }
 
 // ----------------- SEMEADOR INICIAL DO FIRESTORE (SEED) -----------------

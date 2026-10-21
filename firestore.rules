@@ -22,7 +22,11 @@ service cloud.firestore {
     }
 
     function isEditorOrAdmin() {
-      return hasUserData() && (getUserData().get('systemRole', 'Viewer') in ['Admin', 'Editor']);
+      return hasUserData() && (
+        getUserData().get('systemRole', 'Viewer') in ['Admin', 'Editor'] ||
+        (getUserData().keys().hasAny(['roles']) && getUserData().roles.hasAny(['Líder'])) ||
+        (getUserData().keys().hasAny(['role']) && getUserData().role == 'Líder')
+      );
     }
 
     // =========================================================================
@@ -116,6 +120,14 @@ service cloud.firestore {
       allow create: if isAuthenticated();
       allow update: if isAuthenticated();
       allow delete: if isAuthenticated();
+    }
+
+    // =========================================================================
+    // COLEÇÃO: NOTICES (Mural de Avisos da Equipe)
+    // =========================================================================
+    match /notices/{noticeId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAuthenticated();
     }
   }
 }
