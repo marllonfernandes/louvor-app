@@ -10,6 +10,8 @@ import { GenerateMonthModal } from './GenerateMonthModal';
 import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
 import { useAuth } from '../../context/AuthContext';
+import { getEventCalendarBadge } from '../../utils/eventType';
+import { formatDateBR } from '../../utils/worshipEvent';
 
 interface AgendaViewProps {
   events: WorshipEvent[];
@@ -50,6 +52,9 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<WorshipEvent | null>(null);
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+  const [calendarViewMode, setCalendarViewMode] = useState<'week' | 'month'>('week');
+  const [calendarMonthDate, setCalendarMonthDate] = useState<Date>(new Date());
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedEventFromNotification) {
@@ -110,13 +115,104 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   const isMonthActive = filterMonth !== 'all';
   const activeExtraFiltersCount = (isCustomTypeActive ? 1 : 0) + (isMonthActive ? 1 : 0);
 
+  // Navegação de mês no calendário
+  const handlePrevMonth = () => {
+    setCalendarMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+  const handleNextMonth = () => {
+    setCalendarMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+  const handleCurrentMonth = () => {
+    setCalendarMonthDate(new Date());
+  };
+
+  // Dias para visão semanal (próximos 7 dias a partir de hoje)
+  const weekCalendarDays = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+    const dayNum = d.getDate().toString().padStart(2, '0');
+    const dayName = d.toLocaleDateString('pt-BR', { weekday: 'short' }).slice(0, 3).toUpperCase();
+    const isToday = i === 0;
+
+    return {
+      dateStr,
+      dayNum,
+      dayName,
+      isToday
+    };
+  });
+
+  // Dias para visão mensal completa
+  const monthCalendarDays = (() => {
+    const year = calendarMonthDate.getFullYear();
+    const month = calendarMonthDate.getMonth();
+    const firstDayIndex = new Date(year, month, 1).getDay(); // 0 = Domingo
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const prevMonthDays = new Date(year, month, 0).getDate();
+
+    const days: { dateStr: string; dayNum: string; isCurrentMonth: boolean; isToday: boolean }[] = [];
+
+    // Preenchimento dos dias finais do mês anterior
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      const day = prevMonthDays - i;
+      const prevDate = new Date(year, month - 1, day);
+      const mm = String(prevDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(day).padStart(2, '0');
+      const dateStr = `${prevDate.getFullYear()}-${mm}-${dd}`;
+      days.push({
+        dateStr,
+        dayNum: String(day).padStart(2, '0'),
+        isCurrentMonth: false,
+        isToday: false
+      });
+    }
+
+    // Dias do mês atual
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    for (let day = 1; day <= totalDays; day++) {
+      const mm = String(month + 1).padStart(2, '0');
+      const dd = String(day).padStart(2, '0');
+      const dateStr = `${year}-${mm}-${dd}`;
+      days.push({
+        dateStr,
+        dayNum: String(day).padStart(2, '0'),
+        isCurrentMonth: true,
+        isToday: dateStr === todayStr
+      });
+    }
+
+    // Preenchimento dos dias iniciais do próximo mês para fechar semanas completas (múltiplos de 7)
+    const remaining = (7 - (days.length % 7)) % 7;
+    for (let day = 1; day <= remaining; day++) {
+      const nextDate = new Date(year, month + 1, day);
+      const mm = String(nextDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(day).padStart(2, '0');
+      const dateStr = `${nextDate.getFullYear()}-${mm}-${dd}`;
+      days.push({
+        dateStr,
+        dayNum: String(day).padStart(2, '0'),
+        isCurrentMonth: false,
+        isToday: false
+      });
+    }
+
+    return days;
+  })();
+
   const filteredEvents = activeEventsList.filter(ev => {
     const matchesSearch = ev.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (ev.team && ev.team.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesType = filterType === 'all' || ev.type === filterType;
     const matchesMonth = filterMonth === 'all' || ev.date.startsWith(filterMonth);
+    const matchesCalendarDate = !selectedCalendarDate || ev.date === selectedCalendarDate;
     
-    return matchesSearch && matchesType && matchesMonth;
+    return matchesSearch && matchesType && matchesMonth && matchesCalendarDate;
   });
 
   const handleOpenCreateEvent = () => {
@@ -197,52 +293,221 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
         </button>
       </div>
 
-      {/* Calendário Semanal Dinâmico / Compact Strip */}
-      <div className="rounded-2xl bg-surface-container-lowest p-3 border border-outline-variant/20 shadow-md">
-        <div className="flex items-center justify-between mb-2 px-1">
-          <span className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-bold">
-            Visão Rápida • Próximos Dias
-          </span>
-          <div className="flex items-center gap-2 text-[10px]">
-            <span className="inline-flex items-center gap-1 text-tertiary">
-              <span className="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Ceia
+      {/* Calendário Inteligente com Alternância Semana / Mês e Ícones Litúrgicos */}
+      <div className="rounded-2xl bg-surface-container-lowest p-3 border border-outline-variant/20 shadow-md space-y-2">
+        <div className="flex items-center justify-between px-1 flex-wrap gap-2">
+          {calendarViewMode === 'week' ? (
+            <span className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-bold flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px] text-primary">view_week</span>
+              <span>Visão da Semana</span>
             </span>
-            <span className="inline-flex items-center gap-1 text-primary">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span> Culto
-            </span>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handlePrevMonth}
+                className="w-7 h-7 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                title="Mês anterior"
+              >
+                <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+              </button>
+              <span className="font-headline-sm text-sm text-on-surface font-bold capitalize">
+                {calendarMonthDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+              </span>
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                className="w-7 h-7 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                title="Próximo mês"
+              >
+                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+              </button>
+            </div>
+          )}
+
+          {/* Alternador Semana / Mês */}
+          <div className="flex p-0.5 bg-surface-container rounded-xl border border-outline-variant/20">
+            <button
+              type="button"
+              onClick={() => setCalendarViewMode('week')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                calendarViewMode === 'week'
+                  ? 'bg-primary-container text-on-primary-container shadow-xs'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              Semana
+            </button>
+            <button
+              type="button"
+              onClick={() => setCalendarViewMode('month')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                calendarViewMode === 'month'
+                  ? 'bg-primary-container text-on-primary-container shadow-xs'
+                  : 'text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              Mês
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-1">
-          {Array.from({ length: 7 }).map((_, i) => {
-            const d = new Date();
-            d.setDate(d.getDate() + i);
-            const dateStr = d.toISOString().split('T')[0];
-            const hasEvent = events.some(e => e.date === dateStr);
-            const dayNum = d.getDate().toString().padStart(2, '0');
-            const dayName = d.toLocaleDateString('pt-BR', { weekday: 'short' }).slice(0, 3).toUpperCase();
-            const isToday = i === 0;
-
-            return (
-              <div
-                key={i}
-                className={`flex flex-col items-center py-2 rounded-xl transition-all ${
-                  isToday 
-                    ? 'bg-surface-container border border-primary/30' 
-                    : hasEvent 
-                    ? 'bg-surface-container/60' 
-                    : 'opacity-50'
-                }`}
-              >
-                <span className="font-label-sm text-[10px] text-on-surface-variant">{dayName}</span>
-                <span className="font-headline-sm text-sm text-on-surface my-0.5 font-bold">{dayNum}</span>
-                <div className="h-1.5 flex items-center justify-center">
-                  {hasEvent && <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>}
-                </div>
-              </div>
-            );
-          })}
+        {/* Legenda de Ícones Litúrgicos */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar text-[10px] text-on-surface-variant px-1 pb-1">
+          <span className="inline-flex items-center gap-0.5">
+            <span className="material-symbols-outlined text-[12px] text-primary">church</span> Culto
+          </span>
+          <span className="inline-flex items-center gap-0.5">
+            <span className="material-symbols-outlined text-[12px] text-blue-500">diversity_3</span> Família
+          </span>
+          <span className="inline-flex items-center gap-0.5">
+            <span className="material-symbols-outlined text-[12px] text-amber-500">headphones</span> Ensaio
+          </span>
+          <span className="inline-flex items-center gap-0.5">
+            <span className="material-symbols-outlined text-[12px] text-rose-500">wine_bar</span> Ceia
+          </span>
+          <span className="inline-flex items-center gap-0.5">
+            <span className="material-symbols-outlined text-[12px] text-emerald-500">local_fire_department</span> Jovens
+          </span>
         </div>
+
+        {/* VISUALIZAÇÃO: SEMANA (Próximos 7 dias) */}
+        {calendarViewMode === 'week' && (
+          <div className="grid grid-cols-7 gap-1">
+            {weekCalendarDays.map((day) => {
+              const dayEvents = events.filter(e => e.date === day.dateStr);
+              const badges = dayEvents.map(e => getEventCalendarBadge(e));
+              const isSelected = selectedCalendarDate === day.dateStr;
+
+              return (
+                <button
+                  key={day.dateStr}
+                  type="button"
+                  onClick={() => {
+                    if (dayEvents.length > 0) {
+                      setSelectedCalendarDate(isSelected ? null : day.dateStr);
+                    }
+                  }}
+                  className={`flex flex-col items-center py-2 px-0.5 rounded-xl transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-primary-container text-on-primary-container ring-2 ring-primary shadow-sm font-bold'
+                      : day.isToday
+                      ? 'bg-surface-container border border-primary/40 font-bold'
+                      : dayEvents.length > 0
+                      ? 'bg-surface-container hover:bg-surface-container-high'
+                      : 'opacity-40 hover:opacity-70'
+                  }`}
+                  title={dayEvents.length > 0 ? `${dayEvents.length} evento(s) no dia ${day.dayNum}` : undefined}
+                >
+                  <span className={`font-label-sm text-[10px] ${isSelected ? 'text-on-primary-container' : 'text-on-surface-variant'}`}>
+                    {day.dayName}
+                  </span>
+                  <span className="font-headline-sm text-sm text-on-surface my-0.5 font-bold">
+                    {day.dayNum}
+                  </span>
+                  <div className="flex items-center justify-center gap-0.5 min-h-[14px]">
+                    {badges.slice(0, 2).map((badge, bIdx) => (
+                      <span
+                        key={bIdx}
+                        className={`material-symbols-outlined text-[13px] ${isSelected ? 'text-on-primary-container' : badge.colorClass}`}
+                      >
+                        {badge.icon}
+                      </span>
+                    ))}
+                    {badges.length > 2 && (
+                      <span className="text-[8px] font-black opacity-80">+{badges.length - 2}</span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* VISUALIZAÇÃO: MÊS COMPLETO */}
+        {calendarViewMode === 'month' && (
+          <div className="space-y-1">
+            <div className="grid grid-cols-7 gap-1 text-center font-label-sm text-[10px] text-on-surface-variant font-bold pb-0.5">
+              <span>DOM</span>
+              <span>SEG</span>
+              <span>TER</span>
+              <span>QUA</span>
+              <span>QUI</span>
+              <span>SEX</span>
+              <span>SÁB</span>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+              {monthCalendarDays.map((day, dIdx) => {
+                const dayEvents = events.filter(e => e.date === day.dateStr);
+                const badges = dayEvents.map(e => getEventCalendarBadge(e));
+                const isSelected = selectedCalendarDate === day.dateStr;
+
+                return (
+                  <button
+                    key={`${day.dateStr}-${dIdx}`}
+                    type="button"
+                    onClick={() => {
+                      if (dayEvents.length > 0) {
+                        setSelectedCalendarDate(isSelected ? null : day.dateStr);
+                      }
+                    }}
+                    className={`flex flex-col items-center py-1.5 px-0.5 rounded-xl transition-all cursor-pointer min-h-[46px] justify-between ${
+                      !day.isCurrentMonth
+                        ? 'opacity-25 pointer-events-none'
+                        : isSelected
+                        ? 'bg-primary-container text-on-primary-container ring-2 ring-primary shadow-sm font-bold'
+                        : day.isToday
+                        ? 'bg-surface-container border border-primary/40 font-bold'
+                        : dayEvents.length > 0
+                        ? 'bg-surface-container hover:bg-surface-container-high'
+                        : 'hover:bg-surface-container/40 text-on-surface-variant'
+                    }`}
+                    title={dayEvents.length > 0 ? `${dayEvents.length} evento(s) em ${day.dateStr}` : undefined}
+                  >
+                    <span className={`font-headline-sm text-xs font-bold ${isSelected ? 'text-on-primary-container' : 'text-on-surface'}`}>
+                      {day.dayNum}
+                    </span>
+                    <div className="flex items-center justify-center gap-0.5 min-h-[14px]">
+                      {badges.slice(0, 2).map((badge, bIdx) => (
+                        <span
+                          key={bIdx}
+                          className={`material-symbols-outlined text-[13px] ${isSelected ? 'text-on-primary-container' : badge.colorClass}`}
+                        >
+                          {badge.icon}
+                        </span>
+                      ))}
+                      {badges.length > 2 && (
+                        <span className="text-[8px] font-black opacity-80">+{badges.length - 2}</span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Indicador de Filtro Ativo por Dia Selecionado */}
+        {selectedCalendarDate && (
+          <div className="flex items-center justify-between p-2 rounded-xl bg-primary-container/20 border border-primary/30 text-xs font-bold text-on-surface pt-1">
+            <div className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px] text-primary">event</span>
+              <span>Filtrando por: {formatDateBR(selectedCalendarDate)}</span>
+              <span className="text-on-surface-variant text-[11px]">
+                ({events.filter(e => e.date === selectedCalendarDate).length} evento{events.filter(e => e.date === selectedCalendarDate).length === 1 ? '' : 's'})
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedCalendarDate(null)}
+              className="text-primary hover:underline text-[11px] cursor-pointer flex items-center gap-0.5"
+            >
+              <span className="material-symbols-outlined text-[14px]">close</span>
+              <span>Ver todos</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Barra de Busca e Filtros Rápidos */}

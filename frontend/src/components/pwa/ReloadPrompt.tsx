@@ -1,6 +1,7 @@
 import React from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { RefreshCw, X } from 'lucide-react';
+import { appLogger } from '../../utils/logger';
 
 export function ReloadPrompt() {
   const {
@@ -9,10 +10,10 @@ export function ReloadPrompt() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegistered(r: ServiceWorkerRegistration | undefined) {
-      console.log('SW Registered:', r);
+      appLogger.info('PWA', 'Service Worker registrado com sucesso', { scope: r?.scope });
     },
     onRegisterError(error: Error) {
-      console.log('SW registration error', error);
+      appLogger.error('PWA', 'Falha no registro do Service Worker', error);
     },
   });
 

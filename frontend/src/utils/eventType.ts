@@ -101,3 +101,96 @@ export function getEventTypeDefinition(type?: EventType | string): EventTypeDefi
   }
   return EVENT_TYPES.outro;
 }
+
+export interface EventCalendarBadge {
+  icon: string;
+  label: string;
+  colorClass: string;
+}
+
+export function getEventCalendarBadge(event: { title?: string; type?: string; team?: string }): EventCalendarBadge {
+  const title = (event.title || '').toLowerCase();
+  const type = (event.type || '').toLowerCase();
+  const team = (event.team || '').toLowerCase();
+
+  // 1. Ensaio
+  if (type === 'ensaio' || title.includes('ensaio')) {
+    return {
+      icon: 'headphones',
+      label: 'Ensaio',
+      colorClass: 'text-amber-500'
+    };
+  }
+
+  // 2. Santa Ceia
+  if (type === 'ceia' || title.includes('ceia')) {
+    return {
+      icon: 'wine_bar',
+      label: 'Ceia',
+      colorClass: 'text-rose-500'
+    };
+  }
+
+  // 3. Culto com a Família
+  if (title.includes('família') || title.includes('familia')) {
+    return {
+      icon: 'diversity_3',
+      label: 'Família',
+      colorClass: 'text-blue-500'
+    };
+  }
+
+  // 4. Culto de Jovens / Adolescentes
+  if (type === 'jovens' || title.includes('jovens') || title.includes('mocidade') || team.includes('jovens')) {
+    return {
+      icon: 'local_fire_department',
+      label: 'Jovens',
+      colorClass: 'text-emerald-500'
+    };
+  }
+
+  // 5. Congresso / Festividade
+  if (type === 'congresso' || title.includes('congresso') || title.includes('aniversário') || title.includes('aniversario')) {
+    return {
+      icon: 'celebration',
+      label: 'Congresso',
+      colorClass: 'text-purple-500'
+    };
+  }
+
+  // 6. Batismo
+  if (type === 'batismo' || title.includes('batismo')) {
+    return {
+      icon: 'water_drop',
+      label: 'Batismo',
+      colorClass: 'text-cyan-500'
+    };
+  }
+
+  // 7. Culto de Departamento (Varões, Mulheres, Círculo de Oração, Infantil)
+  if (
+    title.includes('departamento') ||
+    title.includes('varões') ||
+    title.includes('varoes') ||
+    title.includes('mulheres') ||
+    title.includes('irmãs') ||
+    title.includes('irmas') ||
+    title.includes('círculo') ||
+    title.includes('circulo') ||
+    title.includes('infantil') ||
+    title.includes('crianças')
+  ) {
+    return {
+      icon: 'groups',
+      label: 'Departamento',
+      colorClass: 'text-indigo-500'
+    };
+  }
+
+  // 8. Padrão: Culto Geral / Celebração
+  return {
+    icon: 'church',
+    label: 'Culto',
+    colorClass: 'text-primary'
+  };
+}

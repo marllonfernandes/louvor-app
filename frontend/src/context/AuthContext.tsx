@@ -15,6 +15,7 @@ import { doc, getDoc, collection, query, where, getDocs, setDoc, deleteDoc, onSn
 import { auth, googleProvider, db, isFirestoreAvailable } from '../config/firebase';
 import { User } from '../types';
 import { isValidAvatarUrl, isSamePersonName } from '../utils/avatar';
+import { appLogger } from '../utils/logger';
 
 const INVITE_STORAGE_KEY = 'louvor_pending_invite_token';
 
@@ -81,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Processa retorno de login por redirecionamento caso o popup tenha usado fallback
     getRedirectResult(auth).catch((err: any) => {
       if (err && err.code !== 'auth/popup-closed-by-user') {
-        console.error('[Auth] Erro no redirect de autenticação:', err);
+        appLogger.error('AUTH', 'Erro no redirect de autenticação', err);
         setError(formatAuthError(err));
       }
     });
@@ -212,7 +213,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     clearPendingInviteToken();
                   }
                 } catch (autoErr) {
-                  console.warn('[Auth] Erro ao tentar auto-link por nome:', autoErr);
+                  appLogger.warn('AUTH', 'Erro ao tentar auto-link por nome', autoErr);
                 }
               }
 
@@ -277,12 +278,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             setLoading(false);
           }, (err) => {
-            console.warn('Erro no listener em tempo real do perfil:', err);
+            appLogger.warn('AUTH', 'Erro no listener em tempo real do perfil', err);
             setLoading(false);
           });
 
         } catch (err) {
-          console.error("Erro ao buscar perfil do usuário", err);
+          appLogger.error('AUTH', 'Erro ao buscar perfil do usuário', err);
           setError('Erro ao carregar seu perfil.');
           setLoading(false);
         }
@@ -347,17 +348,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       // 1. Usuário fechou a janela ou cancelou a operação: não exibe erro alarmante
       if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
-        console.info('[Auth] Login cancelado pelo usuário.');
+        appLogger.info('AUTH', 'Login cancelado pelo usuário');
         return;
       }
 
       // 2. Se o popup falhou ou foi bloqueado (comum no iOS Safari / Webviews / PWA), usa redirecionamento
-      console.info('[Auth] Popup indisponível ou bloqueado, utilizando login com redirecionamento (iOS / Mobile)...', err?.code);
+      appLogger.info('AUTH', 'Popup indisponível ou bloqueado, utilizando login com redirecionamento (iOS / Mobile)', err?.code);
       try {
         await signInWithRedirect(auth, googleProvider);
         return;
       } catch (redirectErr: any) {
-        console.error('[Auth] Falha no redirecionamento:', redirectErr);
+        appLogger.error('AUTH', 'Falha no redirecionamento de login', redirectErr);
         setError(formatAuthError(redirectErr));
       }
     }
@@ -440,7 +441,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       return true;
     } catch (err: any) {
-      console.error('[Auth] Erro ao vincular membro:', err);
+      appLogger.error('AUTH', 'Erro ao vincular membro', err);
       setError('Erro ao vincular: ' + (err.message || 'Tente novamente.'));
       setLoading(false);
       return false;
@@ -466,7 +467,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
     } catch (err: any) {
-      console.error('[Auth] Erro no login com Email:', err);
+      appLogger.error('AUTH', 'Erro no login com Email', err);
       const msg = formatAuthError(err);
       setError(msg);
       throw new Error(msg);
@@ -485,7 +486,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await updateProfile(userCredential.user, { displayName: name.trim() });
       }
     } catch (err: any) {
-      console.error('[Auth] Erro no cadastro com Email:', err);
+      appLogger.error('AUTH', 'Erro no cadastro com Email', err);
       const msg = formatAuthError(err);
       setError(msg);
       throw new Error(msg);
@@ -501,7 +502,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await sendPasswordResetEmail(auth, email.trim());
     } catch (err: any) {
-      console.error('[Auth] Erro na recuperação de senha:', err);
+      appLogger.error('AUTH', 'Erro na recuperação de senha', err);
       const msg = formatAuthError(err);
       setError(msg);
       throw new Error(msg);

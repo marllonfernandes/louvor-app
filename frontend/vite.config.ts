@@ -3,8 +3,13 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
+  const isProd = mode === 'production';
 
   return {
+    esbuild: {
+      pure: isProd ? ['console.log', 'console.debug'] : [],
+      drop: isProd ? ['debugger'] : []
+    },
     plugins: [
       react(),
       VitePWA({

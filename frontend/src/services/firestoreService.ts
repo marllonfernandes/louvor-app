@@ -13,6 +13,7 @@ import { db, isFirestoreAvailable } from '../config/firebase';
 import { WorshipEvent, Song, Member, Team, ConfirmationStatus, AdoptionSong } from '../types';
 import { INITIAL_EVENTS, INITIAL_SONGS, INITIAL_MEMBERS, INITIAL_TEAMS, INITIAL_ADOPTION_SONGS } from './mockData';
 import { isValidAvatarUrl, isSamePersonName } from '../utils/avatar';
+import { appLogger } from '../utils/logger';
 
 const STORAGE_KEYS = {
   EVENTS: 'louvor_app_events',
@@ -50,7 +51,7 @@ function setLocal<T>(key: string, data: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(data));
   } catch (err) {
-    console.error('Erro ao salvar no localStorage:', err);
+    appLogger.error('SISTEMA', 'Erro ao salvar no localStorage', err);
   }
 }
 
@@ -60,7 +61,7 @@ let hasLoggedFirestoreConnection = false;
 function logFirestoreConnectionOnce(collectionName: string, docCount: number) {
   if (!hasLoggedFirestoreConnection) {
     hasLoggedFirestoreConnection = true;
-    console.log(`✅ [Firestore Conectado] Conexão em tempo real ativa! (${collectionName}: ${docCount} documentos recebidos do banco de dados)`);
+    appLogger.info('FIRESTORE', `Conexão em tempo real ativa! (${collectionName}: ${docCount} documentos recebidos)`);
   }
 }
 function cleanForFirestore<T>(obj: T): T {
@@ -91,12 +92,12 @@ export function subscribeToEvents(callback: (events: WorshipEvent[]) => void): (
         setLocal(STORAGE_KEYS.EVENTS, list);
         callback(list);
       }, (error) => {
-        console.warn('❌ [Firestore Events] Erro ao sincronizar eventos em tempo real:', error.message, error);
+        appLogger.warn('FIRESTORE', `Erro ao sincronizar eventos em tempo real: ${error.message}`, error);
         callback(getLocal<WorshipEvent[]>(STORAGE_KEYS.EVENTS, INITIAL_EVENTS));
       });
       return unsubscribe;
     } catch (err) {
-      console.warn('❌ [Firestore Events] Erro ao registrar listener:', err);
+      appLogger.warn('FIRESTORE', 'Erro ao registrar listener de eventos', err);
     }
   }
 
@@ -115,9 +116,9 @@ export async function saveEvent(event: Omit<WorshipEvent, 'id'> & { id?: string 
   if (isFirestoreAvailable && db) {
     try {
       await setDoc(doc(db, 'events', id), cleaned);
-      console.log(`✅ [Firestore Events] Evento ${id} salvo com sucesso no Cloud Firestore.`);
+      appLogger.info('FIRESTORE', `Evento ${id} salvo com sucesso`);
     } catch (e: any) {
-      console.error('❌ [Firestore Events] Erro ao salvar evento no Firestore:', e);
+      appLogger.error('FIRESTORE', 'Erro ao salvar evento', e);
       throw e;
     }
   }
@@ -157,9 +158,9 @@ export async function updateEventStatus(eventId: string, memberName: string, sta
       }
 
       await updateDoc(ref, updates);
-      console.log(`✅ [Firestore Events] Presença de ${memberName} atualizada para ${status} no evento ${eventId}.`);
+      appLogger.info('FIRESTORE', `Presença de ${memberName} atualizada para ${status} no evento ${eventId}`);
     } catch (e: any) {
-      console.error('❌ [Firestore Events] Erro ao atualizar status no Firestore:', e);
+      appLogger.error('FIRESTORE', 'Erro ao atualizar presença no Firestore', e);
       throw e;
     }
   }
@@ -198,9 +199,9 @@ export async function deleteEvent(eventId: string): Promise<void> {
   if (isFirestoreAvailable && db) {
     try {
       await deleteDoc(doc(db, 'events', eventId));
-      console.log(`✅ [Firestore Events] Evento ${eventId} excluído do Cloud Firestore.`);
+      appLogger.info('FIRESTORE', `Evento ${eventId} excluído com sucesso`);
     } catch (e: any) {
-      console.error('❌ [Firestore Events] Erro ao deletar no Firestore:', e);
+      appLogger.error('FIRESTORE', 'Erro ao deletar evento no Firestore', e);
       throw e;
     }
   }
@@ -223,11 +224,11 @@ export function subscribeToSongs(callback: (songs: Song[]) => void): () => void 
         setLocal(STORAGE_KEYS.SONGS, list);
         callback(list);
       }, (error) => {
-        console.warn('❌ [Firestore Songs] Erro ao sincronizar músicas:', error.message, error);
+        appLogger.warn('FIRESTORE', `Erro ao sincronizar músicas: ${error.message}`, error);
         callback(getLocal<Song[]>(STORAGE_KEYS.SONGS, INITIAL_SONGS));
       });
     } catch (err) {
-      console.warn('❌ [Firestore Songs] Erro ao registrar listener:', err);
+      appLogger.warn('FIRESTORE', 'Erro ao registrar listener de músicas', err);
     }
   }
 
@@ -246,9 +247,9 @@ export async function saveSong(song: Omit<Song, 'id'> & { id?: string }): Promis
   if (isFirestoreAvailable && db) {
     try {
       await setDoc(doc(db, 'songs', id), cleaned);
-      console.log(`✅ [Firestore Songs] Música ${id} salva no Cloud Firestore.`);
+      appLogger.info('FIRESTORE', `Música ${id} salva com sucesso`);
     } catch (e: any) {
-      console.error('❌ [Firestore Songs] Erro no Firestore ao salvar música:', e);
+      appLogger.error('FIRESTORE', 'Erro no Firestore ao salvar música', e);
       throw e;
     }
   }
@@ -275,9 +276,9 @@ export async function deleteSong(songId: string): Promise<void> {
   if (isFirestoreAvailable && db) {
     try {
       await deleteDoc(doc(db, 'songs', songId));
-      console.log(`✅ [Firestore Songs] Música ${songId} excluída do Cloud Firestore.`);
+      appLogger.info('FIRESTORE', `Música ${songId} excluída com sucesso`);
     } catch (e: any) {
-      console.error('❌ [Firestore Songs] Erro ao deletar música:', e);
+      appLogger.error('FIRESTORE', 'Erro ao deletar música no Firestore', e);
       throw e;
     }
   }
@@ -298,7 +299,7 @@ export async function deleteRepertoireGroup(groupName: string, deleteSongsToo: b
         try {
           await deleteDoc(doc(db, 'songs', s.id));
         } catch (e) {
-          console.error(`Erro ao excluir música ${s.id} do grupo ${groupName}:`, e);
+          appLogger.error('FIRESTORE', `Erro ao excluir música ${s.id} do grupo ${groupName}`, e);
         }
       }
     }
@@ -312,7 +313,7 @@ export async function deleteRepertoireGroup(groupName: string, deleteSongsToo: b
         try {
           await updateDoc(doc(db, 'songs', s.id), { group: null });
         } catch (e) {
-          console.error(`Erro ao desvincular música ${s.id} do grupo ${groupName}:`, e);
+          appLogger.error('FIRESTORE', `Erro ao desvincular música ${s.id} do grupo ${groupName}`, e);
         }
       }
     }
@@ -337,7 +338,7 @@ export async function assignSongsToGroup(songIds: string[], groupName: string): 
       try {
         await updateDoc(doc(db, 'songs', id), { group: groupName || null });
       } catch (e) {
-        console.error(`Erro ao atualizar grupo da música ${id}:`, e);
+        appLogger.error('FIRESTORE', `Erro ao atualizar grupo da música ${id}`, e);
       }
     }
   }
@@ -363,11 +364,11 @@ export function subscribeToAdoptionSongs(callback: (songs: AdoptionSong[]) => vo
         setLocal(STORAGE_KEYS.ADOPTION_SONGS, list);
         callback(list);
       }, (error) => {
-        console.warn('❌ [Firestore Adoption] Erro ao sincronizar músicas de adoção:', error.message, error);
+        appLogger.warn('FIRESTORE', `Erro ao sincronizar músicas de adoção: ${error.message}`, error);
         callback(getLocal<AdoptionSong[]>(STORAGE_KEYS.ADOPTION_SONGS, INITIAL_ADOPTION_SONGS));
       });
     } catch (err) {
-      console.warn('❌ [Firestore Adoption] Erro ao registrar listener:', err);
+      appLogger.warn('FIRESTORE', 'Erro ao registrar listener de adoções', err);
     }
   }
 
@@ -392,9 +393,9 @@ export async function saveAdoptionSong(song: Omit<AdoptionSong, 'id'> & { id?: s
   if (isFirestoreAvailable && db) {
     try {
       await setDoc(doc(db, 'adoption_songs', id), cleaned);
-      console.log(`✅ [Firestore Adoption] Sugestão ${id} salva no Cloud Firestore.`);
+      appLogger.info('FIRESTORE', `Sugestão ${id} salva com sucesso`);
     } catch (e: any) {
-      console.error('❌ [Firestore Adoption] Erro no Firestore ao salvar música para adoção:', e);
+      appLogger.error('FIRESTORE', 'Erro no Firestore ao salvar música para adoção', e);
       throw e;
     }
   }
@@ -427,9 +428,9 @@ export async function voteAdoptionSong(songId: string, voterName: string): Promi
     try {
       const ref = doc(db, 'adoption_songs', songId);
       await updateDoc(ref, { votes: updatedVotes });
-      console.log(`✅ [Firestore Adoption] Voto de ${voterName} registrado para ${songId}.`);
+      appLogger.info('FIRESTORE', `Voto de ${voterName} registrado para ${songId}`);
     } catch (e: any) {
-      console.error('❌ [Firestore Adoption] Erro no Firestore ao computar voto:', e);
+      appLogger.error('FIRESTORE', 'Erro no Firestore ao computar voto', e);
       throw e;
     }
   }
@@ -466,9 +467,9 @@ export async function approveAdoptionSong(
           approvedAt: Date.now(),
           approvedByMemberName: leaderName
         });
-        console.log(`✅ [Firestore Adoption] Música ${adoptionSongId} aprovada no Cloud Firestore.`);
+        appLogger.info('FIRESTORE', `Música ${adoptionSongId} aprovada com sucesso`);
       } catch (e: any) {
-        console.error('❌ [Firestore Adoption] Erro no Firestore ao aprovar adoção:', e);
+        appLogger.error('FIRESTORE', 'Erro no Firestore ao aprovar adoção', e);
         throw e;
       }
     }
@@ -489,9 +490,9 @@ export async function rejectAdoptionSong(adoptionSongId: string): Promise<void> 
     try {
       const ref = doc(db, 'adoption_songs', adoptionSongId);
       await updateDoc(ref, { status: 'rejected' });
-      console.log(`✅ [Firestore Adoption] Sugestão ${adoptionSongId} rejeitada.`);
+      appLogger.info('FIRESTORE', `Sugestão ${adoptionSongId} rejeitada`);
     } catch (e: any) {
-      console.error('❌ [Firestore Adoption] Erro no Firestore ao rejeitar adoção:', e);
+      appLogger.error('FIRESTORE', 'Erro no Firestore ao rejeitar adoção', e);
       throw e;
     }
   }
@@ -504,9 +505,9 @@ export async function deleteAdoptionSong(songId: string): Promise<void> {
   if (isFirestoreAvailable && db) {
     try {
       await deleteDoc(doc(db, 'adoption_songs', songId));
-      console.log(`✅ [Firestore Adoption] Sugestão ${songId} excluída do Cloud Firestore.`);
+      appLogger.info('FIRESTORE', `Sugestão ${songId} excluída`);
     } catch (e: any) {
-      console.error('❌ [Firestore Adoption] Erro ao deletar música de adoção no Firestore:', e);
+      appLogger.error('FIRESTORE', 'Erro ao deletar música de adoção no Firestore', e);
       throw e;
     }
   }
@@ -570,11 +571,11 @@ export function subscribeToMembers(callback: (members: Member[]) => void): () =>
         setLocal(STORAGE_KEYS.MEMBERS, list);
         callback(list);
       }, (error) => {
-        console.warn('[Firestore Members] Erro ao sincronizar membros:', error.message, error);
+        appLogger.warn('FIRESTORE', `Erro ao sincronizar membros: ${error.message}`, error);
         callback(normalizeMembersList(getLocal<Member[]>(STORAGE_KEYS.MEMBERS, INITIAL_MEMBERS)));
       });
     } catch (err) {
-      console.warn('[Firestore Members] Erro ao registrar listener:', err);
+      appLogger.warn('FIRESTORE', 'Erro ao registrar listener de membros', err);
     }
   }
 
@@ -603,9 +604,9 @@ export async function saveMember(member: Omit<Member, 'id'> & { id?: string }): 
   if (isFirestoreAvailable && db) {
     try {
       await setDoc(doc(db, 'users', id), cleaned);
-      console.log(`✅ [Firestore Users] Membro ${id} salvo com sucesso no Cloud Firestore.`);
+      appLogger.info('FIRESTORE', `Membro ${id} salvo com sucesso`);
     } catch (e: any) {
-      console.error('❌ [Firestore Users] Erro no Firestore ao salvar membro:', e);
+      appLogger.error('FIRESTORE', 'Erro no Firestore ao salvar membro', e);
       throw e;
     }
   }
@@ -623,9 +624,9 @@ export async function deleteMember(memberId: string): Promise<void> {
   if (isFirestoreAvailable && db) {
     try {
       await deleteDoc(doc(db, 'users', memberId));
-      console.log(`✅ [Firestore Users] Membro ${memberId} deletado do Cloud Firestore.`);
+      appLogger.info('FIRESTORE', `Membro ${memberId} deletado`);
     } catch (e: any) {
-      console.error('❌ [Firestore Users] Erro ao deletar membro:', e);
+      appLogger.error('FIRESTORE', 'Erro ao deletar membro no Firestore', e);
       throw e;
     }
   }
@@ -647,11 +648,11 @@ export function subscribeToTeams(callback: (teams: Team[]) => void): () => void 
         setLocal(STORAGE_KEYS.TEAMS, list);
         callback(list);
       }, (error) => {
-        console.warn('[Firestore Teams] Erro ao sincronizar equipes:', error.message, error);
+        appLogger.warn('FIRESTORE', `Erro ao sincronizar equipes: ${error.message}`, error);
         callback(getLocal<Team[]>(STORAGE_KEYS.TEAMS, INITIAL_TEAMS));
       });
     } catch (err) {
-      console.warn('[Firestore Teams] Erro ao registrar listener:', err);
+      appLogger.warn('FIRESTORE', 'Erro ao registrar listener de equipes', err);
     }
   }
 
@@ -670,9 +671,9 @@ export async function saveTeam(team: Omit<Team, 'id'> & { id?: string }): Promis
   if (isFirestoreAvailable && db) {
     try {
       await setDoc(doc(db, 'teams', id), cleaned);
-      console.log(`✅ [Firestore Teams] Equipe ${id} salva no Cloud Firestore.`);
+      appLogger.info('FIRESTORE', `Equipe ${id} salva com sucesso`);
     } catch (e: any) {
-      console.error('❌ [Firestore Teams] Erro no Firestore ao salvar equipe:', e);
+      appLogger.error('FIRESTORE', 'Erro no Firestore ao salvar equipe', e);
       throw e;
     }
   }
@@ -690,9 +691,9 @@ export async function deleteTeam(teamId: string): Promise<void> {
   if (isFirestoreAvailable && db) {
     try {
       await deleteDoc(doc(db, 'teams', teamId));
-      console.log(`✅ [Firestore Teams] Equipe ${teamId} deletada do Cloud Firestore.`);
+      appLogger.info('FIRESTORE', `Equipe ${teamId} deletada`);
     } catch (e: any) {
-      console.error('❌ [Firestore Teams] Erro ao deletar equipe:', e);
+      appLogger.error('FIRESTORE', 'Erro ao deletar equipe no Firestore', e);
       throw e;
     }
   }
@@ -751,7 +752,7 @@ export async function seedFirestoreWithInitialData(): Promise<{ success: boolean
       counts: { eventsCount, songsCount, membersCount, teamsCount, adoptionCount }
     };
   } catch (error: any) {
-    console.error('[Firestore Seed Error]:', error);
+    appLogger.error('FIRESTORE', 'Erro ao executar carga inicial (seed) no Firestore', error);
     return {
       success: false,
       message: `Erro ao gravar no Firestore: ${error?.message || 'Falha desconhecida. Verifique se as regras de segurança permitem escrita.'}`
@@ -775,7 +776,7 @@ export async function linkUserWithInviteToken(uid: string, token: string): Promi
         return true;
       }
     } catch (e) {
-      console.warn('Erro ao processar token de convite no Firestore:', e);
+      appLogger.warn('AUTH', 'Erro ao processar token de convite no Firestore', e);
     }
   }
 

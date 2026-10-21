@@ -1,6 +1,7 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, initializeFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, GoogleAuthProvider, Auth } from 'firebase/auth';
+import { appLogger } from '../utils/logger';
 
 const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
 const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
@@ -25,10 +26,9 @@ const isRealApiKeyFormat = typeof apiKey === 'string' && apiKey.startsWith('AIza
 try {
   if (apiKey && projectId) {
     if (!isRealApiKeyFormat) {
-      console.warn(
-        `[Firebase Config] AVISO: A chave informada ("${apiKey.substring(0, 10)}...") não parece ser uma Web API Key válida do Google Cloud / Firebase (que começa com "AIzaSy..."). ` +
-        `Se esta chave for um Private Key ID de Service Account, o Firestore rejeitará a conexão e o aplicativo usará dados locais/mock. ` +
-        `Obtenha a Web API Key em: GCP Console > APIs e Serviços > Credenciais > Chaves de API.`
+      appLogger.warn(
+        'FIRESTORE',
+        `Chave de API com formato incomum (${apiKey.substring(0, 10)}...). Verifique se é uma Web API Key.`
       );
     }
 
@@ -42,7 +42,7 @@ try {
     try {
       auth = getAuth(app);
     } catch (authErr) {
-      console.error('❌ Erro ao inicializar Auth:', authErr);
+      appLogger.error('AUTH', 'Erro ao inicializar Firebase Auth', authErr);
     }
     
     // Conecta explicitamente ao database 'app-unida' com suporte a ignoreUndefinedProperties
@@ -56,18 +56,16 @@ try {
         db = getFirestore(app, databaseId);
         isFirestoreAvailable = true;
       } catch (fallbackErr) {
-        console.error('❌ Erro ao inicializar Firestore:', fallbackErr);
+        appLogger.error('FIRESTORE', 'Erro ao inicializar Firestore DB', fallbackErr);
       }
     }
     
-    if (import.meta.env.DEV) {
-      console.log(`🔥 [Firebase] SDK inicializado com sucesso para o projeto: ${projectId} (Database: ${databaseId})`);
-    }
+    appLogger.info('FIRESTORE', `Firebase SDK inicializado com sucesso (Projeto: ${projectId}, DB: ${databaseId})`);
   } else {
-    console.info('[Firebase] VITE_FIREBASE_API_KEY ou VITE_FIREBASE_PROJECT_ID não definidos. Operando em modo LocalStorage.');
+    appLogger.info('SISTEMA', 'VITE_FIREBASE_API_KEY ou VITE_FIREBASE_PROJECT_ID não definidos. Operando em modo LocalStorage.');
   }
 } catch (error) {
-  console.error('❌ [Firestore] Erro na inicialização do Firebase SDK:', error);
+  appLogger.error('FIRESTORE', 'Erro fatal na inicialização do Firebase SDK', error);
   isFirestoreAvailable = false;
 }
 
