@@ -25,9 +25,10 @@ export const TeamDetailModal: React.FC<TeamDetailModalProps> = ({
   onEditTeam,
   onDeleteTeam
 }) => {
+  const { userProfile, currentUser } = useAuth();
+
   if (!team) return null;
 
-  const { userProfile, currentUser } = useAuth();
   const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
   const isAdmin = userProfile?.systemRole === 'Admin';
 

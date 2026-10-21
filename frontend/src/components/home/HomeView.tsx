@@ -269,8 +269,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 className="w-full h-12 rounded-xl bg-primary-container text-on-primary-container font-label-lg text-label-lg flex items-center justify-center gap-2 shadow-md hover:bg-primary-container/90 active:scale-[0.98] transition-all"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[20px]">format_list_bulleted</span>
-                <span>Ver Ordem do Culto</span>
+                <span className="material-symbols-outlined text-[20px]">info</span>
+                <span>Ver Detalhes</span>
               </button>
             </div>
           </div>

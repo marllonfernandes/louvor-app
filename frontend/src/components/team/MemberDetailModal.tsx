@@ -28,6 +28,7 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
   onDeleteMember,
   onSaveMember
 }) => {
+  const { userProfile, currentUser } = useAuth();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   if (!member) return null;
@@ -42,7 +43,6 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
   const isRoleLeader = rolesList.includes('Líder');
   const memberTeams = teams.filter(t => t.members.some(mName => isSamePersonName(mName, member.name)));
 
-  const { userProfile, currentUser } = useAuth();
   const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
   const isAdmin = userProfile?.systemRole === 'Admin';
   const isSelf = Boolean(

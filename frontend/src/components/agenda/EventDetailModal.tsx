@@ -73,10 +73,18 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   onEditEvent,
   onSaveEvent
 }) => {
+  const { userProfile, currentUser } = useAuth();
   const [justificationMember, setJustificationMember] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'repertoire' | 'team' | 'details'>('repertoire');
   const [teamFilter, setTeamFilter] = useState<'all' | ConfirmationStatus>('all');
   const [blockFilter, setBlockFilter] = useState<string>('all');
+
+  const deduplicatedConfirmed = useMemo(
+    () => (event ? deduplicateConfirmed(event.confirmed || {}) : {}),
+    [event?.confirmed]
+  );
+  const confirmedEntries = useMemo(() => Object.entries(deduplicatedConfirmed), [deduplicatedConfirmed]);
+  const confirmedMemberNames = useMemo(() => Object.keys(deduplicatedConfirmed), [deduplicatedConfirmed]);
 
   if (!event) return null;
 
@@ -108,19 +116,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
     new Set([...blocksOrder.filter(b => presentBlocks.includes(b)), ...presentBlocks])
   );
 
-  const deduplicatedConfirmed = useMemo(
-    () => deduplicateConfirmed(event.confirmed || {}),
-    [event.confirmed]
-  );
-  const confirmedEntries = useMemo(() => Object.entries(deduplicatedConfirmed), [deduplicatedConfirmed]);
-  const confirmedMemberNames = useMemo(() => Object.keys(deduplicatedConfirmed), [deduplicatedConfirmed]);
   const scheduledMembers = members.filter(m => confirmedMemberNames.some(name => isSamePersonName(name, m.name)));
   const selectableMembers = scheduledMembers.length > 0 ? scheduledMembers : members;
   const sortedSelectable = sortMembersWithVocalsFirst(selectableMembers);
 
   const typeDef = getEventTypeDefinition(event.type);
 
-  const { userProfile, currentUser } = useAuth();
   const isLeader = ['Admin', 'Editor'].includes(userProfile?.systemRole || '');
   const isAdmin = userProfile?.systemRole === 'Admin';
 
