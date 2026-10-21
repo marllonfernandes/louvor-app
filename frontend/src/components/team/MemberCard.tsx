@@ -54,44 +54,50 @@ export const MemberCard: React.FC<MemberCardProps> = ({
   return (
     <div 
       onClick={() => onSelectMember(member)}
-      className="bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-slate-700/80 hover:border-blue-500/40 rounded-2xl p-3.5 flex items-center justify-between shadow-xs transition-all text-left cursor-pointer active:scale-[0.98] select-none group"
+      className="bg-surface-container hover:bg-surface-container-high border border-outline-variant/15 rounded-2xl p-3 flex items-center justify-between shadow-sm transition-all text-left cursor-pointer active:scale-[0.99] select-none group"
     >
-      <div className="flex items-center gap-3.5 min-w-0 flex-1">
-        {/* Avatar com Foto do Google / Galeria ou Gradiente com Iniciais */}
-        <MemberAvatar
-          name={member.name}
-          avatarUrl={resolvedAvatar}
-          size="md"
-          shape="rounded-2xl"
-          isLeader={isRoleLeader}
-        />
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        {/* Avatar com halo dourado se for líder */}
+        <div className={`relative flex-shrink-0 ${isRoleLeader ? 'ring-2 ring-amber-500/40 rounded-2xl p-0.5' : ''}`}>
+          <MemberAvatar
+            name={member.name}
+            avatarUrl={resolvedAvatar}
+            size="md"
+            shape="rounded-2xl"
+            isLeader={isRoleLeader}
+          />
+          {isRoleLeader && (
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center shadow-sm">
+              <span className="material-symbols-outlined text-[10px] font-bold">star</span>
+            </div>
+          )}
+        </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-base group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors truncate">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <h4 className="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors truncate font-bold">
               {member.name}
             </h4>
             {isRoleLeader && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md flex-shrink-0">
-                <Crown size={11} className="text-amber-500 dark:text-amber-400" />
+              <span className="inline-flex items-center gap-1 font-label-sm text-[9px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded-full">
                 Líder
               </span>
             )}
             {isPendingInvite && isLeader && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-md flex-shrink-0">
+              <span className="inline-flex items-center gap-1 font-label-sm text-[9px] font-bold bg-primary/15 text-primary border border-primary/30 px-1.5 py-0.2 rounded-full">
                 Convite Pendente
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             {rolesList.filter(r => r !== 'Líder').map(r => (
-              <span key={r} className="text-[11px] text-blue-700 dark:text-blue-400 font-semibold bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-500/20">
+              <span key={r} className="font-label-md text-label-md text-secondary bg-surface-container-high px-2 py-0.5 rounded-md border border-outline-variant/20">
                 {r}
               </span>
             ))}
             {member.phone && (
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+              <span className="font-body-sm text-body-sm text-on-surface-variant truncate">
                 • {member.phone}
               </span>
             )}
@@ -99,37 +105,32 @@ export const MemberCard: React.FC<MemberCardProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-        {/* Botão WhatsApp com área de toque mínima de 44px */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
         {waLink && (
           <a
             href={waLink}
             target="_blank"
-            rel="noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 active:scale-90 transition-all border border-emerald-500/20 shadow-2xs"
-            title={isPendingInvite && isLeader ? "Enviar Convite com Link no WhatsApp" : "Abrir WhatsApp"}
+            rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            className="w-9 h-9 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface flex items-center justify-center active:scale-90 transition-all border border-outline-variant/20"
+            title={isPendingInvite ? "Enviar convite via WhatsApp" : "Conversar no WhatsApp"}
           >
-            <MessageCircle size={17} />
+            <span className="material-symbols-outlined text-[18px] text-emerald-400">chat</span>
           </a>
         )}
 
-        {(isLeader || isSelf) && (
+        {isLeader && (
           <button
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               onEditMember(member);
             }}
-            className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/80 active:scale-90 transition-all bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60"
+            className="w-9 h-9 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface-variant hover:text-on-surface flex items-center justify-center active:scale-90 transition-all border border-outline-variant/20"
             title="Editar Integrante"
           >
-            <Pencil size={15} />
+            <span className="material-symbols-outlined text-[17px]">edit</span>
           </button>
         )}
-
-        <span className="text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all p-1">
-          <ChevronRight size={18} />
-        </span>
       </div>
     </div>
   );

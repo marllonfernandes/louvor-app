@@ -31,6 +31,7 @@ interface PlaylistViewProps {
   onSaveGroup?: (groupName: string, selectedSongIds: string[]) => void;
   selectedSongFromEvent?: Song | null;
   onClearSelectedSong?: () => void;
+  onOpenStageSong?: (song: Song) => void;
 }
 
 export const PlaylistView: React.FC<PlaylistViewProps> = ({
@@ -48,7 +49,8 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
   onDeleteGroup,
   onSaveGroup,
   selectedSongFromEvent,
-  onClearSelectedSong
+  onClearSelectedSong,
+  onOpenStageSong
 }) => {
   const [subTab, setSubTab] = useState<'repertoire' | 'adoption'>('repertoire');
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,6 +58,7 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
   const [selectedKey, setSelectedKey] = useState<string>('all');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [adoptionFilter, setAdoptionFilter] = useState<'all' | 'voting' | 'approved' | 'rejected'>('all');
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
 
   const { userProfile } = useAuth();
   
@@ -123,13 +126,22 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
 
   const votingCount = adoptionSongs.filter(s => s.status === 'voting').length;
 
+  const isCustomCategoryActive = selectedCategory !== 'all' && !['Adoração', 'Celebração'].includes(selectedCategory);
+  const isKeyActive = selectedKey !== 'all';
+  const isGroupActive = selectedGroup !== 'all';
+  const activeExtraFiltersCount = (isCustomCategoryActive ? 1 : 0) + (isKeyActive ? 1 : 0) + (isGroupActive ? 1 : 0);
+
   return (
-    <div className="space-y-4 text-left">
+    <div className="space-y-3.5 text-left">
       {/* Topo com Ações Contextuais */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-lg sm:text-xl font-black text-slate-100 tracking-tight truncate">Repertório</h2>
-          <p className="text-xs text-slate-400 truncate">Músicas, tons e adoção de louvores</p>
+        <div className="min-w-0 flex-1 flex items-center gap-2">
+          <h2 className="text-lg sm:text-xl font-headline-lg-mobile text-on-surface tracking-tight truncate font-bold">
+            {subTab === 'repertoire' ? 'Biblioteca' : 'Adoção de Louvores'}
+          </h2>
+          <span className="bg-surface-container-high text-primary px-2.5 py-0.5 rounded-full font-label-md text-label-md font-bold">
+            {subTab === 'repertoire' ? songs.length : adoptionSongs.length}
+          </span>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -147,7 +159,8 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
                 </button>
               )}
 
-              <Button
+              <button
+                type="button"
                 onClick={() => {
                   if (isCurrentUserLeader) {
                     setSongToEdit(null);
@@ -156,49 +169,50 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
                     setIsAddAdoptionOpen(true);
                   }
                 }}
-                size="sm"
-                className="flex-shrink-0 whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm"
-                icon={<Plus size={16} />}
+                className="bg-primary-container hover:bg-primary-container/90 active:scale-95 text-on-primary-container px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-md font-label-lg text-label-lg font-bold"
               >
-                Nova Música
-              </Button>
+                <span className="material-symbols-outlined text-[18px]">add</span>
+                <span>Nova Música</span>
+              </button>
             </>
           ) : (
-            <Button
+            <button
+              type="button"
               onClick={() => setIsAddAdoptionOpen(true)}
-              size="sm"
-              className="flex-shrink-0 whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm bg-amber-600 hover:bg-amber-500 text-slate-950 font-black border-amber-400"
-              icon={<Sparkles size={16} />}
+              className="bg-primary-container hover:bg-primary-container/90 active:scale-95 text-on-primary-container px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-md font-label-lg text-label-lg font-bold"
             >
-              Sugerir Música
-            </Button>
+              <span className="material-symbols-outlined text-[18px]">add_circle</span>
+              <span>Sugerir Música</span>
+            </button>
           )}
         </div>
       </div>
 
-      {/* Segmented Control (Repertório Principal vs Músicas para Adoção) */}
-      <div className="grid grid-cols-2 p-1 bg-slate-950/90 rounded-2xl border border-slate-800 shadow-inner">
+      {/* Segmented Mode Switcher (Sleek & Compact) */}
+      <div className="flex p-1 bg-surface-container-lowest rounded-xl border border-outline-variant/20 shadow-inner">
         <button
+          type="button"
           onClick={() => setSubTab('repertoire')}
-          className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             subTab === 'repertoire'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-primary-container text-on-primary-container shadow-sm'
+              : 'text-on-surface-variant hover:text-on-surface'
           }`}
         >
-          <Disc3 size={16} />
+          <Disc3 size={15} />
           <span>Repertório Ativo ({songs.length})</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setSubTab('adoption')}
-          className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             subTab === 'adoption'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+              : 'text-on-surface-variant hover:text-on-surface'
           }`}
         >
-          <Sparkles size={16} className={votingCount > 0 ? "text-amber-400 animate-pulse" : ""} />
+          <Sparkles size={15} className={votingCount > 0 ? "text-amber-400 animate-pulse" : ""} />
           <span>Para Adoção</span>
           {votingCount > 0 && (
             <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-full">
@@ -208,108 +222,330 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
         </button>
       </div>
 
-      {/* Barra de Busca */}
-      <div className="relative">
-        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+      {/* Barra de Busca Minimalista */}
+      <div className="relative w-full">
+        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
+          <span className="material-symbols-outlined text-[20px]">search</span>
+        </div>
         <input
           type="text"
-          placeholder={subTab === 'repertoire' ? "Buscar por música ou artista..." : "Buscar sugestão por música, artista ou quem sugeriu..."}
+          placeholder={subTab === 'repertoire' ? "Buscar por título, artista, tom ou tag..." : "Buscar sugestão por título, artista ou quem sugeriu..."}
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
-          className="w-full bg-slate-950/90 border border-slate-700/80 rounded-2xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 shadow-inner"
+          className="w-full h-11 pl-10 pr-10 bg-surface-container-lowest text-on-surface placeholder:text-outline text-body-md font-body-md rounded-xl outline-none focus:bg-surface-container-low transition-colors duration-200 border border-outline-variant/30 shadow-inner"
         />
+        {searchTerm && (
+          <button
+            type="button"
+            onClick={() => setSearchTerm('')}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-outline hover:text-on-surface"
+            title="Limpar busca"
+          >
+            <span className="material-symbols-outlined text-[18px]">cancel</span>
+          </button>
+        )}
       </div>
 
       {/* Conteúdo: Subaba Repertório Principal */}
       {subTab === 'repertoire' && (
         <div className="space-y-3">
-          {/* Barra de Filtro de Grupos de Repertório */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-            <button
-              type="button"
-              onClick={() => setSelectedGroup('all')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                selectedGroup === 'all'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-slate-850 text-slate-400 hover:text-slate-200 border border-slate-700/60'
-              }`}
-            >
-              <Layers size={13} />
-              <span>Todas ({songs.length})</span>
-            </button>
-
-            {availableGroups.map(grp => {
-              const count = songs.filter(s => s.group === grp).length;
-              const isSelected = selectedGroup === grp;
-              return (
+            {/* FAIXA DE FILTROS CLEAN (Sem rolagem lateral: 3 filtros rápidos + Menu +Filtros) */}
+            <div className="relative">
+              <div className="flex items-center gap-1.5 flex-wrap py-0.5">
+                {/* 1. Todas */}
                 <button
-                  key={grp}
                   type="button"
-                  onClick={() => setSelectedGroup(grp)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                    isSelected
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-slate-800/90 text-slate-300 hover:text-white border border-slate-700/70'
+                  onClick={() => {
+                    setSelectedCategory('all');
+                    setSelectedGroup('all');
+                    setSelectedKey('all');
+                  }}
+                  className={`px-3 py-1.5 rounded-full font-label-md text-label-md transition-all active:scale-95 cursor-pointer ${
+                    selectedCategory === 'all' && selectedGroup === 'all' && selectedKey === 'all'
+                      ? 'bg-primary-container text-on-primary-container shadow-sm font-bold'
+                      : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface border border-outline-variant/20'
                   }`}
                 >
-                  <Folder size={13} className={isSelected ? 'text-white' : 'text-blue-400'} />
-                  <span>{grp}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                    isSelected ? 'bg-blue-700 text-white' : 'bg-slate-800 text-slate-400'
-                  }`}>
-                    {count}
+                  Todas ({songs.length})
+                </button>
+
+                {/* 2. Adoração */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory(selectedCategory === 'Adoração' ? 'all' : 'Adoração')}
+                  className={`px-3 py-1.5 rounded-full font-label-md text-label-md transition-all active:scale-95 cursor-pointer ${
+                    selectedCategory === 'Adoração'
+                      ? 'bg-primary-container text-on-primary-container shadow-sm font-bold'
+                      : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface border border-outline-variant/20'
+                  }`}
+                >
+                  Adoração
+                </button>
+
+                {/* 3. Celebração */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory(selectedCategory === 'Celebração' ? 'all' : 'Celebração')}
+                  className={`px-3 py-1.5 rounded-full font-label-md text-label-md transition-all active:scale-95 cursor-pointer ${
+                    selectedCategory === 'Celebração'
+                      ? 'bg-primary-container text-on-primary-container shadow-sm font-bold'
+                      : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface border border-outline-variant/20'
+                  }`}
+                >
+                  Celebração
+                </button>
+
+                {/* Chip ativo se for categoria externa selecionada pelo menu */}
+                {isCustomCategoryActive && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory('all')}
+                    className="px-2.5 py-1.5 rounded-full font-label-md text-label-md transition-all active:scale-95 bg-primary-container text-on-primary-container shadow-sm font-bold flex items-center gap-1 cursor-pointer"
+                    title="Remover filtro de categoria"
+                  >
+                    <span>{selectedCategory}</span>
+                    <span className="material-symbols-outlined text-[14px]">close</span>
+                  </button>
+                )}
+
+                {/* Chip ativo se Tom selecionado */}
+                {isKeyActive && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedKey('all')}
+                    className="px-2.5 py-1.5 rounded-full font-label-md text-label-md transition-all active:scale-95 bg-primary-container text-on-primary-container shadow-sm font-bold flex items-center gap-1 cursor-pointer"
+                    title="Remover filtro de tom"
+                  >
+                    <span>Tom: {selectedKey}</span>
+                    <span className="material-symbols-outlined text-[14px]">close</span>
+                  </button>
+                )}
+
+                {/* Chip ativo se Grupo selecionado */}
+                {isGroupActive && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedGroup('all')}
+                    className="px-2.5 py-1.5 rounded-full font-label-md text-label-md transition-all active:scale-95 bg-primary-container text-on-primary-container shadow-sm font-bold flex items-center gap-1 cursor-pointer"
+                    title="Remover filtro de grupo"
+                  >
+                    <span>{selectedGroup === 'ungrouped' ? 'Sem Grupo' : selectedGroup}</span>
+                    <span className="material-symbols-outlined text-[14px]">close</span>
+                  </button>
+                )}
+
+                {/* Botão + Filtros (Menu Dropdown) */}
+                <button
+                  type="button"
+                  onClick={() => setIsFilterMenuOpen(prev => !prev)}
+                  className={`px-3 py-1.5 rounded-full font-label-md text-label-md transition-all active:scale-95 flex items-center gap-1 border cursor-pointer ${
+                    activeExtraFiltersCount > 0
+                      ? 'bg-primary-container/20 text-primary border-primary/40 font-bold'
+                      : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface border-outline-variant/30'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[15px]">tune</span>
+                  <span>+ Filtros</span>
+                  {activeExtraFiltersCount > 0 && (
+                    <span className="bg-primary text-on-primary text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                      {activeExtraFiltersCount}
+                    </span>
+                  )}
+                  <span className="material-symbols-outlined text-[14px] opacity-70">
+                    {isFilterMenuOpen ? 'expand_less' : 'expand_more'}
                   </span>
                 </button>
-              );
-            })}
+              </div>
 
-            {ungroupedCount > 0 && availableGroups.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setSelectedGroup('ungrouped')}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                  selectedGroup === 'ungrouped'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-slate-800/90 text-slate-400 hover:text-slate-200 border border-slate-700/60'
-                }`}
-              >
-                <span>Sem Grupo</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  selectedGroup === 'ungrouped' ? 'bg-blue-700 text-white' : 'bg-slate-800 text-slate-400'
-                }`}>
-                  {ungroupedCount}
-                </span>
-              </button>
-            )}
+              {/* Menu Popover Dropdown de Mais Filtros */}
+              {isFilterMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsFilterMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-surface-container border border-outline-variant/30 rounded-2xl p-4 shadow-2xl z-50 text-left space-y-3.5 backdrop-blur-xl">
+                    <div className="flex items-center justify-between border-b border-outline-variant/20 pb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-primary text-[18px]">tune</span>
+                        <span className="font-headline-sm text-sm font-bold text-on-surface">Mais Filtros</span>
+                      </div>
+                      {(selectedCategory !== 'all' || selectedGroup !== 'all' || selectedKey !== 'all') && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedCategory('all');
+                            setSelectedGroup('all');
+                            setSelectedKey('all');
+                          }}
+                          className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
+                        >
+                          Limpar tudo
+                        </button>
+                      )}
+                    </div>
 
-            {isCurrentUserLeader && (
-              <button
-                type="button"
-                onClick={() => {
-                  setGroupToEdit(null);
-                  setIsCreateGroupOpen(true);
-                }}
-                className="px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/30 active:scale-95"
-                title="Criar novo grupo de repertório"
-              >
-                <FolderPlus size={13} />
-                <span>Novo Grupo</span>
-              </button>
-            )}
-          </div>
+                    {/* Mais Categorias */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-outline">
+                        Outras Categorias
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {['Ministração', 'Abertura', 'Santa Ceia', 'Comunhão', 'Contemplação'].map(cat => (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => {
+                              setSelectedCategory(selectedCategory === cat ? 'all' : cat);
+                              setIsFilterMenuOpen(false);
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                              selectedCategory === cat
+                                ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
+                                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+                            }`}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Tom Musical */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-outline">
+                        Tom Musical
+                      </label>
+                      <div className="grid grid-cols-4 gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedKey('all');
+                          }}
+                          className={`py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            selectedKey === 'all'
+                              ? 'bg-primary-container text-on-primary-container shadow-sm'
+                              : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+                          }`}
+                        >
+                          Todos
+                        </button>
+                        {['C', 'D', 'E', 'F', 'G', 'A', 'B', 'Am', 'Em', 'Dm'].map(k => (
+                          <button
+                            key={k}
+                            type="button"
+                            onClick={() => {
+                              setSelectedKey(selectedKey === k ? 'all' : k);
+                            }}
+                            className={`py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              selectedKey === k
+                                ? 'bg-primary-container text-on-primary-container shadow-sm'
+                                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+                            }`}
+                          >
+                            {k}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Grupos / Pastas */}
+                    {availableGroups.length > 0 && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-bold uppercase tracking-wider text-outline">
+                            Grupo / Ocasião
+                          </label>
+                          {isCurrentUserLeader && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsFilterMenuOpen(false);
+                                setGroupToEdit(null);
+                                setIsCreateGroupOpen(true);
+                              }}
+                              className="text-[11px] font-bold text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-[13px]">add</span>
+                              Novo Grupo
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedGroup('all');
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                              selectedGroup === 'all'
+                                ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
+                                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+                            }`}
+                          >
+                            Todos
+                          </button>
+                          {availableGroups.map(grp => (
+                            <button
+                              key={grp}
+                              type="button"
+                              onClick={() => {
+                                setSelectedGroup(selectedGroup === grp ? 'all' : grp);
+                              }}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                selectedGroup === grp
+                                  ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
+                                  : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+                              }`}
+                            >
+                              {grp}
+                            </button>
+                          ))}
+                          {ungroupedCount > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedGroup(selectedGroup === 'ungrouped' ? 'all' : 'ungrouped');
+                              }}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                selectedGroup === 'ungrouped'
+                                  ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
+                                  : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+                              }`}
+                            >
+                              Sem Grupo ({ungroupedCount})
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setIsFilterMenuOpen(false)}
+                        className="w-full py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-xs font-bold transition-all text-center cursor-pointer"
+                      >
+                        Fechar
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
 
           {/* Banner de Gestão do Grupo Ativo (quando filtrado por grupo específico) */}
           {selectedGroup !== 'all' && selectedGroup !== 'ungrouped' && (
-            <div className="bg-slate-900/90 border border-blue-500/30 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-md">
+            <div className="bg-surface-container border border-primary/30 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-md">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
-                  <Folder size={20} />
+                <div className="w-10 h-10 rounded-xl bg-primary-container/20 text-primary border border-primary/30 flex items-center justify-center flex-shrink-0">
+                  <span className="material-symbols-outlined text-[20px]">folder</span>
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-sm font-bold text-slate-100 truncate flex items-center gap-1.5">
+                  <h4 className="text-sm font-bold text-on-surface truncate flex items-center gap-1.5">
                     {selectedGroup}
                   </h4>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-on-surface-variant">
                     {songs.filter(s => s.group === selectedGroup).length} {songs.filter(s => s.group === selectedGroup).length === 1 ? 'música agrupada' : 'músicas agrupadas'}
                   </p>
                 </div>
@@ -323,10 +559,10 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
                       setGroupToEdit(selectedGroup);
                       setIsCreateGroupOpen(true);
                     }}
-                    className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1 border border-slate-700 transition-all active:scale-95"
+                    className="px-2.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold flex items-center gap-1 border border-outline-variant/30 transition-all active:scale-95"
                     title="Editar músicas deste grupo"
                   >
-                    <Pencil size={13} />
+                    <span className="material-symbols-outlined text-[14px]">edit</span>
                     <span className="hidden sm:inline">Editar</span>
                   </button>
                   <button
@@ -338,43 +574,13 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
                     className="px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-semibold flex items-center gap-1 transition-all active:scale-95"
                     title="Excluir grupo de repertório"
                   >
-                    <Trash2 size={13} />
+                    <span className="material-symbols-outlined text-[14px]">delete</span>
                     <span className="hidden sm:inline">Excluir Grupo</span>
                   </button>
                 </div>
               )}
             </div>
           )}
-
-          {/* Filtros de Categoria e Tom */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar flex-1">
-              {['all', 'Adoração', 'Celebração', 'Ministração', 'Abertura', 'Santa Ceia'].map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                    selectedCategory === cat
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-slate-800/90 text-slate-400 hover:text-slate-200 border border-slate-700/60'
-                  }`}
-                >
-                  {cat === 'all' ? 'Todas' : cat}
-                </button>
-              ))}
-            </div>
-
-            <select
-              value={selectedKey}
-              onChange={e => setSelectedKey(e.target.value)}
-              className="bg-slate-800 text-slate-200 border border-slate-700 text-xs rounded-2xl px-3 py-1.5 focus:outline-none focus:border-blue-500 font-bold flex-shrink-0"
-            >
-              <option value="all">Todos Tons</option>
-              {['C', 'D', 'E', 'F', 'G', 'A', 'B', 'Am', 'Em', 'Dm'].map(k => (
-                <option key={k} value={k}>Tom {k}</option>
-              ))}
-            </select>
-          </div>
 
           {/* Lista de Músicas */}
           {filteredSongs.length === 0 ? (
@@ -426,6 +632,7 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
                     setSongToEdit(song);
                     setIsAddSongOpen(true);
                   }}
+                  onOpenStageSong={onOpenStageSong}
                 />
               ))}
             </div>
@@ -437,10 +644,10 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
       {subTab === 'adoption' && (
         <div className="space-y-3">
           {/* Seletor de Votante / Líder Ativo */}
-          <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex items-center justify-between gap-2 flex-wrap">
+          <div className="bg-surface-container p-3 rounded-2xl border border-outline-variant/20 flex items-center justify-between gap-2 flex-wrap shadow-sm">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Conectado como:</span>
-              <span className="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-100">
+              <span className="text-xs text-on-surface-variant">Conectado como:</span>
+              <span className="bg-surface-container-high border border-outline-variant/30 rounded-xl px-2.5 py-1 text-xs font-bold text-on-surface">
                 {currentVoterName} {isCurrentUserLeader ? '(Líder)' : ''}
               </span>
             </div>
@@ -463,10 +670,10 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
               <button
                 key={f.id}
                 onClick={() => setAdoptionFilter(f.id as any)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                className={`whitespace-nowrap px-3.5 py-1.5 rounded-full font-label-md text-label-md transition-all active:scale-95 ${
                   adoptionFilter === f.id
-                    ? 'bg-amber-600 text-white shadow-sm'
-                    : 'bg-slate-800/90 text-slate-400 hover:text-slate-200 border border-slate-700/60'
+                    ? 'bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold shadow-sm'
+                    : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface border border-outline-variant/20'
                 }`}
               >
                 {f.label}
@@ -476,20 +683,20 @@ export const PlaylistView: React.FC<PlaylistViewProps> = ({
 
           {/* Lista de Músicas para Adoção */}
           {filteredAdoptionSongs.length === 0 ? (
-            <div className="bg-slate-800/40 border border-dashed border-slate-700/80 rounded-3xl p-8 text-center space-y-3">
+            <div className="bg-surface-container border border-dashed border-outline-variant/40 rounded-3xl p-8 text-center space-y-3">
               <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto">
                 <Sparkles size={24} />
               </div>
-              <p className="text-sm font-bold text-slate-200">Nenhuma música para adoção</p>
-              <p className="text-xs text-slate-400">Sugira novas canções para o time votar e o líder aprovar.</p>
-              <Button
-                size="sm"
+              <p className="text-sm font-bold text-on-surface">Nenhuma música para adoção</p>
+              <p className="text-xs text-on-surface-variant">Sugira novas canções para o time votar e o líder aprovar.</p>
+              <button
+                type="button"
                 onClick={() => setIsAddAdoptionOpen(true)}
-                className="bg-amber-600 hover:bg-amber-500 text-slate-950 font-black border-amber-400"
-                icon={<Sparkles size={16} />}
+                className="bg-primary-container hover:bg-primary-container/90 active:scale-95 text-on-primary-container px-3.5 py-2 rounded-xl inline-flex items-center gap-1.5 transition-all shadow-md font-label-lg text-label-lg font-bold"
               >
-                Sugerir Primeira Canção
-              </Button>
+                <Sparkles size={16} />
+                <span>Sugerir Primeira Canção</span>
+              </button>
             </div>
           ) : (
             <div className="space-y-3">

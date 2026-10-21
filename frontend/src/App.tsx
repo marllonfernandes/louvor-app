@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { MobileContainer } from './components/layout/MobileContainer';
 import { Header } from './components/layout/Header';
 import { BottomNav } from './components/layout/BottomNav';
+import { HomeView } from './components/home/HomeView';
 import { AgendaView } from './components/agenda/AgendaView';
 import { PlaylistView } from './components/playlist/PlaylistView';
 import { TeamView } from './components/team/TeamView';
 import { MetricsView } from './components/metrics/MetricsView';
+import { LiveStageChordModal } from './components/stage/LiveStageChordModal';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { NotificationCenterModal } from './components/notifications/NotificationCenterModal';
 import { ToastContainer, ToastMessage } from './components/ui/Toast';
@@ -49,7 +51,7 @@ import { WorshipEvent, Song, Member, Team, TabType, ConfirmationStatus, Adoption
 
 export function AppContent() {
   const { currentUser, userProfile, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabType>('agenda');
+  const [activeTab, setActiveTab] = useState<TabType>('inicio');
   const [events, setEvents] = useState<WorshipEvent[]>([]);
   const [songs, setSongs] = useState<Song[]>([]);
   const [adoptionSongs, setAdoptionSongs] = useState<AdoptionSong[]>([]);
@@ -62,6 +64,7 @@ export function AppContent() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [selectedSongFromEvent, setSelectedSongFromEvent] = useState<Song | null>(null);
   const [selectedEventFromNotification, setSelectedEventFromNotification] = useState<WorshipEvent | null>(null);
+  const [selectedStageSong, setSelectedStageSong] = useState<Song | null>(null);
 
   const addToast = (title: string, description?: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = `toast_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
@@ -446,6 +449,7 @@ export function AppContent() {
 
       {/* Top Header */}
       <Header
+        activeTab={activeTab}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         unreadNotificationsCount={unreadNotificationsCount}
@@ -458,6 +462,24 @@ export function AppContent() {
           WebkitOverflowScrolling: 'touch'
         }}
       >
+        {activeTab === 'inicio' && (
+          <HomeView
+            events={events}
+            songs={songs}
+            members={members}
+            onSelectEvent={(ev) => {
+              setActiveTab('agenda');
+              setSelectedEventFromNotification(ev);
+            }}
+            onSelectSong={handleSelectSongFromEvent}
+            onOpenStageSong={(s) => setSelectedStageSong(s)}
+            onStatusChange={handleStatusChange}
+            onChangeTab={setActiveTab}
+            onOpenNotifications={() => setIsNotificationsOpen(true)}
+            unreadNotificationsCount={unreadNotificationsCount}
+          />
+        )}
+
         {activeTab === 'agenda' && (
           <AgendaView
             events={events}
@@ -491,6 +513,7 @@ export function AppContent() {
             onSaveGroup={handleSaveGroup}
             selectedSongFromEvent={selectedSongFromEvent}
             onClearSelectedSong={() => setSelectedSongFromEvent(null)}
+            onOpenStageSong={(s) => setSelectedStageSong(s)}
           />
         )}
 
@@ -515,6 +538,16 @@ export function AppContent() {
           />
         )}
       </main>
+
+      {/* Cifra ao Vivo no Palco (Live Stage Chord Mode) */}
+      <LiveStageChordModal
+        isOpen={Boolean(selectedStageSong)}
+        onClose={() => setSelectedStageSong(null)}
+        song={selectedStageSong}
+        setlistSongs={songs}
+        onSelectSong={setSelectedStageSong}
+        stageMembers={members}
+      />
 
       {/* Navegação Inferior Nativa */}
       <BottomNav

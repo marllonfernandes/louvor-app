@@ -1,5 +1,4 @@
 import React from 'react';
-import { CalendarDays, Disc3, Users, BarChart3 } from 'lucide-react';
 import { TabType } from '../../types';
 
 interface BottomNavProps {
@@ -15,64 +14,69 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   eventCount,
   songCount
 }) => {
-  const tabs: { id: TabType; label: string; icon: React.ReactNode; badge?: number }[] = [
+  const tabs: { id: TabType; label: string; icon: string; badge?: number }[] = [
     {
-      id: 'agenda',
-      label: 'Agenda',
-      icon: <CalendarDays size={19} />,
-      badge: eventCount
+      id: 'inicio',
+      label: 'Início',
+      icon: 'home'
     },
     {
       id: 'playlist',
       label: 'Repertório',
-      icon: <Disc3 size={19} />,
+      icon: 'queue_music',
       badge: songCount
     },
     {
+      id: 'agenda',
+      label: 'Escalas',
+      icon: 'event_available',
+      badge: eventCount
+    },
+    {
       id: 'team',
-      label: 'Equipe',
-      icon: <Users size={19} />
+      label: 'Equipes',
+      icon: 'groups'
     },
     {
       id: 'metrics',
-      label: 'Indicadores',
-      icon: <BarChart3 size={19} />
+      label: 'Métricas',
+      icon: 'insights'
     }
   ];
 
   return (
     <nav 
-      className="flex-shrink-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 flex justify-around items-center px-1 sm:px-4 py-2 shadow-2xl"
-      style={{
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.5rem)'
-      }}
+      className="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface-container/85 backdrop-blur-xl shadow-[0_-1px_12px_rgba(0,0,0,0.25)] border-t border-outline-variant/20"
+      data-active-classes="text-primary font-bold"
     >
-      <div className="w-full flex justify-around items-center">
+      <div className="h-16 max-w-md mx-auto flex items-center justify-around px-gutter">
         {tabs.map(tab => {
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => onChangeTab(tab.id)}
-              className={`flex-1 relative flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all duration-200 active:scale-90 ${
+              aria-current={isActive ? 'page' : undefined}
+              data-path={tab.id}
+              className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl transition-all active:scale-95 cursor-pointer relative ${
                 isActive 
-                  ? 'text-blue-600 dark:text-blue-400 font-bold' 
-                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-medium'
+                  ? 'text-primary font-bold' 
+                  : 'text-on-surface-variant hover:text-on-surface font-medium'
               }`}
             >
-              <div className="relative">
-                {/* Efeito Glow / Pill no ícone ativo */}
-                {isActive && (
-                  <span className="absolute -inset-1.5 bg-blue-500/10 dark:bg-blue-500/20 rounded-full blur-sm -z-10" />
-                )}
-                {tab.icon}
+              <div className="relative flex items-center justify-center">
+                <span className="material-symbols-outlined text-[22px]">
+                  {tab.icon}
+                </span>
                 {Boolean(tab.badge && tab.badge > 0) && (
-                  <span className="absolute -top-1.5 -right-2.5 bg-blue-500 text-white dark:text-slate-950 font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
-                    {tab.badge}
+                  <span className="absolute -top-1.5 -right-2 bg-primary-container text-on-primary-container font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-surface">
+                    {tab.badge! > 99 ? '99+' : tab.badge}
                   </span>
                 )}
               </div>
-              <span className="text-[10px] mt-1 tracking-tight truncate max-w-[64px]">{tab.label}</span>
+              <span className="font-label-sm text-label-sm mt-0.5 tracking-tight leading-none truncate max-w-[56px]">
+                {tab.label}
+              </span>
             </button>
           );
         })}

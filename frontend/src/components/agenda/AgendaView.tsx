@@ -49,6 +49,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<WorshipEvent | null>(null);
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
 
   useEffect(() => {
     if (selectedEventFromNotification) {
@@ -88,6 +89,27 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
     new Set(activeEventsList.map(ev => ev.date.substring(0, 7)))
   ).sort();
 
+  const eventTypeLabels: Record<string, string> = {
+    all: 'Todos',
+    culto: 'Cultos',
+    ceia: 'Santa Ceia',
+    ensaio: 'Ensaios',
+    jovens: 'Jovens',
+    congresso: 'Congressos',
+    batismo: 'Batismo',
+    especial: 'Especiais'
+  };
+
+  const formatMonthLabel = (monthStr: string) => {
+    const [year, month] = monthStr.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace('.', '');
+  };
+
+  const isCustomTypeActive = filterType !== 'all' && !['culto', 'ceia'].includes(filterType);
+  const isMonthActive = filterMonth !== 'all';
+  const activeExtraFiltersCount = (isCustomTypeActive ? 1 : 0) + (isMonthActive ? 1 : 0);
+
   const filteredEvents = activeEventsList.filter(ev => {
     const matchesSearch = ev.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (ev.team && ev.team.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -118,135 +140,337 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   };
 
   return (
-    <div className="space-y-4 text-left">
-      {/* Topo com proporções ajustadas */}
+    <div className="space-y-4 text-left animate-fade-in">
+      {/* Topo com proporções e botões no estilo Sanctuary Slate */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg sm:text-xl font-black text-slate-100 tracking-tight truncate">Escalas</h2>
-          <p className="text-xs text-slate-400 truncate">Cultos, ensaios e presença</p>
+          <h2 className="font-headline-lg text-headline-lg text-on-surface tracking-tight truncate font-extrabold">
+            Agenda de Cultos
+          </h2>
+          <p className="font-body-sm text-body-sm text-on-surface-variant truncate">
+            Escalas, liturgias e presenças
+          </p>
         </div>
         {isLeader && (
           <div className="flex gap-2">
-            <Button
+            <button
               onClick={() => setIsGenerateOpen(true)}
-              size="sm"
-              variant="secondary"
-              className="flex-shrink-0 whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm"
+              className="flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-label-md font-bold bg-surface-container-high hover:bg-surface-variant text-on-surface border border-outline-variant/30 active:scale-95 transition-all shadow-sm"
             >
               Gerar Mês
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={handleOpenCreateEvent}
-              size="sm"
-              className="flex-shrink-0 whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm"
-              icon={<Plus size={16} />}
+              className="flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-label-md font-bold bg-primary-container text-on-primary-container hover:bg-primary-container/90 active:scale-95 transition-all shadow-sm flex items-center gap-1.5"
             >
-              Novo Evento
-            </Button>
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              <span>Novo Culto</span>
+            </button>
           </div>
         )}
       </div>
 
       {/* Segmented Control: Próximos vs Realizados */}
-      <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-950/90 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-inner">
+      <div className="grid grid-cols-2 p-1 bg-surface-container rounded-2xl border border-outline-variant/20 shadow-inner">
         <button
           onClick={() => setTimelineTab('upcoming')}
-          className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer min-h-[44px] ${
+          className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer min-h-[42px] ${
             timelineTab === 'upcoming'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              ? 'bg-primary-container text-on-primary-container shadow-md'
+              : 'text-on-surface-variant hover:text-on-surface'
           }`}
         >
-          <Calendar size={15} />
+          <span className="material-symbols-outlined text-[18px]">calendar_month</span>
           <span>Próximos ({upcomingEvents.length})</span>
         </button>
 
         <button
           onClick={() => setTimelineTab('past')}
-          className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer min-h-[44px] ${
+          className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer min-h-[42px] ${
             timelineTab === 'past'
-              ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700 shadow-md'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              ? 'bg-primary-container text-on-primary-container shadow-md'
+              : 'text-on-surface-variant hover:text-on-surface'
           }`}
         >
-          <History size={15} />
+          <span className="material-symbols-outlined text-[18px]">history</span>
           <span>Realizados ({pastEvents.length})</span>
         </button>
+      </div>
+
+      {/* Calendário Semanal Dinâmico / Compact Strip */}
+      <div className="rounded-2xl bg-surface-container-lowest p-3 border border-outline-variant/20 shadow-md">
+        <div className="flex items-center justify-between mb-2 px-1">
+          <span className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-bold">
+            Visão Rápida • Próximos Dias
+          </span>
+          <div className="flex items-center gap-2 text-[10px]">
+            <span className="inline-flex items-center gap-1 text-tertiary">
+              <span className="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Ceia
+            </span>
+            <span className="inline-flex items-center gap-1 text-primary">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span> Culto
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-7 gap-1">
+          {Array.from({ length: 7 }).map((_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() + i);
+            const dateStr = d.toISOString().split('T')[0];
+            const hasEvent = events.some(e => e.date === dateStr);
+            const dayNum = d.getDate().toString().padStart(2, '0');
+            const dayName = d.toLocaleDateString('pt-BR', { weekday: 'short' }).slice(0, 3).toUpperCase();
+            const isToday = i === 0;
+
+            return (
+              <div
+                key={i}
+                className={`flex flex-col items-center py-2 rounded-xl transition-all ${
+                  isToday 
+                    ? 'bg-surface-container border border-primary/30' 
+                    : hasEvent 
+                    ? 'bg-surface-container/60' 
+                    : 'opacity-50'
+                }`}
+              >
+                <span className="font-label-sm text-[10px] text-on-surface-variant">{dayName}</span>
+                <span className="font-headline-sm text-sm text-on-surface my-0.5 font-bold">{dayNum}</span>
+                <div className="h-1.5 flex items-center justify-center">
+                  {hasEvent && <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Barra de Busca e Filtros Rápidos */}
       <div className="space-y-2">
         <div className="relative">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none">
+            search
+          </span>
           <input
             type="text"
             placeholder="Buscar por evento ou equipe..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="w-full bg-white dark:bg-slate-950/90 border border-slate-200 dark:border-slate-700/80 rounded-2xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 shadow-inner"
+            className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-2xl pl-10 pr-4 py-2.5 font-body-sm text-body-sm text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:border-primary shadow-inner"
           />
         </div>
 
-        {/* Chips de Filtro */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {[
-            { id: 'all', label: 'Todos' },
-            { id: 'congresso', label: 'Congressos' },
-            { id: 'culto', label: 'Cultos' },
-            { id: 'ensaio', label: 'Ensaios' },
-            { id: 'jovens', label: 'Jovens' },
-            { id: 'ceia', label: 'Santa Ceia' },
-            { id: 'batismo', label: 'Batismo' },
-            { id: 'especial', label: 'Especiais' }
-          ].map(f => (
+        {/* Faixa de Filtros Clean: 3 Filtros Rápidos + Menu +Filtros (Sem rolagem lateral) */}
+        <div className="relative">
+          <div className="flex items-center gap-1.5 flex-wrap py-0.5">
+            {/* 1. Todos */}
             <button
-              key={f.id}
-              onClick={() => setFilterType(f.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                filterType === f.id
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-white dark:bg-slate-800/90 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60'
+              type="button"
+              onClick={() => {
+                setFilterType('all');
+                setFilterMonth('all');
+              }}
+              className={`px-3 py-1.5 rounded-full font-label-md text-label-md transition-all active:scale-95 cursor-pointer ${
+                filterType === 'all' && filterMonth === 'all'
+                  ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
+                  : 'bg-surface-container text-on-surface-variant hover:text-on-surface border border-outline-variant/20'
               }`}
             >
-              {f.label}
+              Todos
             </button>
-          ))}
-        </div>
 
-        {/* Filtro de Mês */}
-        {uniqueMonths.length > 0 && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar mt-2">
+            {/* 2. Cultos */}
             <button
-              onClick={() => setFilterMonth('all')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                filterMonth === 'all'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-white dark:bg-slate-800/90 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60'
+              type="button"
+              onClick={() => setFilterType(filterType === 'culto' ? 'all' : 'culto')}
+              className={`px-3 py-1.5 rounded-full font-label-md text-label-md transition-all active:scale-95 cursor-pointer ${
+                filterType === 'culto'
+                  ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
+                  : 'bg-surface-container text-on-surface-variant hover:text-on-surface border border-outline-variant/20'
               }`}
             >
-              Todos os Meses
+              Cultos
             </button>
-            {uniqueMonths.map(monthStr => {
-              const [year, month] = monthStr.split('-');
-              const date = new Date(parseInt(year), parseInt(month) - 1);
-              const label = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace('.', '');
-              
-              return (
-                <button
-                  key={monthStr}
-                  onClick={() => setFilterMonth(monthStr)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all capitalize ${
-                    filterMonth === monthStr
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-white dark:bg-slate-800/90 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60'
-                  }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
+
+            {/* 3. Santa Ceia */}
+            <button
+              type="button"
+              onClick={() => setFilterType(filterType === 'ceia' ? 'all' : 'ceia')}
+              className={`px-3 py-1.5 rounded-full font-label-md text-label-md transition-all active:scale-95 cursor-pointer ${
+                filterType === 'ceia'
+                  ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
+                  : 'bg-surface-container text-on-surface-variant hover:text-on-surface border border-outline-variant/20'
+              }`}
+            >
+              Santa Ceia
+            </button>
+
+            {/* Chip ativo se for outro tipo selecionado no menu (ex: Ensaios) */}
+            {isCustomTypeActive && (
+              <button
+                type="button"
+                onClick={() => setFilterType('all')}
+                className="px-2.5 py-1.5 rounded-full font-label-md text-label-md transition-all active:scale-95 bg-primary-container text-on-primary-container shadow-sm font-bold flex items-center gap-1 cursor-pointer"
+                title="Remover filtro de tipo"
+              >
+                <span>{eventTypeLabels[filterType] || filterType}</span>
+                <span className="material-symbols-outlined text-[14px]">close</span>
+              </button>
+            )}
+
+            {/* Chip ativo se mês selecionado */}
+            {isMonthActive && (
+              <button
+                type="button"
+                onClick={() => setFilterMonth('all')}
+                className="px-2.5 py-1.5 rounded-full font-label-md text-label-md transition-all active:scale-95 bg-primary-container text-on-primary-container shadow-sm font-bold flex items-center gap-1 cursor-pointer capitalize"
+                title="Remover filtro de mês"
+              >
+                <span>{formatMonthLabel(filterMonth)}</span>
+                <span className="material-symbols-outlined text-[14px]">close</span>
+              </button>
+            )}
+
+            {/* Botão + Filtros (Menu Dropdown) */}
+            <button
+              type="button"
+              onClick={() => setIsFilterMenuOpen(prev => !prev)}
+              className={`px-3 py-1.5 rounded-full font-label-md text-label-md transition-all active:scale-95 flex items-center gap-1 border cursor-pointer ${
+                activeExtraFiltersCount > 0
+                  ? 'bg-primary-container/20 text-primary border-primary/40 font-bold'
+                  : 'bg-surface-container text-on-surface-variant hover:text-on-surface border-outline-variant/30'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[15px]">tune</span>
+              <span>+ Filtros</span>
+              {activeExtraFiltersCount > 0 && (
+                <span className="bg-primary text-on-primary text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                  {activeExtraFiltersCount}
+                </span>
+              )}
+              <span className="material-symbols-outlined text-[14px] opacity-70">
+                {isFilterMenuOpen ? 'expand_less' : 'expand_more'}
+              </span>
+            </button>
           </div>
-        )}
+
+          {/* Menu Dropdown de Mais Filtros */}
+          {isFilterMenuOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setIsFilterMenuOpen(false)}
+              />
+              <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-surface-container border border-outline-variant/30 rounded-2xl p-4 shadow-2xl z-50 text-left space-y-3.5 backdrop-blur-xl">
+                <div className="flex items-center justify-between border-b border-outline-variant/20 pb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-primary text-[18px]">tune</span>
+                    <span className="font-headline-sm text-sm font-bold text-on-surface">Mais Filtros da Escala</span>
+                  </div>
+                  {(filterType !== 'all' || filterMonth !== 'all') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFilterType('all');
+                        setFilterMonth('all');
+                      }}
+                      className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
+                    >
+                      Limpar tudo
+                    </button>
+                  )}
+                </div>
+
+                {/* Mais Tipos de Eventos */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-outline">
+                    Outros Tipos de Eventos
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { id: 'ensaio', label: 'Ensaios' },
+                      { id: 'jovens', label: 'Jovens' },
+                      { id: 'congresso', label: 'Congressos' },
+                      { id: 'batismo', label: 'Batismo' },
+                      { id: 'especial', label: 'Especiais' }
+                    ].map(t => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => {
+                          setFilterType(filterType === t.id ? 'all' : t.id);
+                          setIsFilterMenuOpen(false);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                          filterType === t.id
+                            ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
+                            : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Filtro por Mês */}
+                {uniqueMonths.length > 0 && (
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-outline">
+                      Filtrar por Mês
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFilterMonth('all');
+                          setIsFilterMenuOpen(false);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                          filterMonth === 'all'
+                            ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
+                            : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+                        }`}
+                      >
+                        Todos os Meses
+                      </button>
+                      {uniqueMonths.map(monthStr => {
+                        const label = formatMonthLabel(monthStr);
+                        return (
+                          <button
+                            key={monthStr}
+                            type="button"
+                            onClick={() => {
+                              setFilterMonth(monthStr);
+                              setIsFilterMenuOpen(false);
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all capitalize cursor-pointer ${
+                              filterMonth === monthStr
+                                ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
+                                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsFilterMenuOpen(false)}
+                    className="w-full py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-xs font-bold transition-all text-center cursor-pointer"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Lista de Eventos Despoluída */}

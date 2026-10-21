@@ -1,7 +1,5 @@
 import React from 'react';
-import { Calendar, Clock, MapPin, Share2, Music2, ChevronRight, CheckCircle2, Check, X, Clock3, Folder, Layers } from 'lucide-react';
 import { WorshipEvent, ConfirmationStatus, Song, Member } from '../../types';
-import { Badge } from '../ui/Badge';
 import { getEventTypeDefinition } from '../../utils/eventType';
 import { getEventBlocksOrder, getEventSongItems, resolveEventSong } from '../../utils/worshipEvent';
 
@@ -23,141 +21,140 @@ export const EventCard: React.FC<EventCardProps> = ({
   isPast = false
 }) => {
   const confirmedEntries = Object.entries(event.confirmed || {});
-  
+  const totalCount = confirmedEntries.length;
   const acceptedCount = confirmedEntries.filter(([_, s]) => s === 'accepted').length;
-  const declinedCount = confirmedEntries.filter(([_, s]) => s === 'declined').length;
-  const pendingCount = confirmedEntries.filter(([_, s]) => s === 'pending').length;
 
   const eventSongs = getEventSongItems(event).map(item => resolveEventSong(item, songs)).filter(Boolean) as Song[];
-  const uniqueSongGroups = Array.from(new Set(eventSongs.map(s => s.group).filter(Boolean))) as string[];
   const typeDef = getEventTypeDefinition(event.type);
   const eventBlocks = getEventBlocksOrder(event);
 
-  // Formata data amigável (ex: Dom, 01 Mar)
+  // Formata data amigável (ex: Domingo • 01/Dez)
   const formatDateFriendly = (dateStr: string) => {
     try {
       const [y, m, d] = dateStr.split('-').map(Number);
       const date = new Date(y, m - 1, d);
-      return date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
+      const weekday = date.toLocaleDateString('pt-BR', { weekday: 'short' });
+      const day = d.toString().padStart(2, '0');
+      const month = date.toLocaleDateString('pt-BR', { month: 'short' });
+      return `${weekday.toUpperCase()} • ${day} ${month}`;
     } catch {
       return dateStr;
     }
   };
 
+  const isClosed = totalCount > 0 && acceptedCount === totalCount;
+
   return (
-    <div
+    <article
       onClick={() => onSelectEvent(event)}
-      className={`border border-l-4 ${typeDef.borderClass} rounded-2xl p-4 shadow-sm space-y-3 transition-all text-left cursor-pointer active:scale-[0.99] group ${
-        isPast 
-          ? 'bg-slate-50 dark:bg-slate-900/70 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 opacity-90' 
-          : 'bg-white dark:bg-slate-800/90 hover:bg-slate-50/80 dark:hover:bg-slate-800 border-slate-200/90 dark:border-slate-700/80 hover:border-blue-400/40 dark:hover:border-blue-500/40 shadow-slate-200/50 dark:shadow-slate-950/20'
+      className={`rounded-2xl p-4 shadow-md transition-all text-left cursor-pointer active:scale-[0.99] border ${
+        isPast
+          ? 'bg-surface-container-lowest/70 border-outline-variant/15 opacity-80'
+          : 'bg-surface-container-low hover:bg-surface-container border-outline-variant/20 shadow-sm'
       }`}
     >
-      {/* Linha Superior: Time, Tipo e Ação Rápida de WhatsApp */}
-      <div className="flex justify-between items-center gap-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant={isPast ? 'slate' : 'blue'} size="sm">
-            {event.team || 'Escala Avulsa'}
-          </Badge>
-          {event.type && (
-            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md border flex items-center gap-1 shadow-sm ${typeDef.badgeClass}`}>
-              <typeDef.icon size={12} className="shrink-0" />
-              <span>{typeDef.label}</span>
-            </span>
-          )}
-          {eventBlocks.length > 0 && (
-            <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 flex items-center gap-1 shadow-sm">
-              <Layers size={11} className="text-blue-600 dark:text-blue-400" />
-              <span>{eventBlocks.join(' • ')}</span>
-            </span>
-          )}
-          {isPast && (
-            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 flex items-center gap-1">
-              <CheckCircle2 size={11} className="text-slate-500 dark:text-slate-400" />
-              Realizado
-            </span>
-          )}
+      {/* Linha Superior: Ícone Litúrgico, Data/Hora e Status */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-11 h-11 rounded-xl bg-primary-container/20 flex items-center justify-center text-primary shrink-0 shadow-inner">
+            <span className="material-symbols-outlined text-[24px]">church</span>
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-label-sm text-label-sm font-extrabold uppercase text-primary px-2 py-0.5 rounded-md bg-primary-container/20">
+                {formatDateFriendly(event.date)}
+              </span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant font-medium">
+                {event.time || '19:00'}
+              </span>
+            </div>
+            <h3 className="font-headline-sm text-headline-sm text-on-surface mt-0.5 leading-snug truncate font-bold">
+              {event.title}
+            </h3>
+          </div>
         </div>
 
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onShareWhatsApp(event);
-          }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 active:scale-95 transition-all text-xs font-bold border border-blue-500/20 flex-shrink-0"
-          title="Compartilhar escala no WhatsApp"
-        >
-          <Share2 size={14} />
-          <span>WhatsApp</span>
-        </button>
+        {/* Indicador de Status da Escala */}
+        <span 
+          className={`w-2.5 h-2.5 rounded-full mt-2 shrink-0 ${
+            isClosed ? 'bg-emerald-400' : 'bg-amber-400'
+          }`} 
+          title={isClosed ? 'Escala 100% Confirmada' : 'Presenças Pendentes'}
+        />
       </div>
 
-      {/* Título, Data e Horário */}
-      <div className="pt-0.5">
-        <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors truncate">
-          {event.title}
-        </h3>
-        <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-slate-600 dark:text-slate-300">
-          <span className="inline-flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-bold">
-            <Calendar size={14} />
-            {formatDateFriendly(event.date)}
-          </span>
-          <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 font-semibold">
-            <Clock size={14} className="text-slate-500 dark:text-slate-400" />
-            {event.time}
-          </span>
-          {event.location && (
-            <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-400 truncate max-w-[140px]">
-              <MapPin size={13} />
-              {event.location}
+      {/* Bloco de Detalhes Internos */}
+      <div className="mt-3 pt-3 flex flex-col gap-2 bg-surface-container-lowest/60 rounded-xl p-3 border border-outline-variant/10">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2 text-on-surface-variant">
+            <span className="material-symbols-outlined text-[17px] text-primary">group</span>
+            <span className="font-body-sm text-body-sm truncate">
+              {event.team || 'Banda Principal'}
+            </span>
+          </div>
+          {typeDef.label && (
+            <span className="font-label-sm text-label-sm px-2 py-0.5 rounded-md bg-surface-container-high text-primary font-bold">
+              {typeDef.label}
             </span>
           )}
         </div>
+
+        <div className="flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm gap-2">
+          <div className="flex items-center gap-1.5 truncate">
+            <span className="material-symbols-outlined text-[16px] text-secondary">location_on</span>
+            <span className="truncate">{event.location || 'Templo Principal'}</span>
+          </div>
+
+          {totalCount > 0 ? (
+            <div className={`flex items-center gap-1 font-label-sm text-label-sm font-bold shrink-0 ${
+              isClosed ? 'text-emerald-400' : 'text-amber-400'
+            }`}>
+              <span className="material-symbols-outlined text-[15px]">
+                {isClosed ? 'check_circle' : 'schedule'}
+              </span>
+              <span>{acceptedCount}/{totalCount} Confirmados</span>
+            </div>
+          ) : (
+            <span className="font-label-sm text-label-sm text-on-surface-variant">Sem escalados</span>
+          )}
+        </div>
+
+        {eventBlocks.length > 0 && (
+          <div className="flex items-center gap-1.5 pt-1 border-t border-outline-variant/10">
+            <span className="material-symbols-outlined text-[14px] text-tertiary">layers</span>
+            <span className="font-label-sm text-label-sm text-tertiary truncate">
+              {eventBlocks.join(' • ')}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Rodapé Limpo: Resumo de Presença com Cores Padrão, Qtd Músicas e Indicador */}
-      <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-200 dark:border-slate-700/50 text-xs">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold text-[11px]">
-            <Check size={11} className="stroke-[3]" />
-            {acceptedCount} Confirmado{acceptedCount === 1 ? '' : 's'}
-          </span>
-          {declinedCount > 0 && (
-            <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-md font-bold text-[11px]">
-              <X size={11} className="stroke-[3]" />
-              {declinedCount} Não vai
-            </span>
-          )}
-          {pendingCount > 0 && (
-            <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md font-bold text-[11px]">
-              <Clock3 size={11} />
-              {pendingCount} Pendente
-            </span>
-          )}
+      {/* Ações Inferiores: Músicas e WhatsApp */}
+      <div className="mt-3 flex items-center justify-between">
+        <div className="flex items-center gap-1.5 font-label-md text-label-md text-primary hover:underline">
+          <span className="material-symbols-outlined text-[18px]">playlist_play</span>
+          <span>{eventSongs.length} {eventSongs.length === 1 ? 'música' : 'músicas'}</span>
         </div>
 
-        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-          {uniqueSongGroups.length > 0 && (
-            <span
-              className="inline-flex items-center gap-1 bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/25 px-2 py-0.5 rounded-md text-[11px] max-w-[120px] truncate"
-              title={`Grupo: ${uniqueSongGroups.join(', ')}`}
-            >
-              <Folder size={11} className="text-purple-600 dark:text-purple-400 shrink-0" />
-              <span className="truncate">{uniqueSongGroups.join(', ')}</span>
-            </span>
-          )}
-          {eventSongs.length > 0 && (
-            <span className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-950 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 text-[11px] text-slate-700 dark:text-slate-300 font-semibold">
-              <Music2 size={12} className="text-blue-600 dark:text-blue-400" />
-              {eventSongs.length}
-            </span>
-          )}
-          <span className="text-blue-600 dark:text-blue-400 text-xs font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
-            Ver detalhes
-            <ChevronRight size={14} />
+        <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onShareWhatsApp(event);
+            }}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface active:scale-95 transition-all text-xs font-bold border border-outline-variant/20"
+            title="Compartilhar escala no WhatsApp"
+          >
+            <span className="material-symbols-outlined text-[16px] text-emerald-400">share</span>
+            <span>WhatsApp</span>
+          </button>
+
+          <span className="material-symbols-outlined text-on-surface-variant text-[20px]">
+            chevron_right
           </span>
         </div>
       </div>
-    </div>
+    </article>
   );
 };

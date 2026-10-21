@@ -17,34 +17,38 @@ export const StatCard: React.FC<StatCardProps> = ({
   variant = 'blue',
   trend
 }) => {
-  const variantGlow = {
-    blue: 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400',
-    cyan: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400',
-    purple: 'bg-purple-500/10 border-purple-500/20 text-purple-400',
-    amber: 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+  const variantIcons = {
+    blue: 'bg-primary-container/20 text-primary border-primary/20',
+    cyan: 'bg-secondary-container/30 text-secondary border-secondary/20',
+    purple: 'bg-tertiary-container/30 text-tertiary border-tertiary/20',
+    amber: 'bg-amber-500/15 text-amber-300 border-amber-500/20'
   };
 
   return (
-    <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-3.5 shadow-sm space-y-2 text-left relative overflow-hidden">
+    <div className="bg-surface-container border border-outline-variant/15 rounded-2xl p-3.5 shadow-sm space-y-2 text-left relative overflow-hidden group">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-slate-400">{title}</span>
-        <div className={`p-2 rounded-xl border ${variantGlow[variant]}`}>
+        <span className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">
+          {title}
+        </span>
+        <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${variantIcons[variant]}`}>
           {icon}
         </div>
       </div>
 
       <div>
-        <span className="text-2xl font-black text-slate-100 tracking-tight block">
+        <span className="font-headline-lg text-2xl font-black text-on-surface tracking-tight block">
           {value}
         </span>
         {subtitle && (
-          <p className="text-[11px] text-slate-400 mt-0.5">{subtitle}</p>
+          <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">{subtitle}</p>
         )}
       </div>
 
       {trend && (
-        <div className="text-[10px] text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1 pt-1 border-t border-slate-700/40">
-          <span>{trend}</span>
+        <div className="pt-1 border-t border-outline-variant/10 flex items-center gap-1">
+          <span className="inline-flex items-center text-[10px] font-bold text-primary bg-primary-container/30 px-2 py-0.5 rounded-full">
+            {trend}
+          </span>
         </div>
       )}
     </div>

@@ -142,7 +142,7 @@ export interface Team {
   description?: string;
 }
 
-export type TabType = 'agenda' | 'playlist' | 'team' | 'metrics' | 'settings';
+export type TabType = 'inicio' | 'agenda' | 'playlist' | 'team' | 'metrics' | 'settings';
 
 export interface SyncStatus {
   isOnline: boolean;

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="pt-BR"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800;900&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#0b1326;color:#dae2fd;}body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "inverse-primary": "#0053db", "on-tertiary-fixed": "#23005c", "surface-container-lowest": "#060e20", "on-tertiary-container": "#f6edff", "on-error-container": "#ffdad6", "background": "#0b1326", "on-primary-fixed-variant": "#003ea8", "primary": "#b4c5ff", "tertiary": "#d0bcff", "on-surface-variant": "#c3c6d7", "on-error": "#690005", "surface-variant": "#2d3449", "on-surface": "#dae2fd", "error": "#ffb4ab", "surface-dim": "#0b1326", "secondary-fixed-dim": "#b7c8e1", "surface-tint": "#b4c5ff", "outline-variant": "#434655", "surface-bright": "#31394d", "surface-container-low": "#131b2e", "inverse-on-surface": "#283044", "surface-container-high": "#222a3d", "on-secondary-fixed-variant": "#38485d", "primary-fixed": "#dbe1ff", "secondary-container": "#3a4a5f", "primary-fixed-dim": "#b4c5ff", "secondary-fixed": "#d3e4fe", "surface-container-highest": "#2d3449", "tertiary-fixed": "#e9ddff", "tertiary-fixed-dim": "#d0bcff", "error-container": "#93000a", "on-tertiary": "#3c0091", "on-primary": "#002a78", "tertiary-container": "#7d4ce7", "outline": "#8d90a0", "on-secondary": "#213145", "on-tertiary-fixed-variant": "#5516be", "on-background": "#dae2fd", "primary-container": "#2563eb", "on-secondary-fixed": "#0b1c30", "surface": "#0b1326", "inverse-surface": "#dae2fd", "on-primary-fixed": "#00174b", "on-primary-container": "#eeefff", "surface-container": "#171f33", "secondary": "#b7c8e1", "on-secondary-container": "#a9bad3" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-xs": "0.25rem", "space-sm": "0.5rem", "gutter": "0.75rem", "margin": "1rem", "space-xl": "2rem", "space-lg": "1.5rem", "space-md": "1rem" }, fontFamily: { "headline-sm": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "label-sm": ["Plus Jakarta Sans"], "body-sm": ["Plus Jakarta Sans"], "label-lg": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "headline-lg-mobile": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"] }, fontSize: { "headline-sm": ["15px", { lineHeight: "20px", letterSpacing: "-0.01em", fontWeight: "700" }], "headline-md": ["18px", { lineHeight: "24px", letterSpacing: "-0.015em", fontWeight: "700" }], "label-sm": ["9px", { lineHeight: "12px", letterSpacing: "0.05em", fontWeight: "900" }], "body-sm": ["12px", { lineHeight: "16px", letterSpacing: "0", fontWeight: "400" }], "label-lg": ["13px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "700" }], "headline-lg": ["20px", { lineHeight: "28px", letterSpacing: "-0.025em", fontWeight: "800" }], "body-lg": ["15px", { lineHeight: "22px", letterSpacing: "-0.005em", fontWeight: "500" }], "body-md": ["14px", { lineHeight: "20px", letterSpacing: "0", fontWeight: "500" }], "headline-lg-mobile": ["18px", { lineHeight: "26px", letterSpacing: "-0.02em", fontWeight: "800" }], "label-md": ["11px", { lineHeight: "14px", letterSpacing: "0.04em", fontWeight: "800" }] } } } }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 left-0 right-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="h-16 px-margin flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-xs min-w-0"><button aria-label="Voltar" class="w-11 h-11 -ml-2 flex items-center justify-center rounded-xl text-on-surface hover:bg-surface-container active:scale-95 transition-all" onclick="history.back()" type="button"><span class="material-symbols-outlined text-[24px]">arrow_back</span></button><img alt="Louvor App Logo" class="h-7 w-auto object-contain flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAt5vfgZuUBBc2aYwnH8Tt5kmD5WrkgwtahsGauRTGK4OqytjPaSnImDCy4prFAtiqixcBbqt5F5MvvdhTgBa95OianGeV5Mbx1U-njS9m8c1mqIIz1cNLXXIXlTF8yBnYEW8JFSnrKPaBb2ot_ShClAiaBwQI4lIwMvulStlsDbpm8nClpQad__GfDjs3jcAggzT0kiHrl5T2okmTRqUIHvxOGvbFvIiT7CrvITDVLzS0FKWe43lK2"/><div class="flex flex-col min-w-0 pl-1"><h1 class="font-headline-sm text-headline-sm text-on-surface truncate">Cifra Ao Vivo</h1><span class="font-label-sm text-label-sm uppercase text-on-surface-variant truncate">Louvor App • Igreja Central</span></div></div><div class="flex items-center gap-space-xs flex-shrink-0"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-1 ring-outline-variant/40" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6r-ZsxGdO4UwGIjp_k8up-urrR1rEJJgysw0lesFKh2yKIC1ZPKrM1_xaqlJ5csotH_ROrfwUhosN2jGyK7UEp6jNVE_N7rYGnar7rdce9Eow7qbNr2nfdcqYe38rIt6zfFW2RiGR4G0MKP5J6CS9BFutV2G2tXsEj23WcXvbzn3Se1jBQKISnW7F7BNO56wcOn78buT_UN4XIhc5YKyY-89X7ZdoV5TtZmH0qkUD1_ikoP-II42H"/></div></div></header><main class="flex-1 w-full pt-16 pb-safe bg-surface max-w-md mx-auto relative"><div class="flex flex-col w-full pb-24">
+<!-- Live Stage Quick Monitor Bar -->
+<div class="px-margin pt-space-xs pb-space-sm flex flex-col gap-space-sm">
+<!-- Song Header Banner with Ambient Stage Aura -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-high p-margin shadow-md">
+<div class="absolute -right-10 -top-10 w-32 h-32 rounded-full bg-primary-container/20 blur-2xl pointer-events-none"></div>
+<div class="flex items-start justify-between gap-space-sm relative z-10">
+<div class="min-w-0 flex-1">
+<div class="flex items-center gap-space-xs mb-1">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-container/30 text-primary font-label-sm text-label-sm uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+              Ao Vivo no Culto
+            </span>
+<span class="text-on-surface-variant font-label-sm text-label-sm uppercase">Nº 03 no Setlist</span>
+</div>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface font-extrabold truncate tracking-tight">
+            Bondade de Deus
+          </h2>
+<p class="font-body-sm text-body-sm text-secondary truncate mt-0.5">
+            Isaías Saad • Bethel Music Brasil
+          </p>
+</div>
+<!-- Keep Awake Stage Lock Button -->
+<button class="h-10 px-3 rounded-lg bg-surface-container flex items-center gap-1.5 text-on-surface-variant transition-all active:scale-95 shadow-sm" id="wakeLockBtn" onclick="toggleScreenLock()" title="Manter Tela Sempre Ativa">
+<span class="material-symbols-outlined text-[18px]" id="wakeLockIcon">lock_open</span>
+<span class="font-label-md text-label-md" id="wakeLockLabel">Tela Ativa</span>
+</button>
+</div>
+<!-- Musical Metrics Badges (Key, BPM, Signature) -->
+<div class="grid grid-cols-3 gap-space-xs mt-space-md pt-space-sm bg-surface-container-lowest/60 rounded-lg p-space-sm">
+<div class="flex flex-col items-center justify-center p-1 rounded bg-surface-container-low">
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant">Tom Atual</span>
+<div class="flex items-baseline gap-1 mt-0.5">
+<span class="font-headline-md text-headline-md text-primary font-black" id="currentKeyDisplay">G</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant line-through opacity-70">Ab</span>
+</div>
+</div>
+<!-- Metronome Pulse Unit -->
+<div class="flex flex-col items-center justify-center p-1 rounded bg-surface-container-low cursor-pointer transition-colors duration-150" id="metronomeBox" onclick="toggleMetronome()">
+<div class="flex items-center gap-1">
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant">Tempo</span>
+<span class="w-2 h-2 rounded-full bg-outline-variant transition-all duration-100" id="beatDot"></span>
+</div>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="font-headline-md text-headline-md text-on-surface font-bold">70</span>
+<span class="font-label-sm text-label-sm text-secondary">BPM</span>
+</div>
+</div>
+<div class="flex flex-col items-center justify-center p-1 rounded bg-surface-container-low">
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant">Compasso</span>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="font-headline-md text-headline-md text-tertiary font-black">4/4</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Balada</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Live Floating Control Tray: Transposer, Capo, Smart-Scroll -->
+<div class="bg-surface-container rounded-xl p-space-sm shadow-md flex flex-col gap-space-xs">
+<!-- Row 1: Key Transposition & Capo -->
+<div class="flex items-center justify-between gap-space-xs">
+<!-- Transposer Controls -->
+<div class="flex items-center bg-surface-container-lowest rounded-lg p-0.5 flex-1 shadow-inner">
+<button aria-label="Diminuir Meio Tom" class="h-9 px-2.5 rounded-md flex items-center justify-center text-on-surface hover:bg-surface-container-high active:scale-90 transition-all" onclick="transpose(-1)">
+<span class="font-label-md text-label-md font-black text-on-surface">-½</span>
+</button>
+<div class="flex-1 text-center min-w-0 px-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider">Transposição</span>
+<span class="font-label-lg text-label-lg text-primary font-black truncate block" id="transposedKeyTag">Tom: G</span>
+</div>
+<button aria-label="Aumentar Meio Tom" class="h-9 px-2.5 rounded-md flex items-center justify-center text-on-surface hover:bg-surface-container-high active:scale-90 transition-all" onclick="transpose(1)">
+<span class="font-label-md text-label-md font-black text-on-surface">+½</span>
+</button>
+</div>
+<!-- Capo Setting -->
+<div class="flex items-center gap-1 px-3 h-10 rounded-lg bg-surface-container-lowest text-on-surface shadow-inner flex-shrink-0">
+<span class="material-symbols-outlined text-secondary text-[18px]">straighten</span>
+<div class="flex flex-col leading-tight">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Capo</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">Casa 1</span>
+</div>
+</div>
+</div>
+<!-- Row 2: Auto-Scroll Deck & Metronome Audio-visual Toggle -->
+<div class="flex items-center justify-between gap-space-xs pt-1">
+<div class="flex items-center gap-1 bg-surface-container-lowest rounded-lg p-1 flex-1">
+<button class="h-9 px-3 rounded-md bg-primary-container text-on-primary-container flex items-center gap-1 active:scale-95 transition-all shadow-sm" id="scrollPlayBtn" onclick="toggleAutoScroll()">
+<span class="material-symbols-outlined text-[20px]" id="scrollPlayIcon">play_arrow</span>
+<span class="font-label-md text-label-md font-bold uppercase" id="scrollPlayText">Rolar</span>
+</button>
+<!-- Speed Stepper Buttons -->
+<div class="flex items-center gap-1 ml-auto">
+<button class="scroll-speed-btn h-8 px-2 rounded font-label-md text-label-md bg-surface-container-high text-primary font-bold" onclick="setScrollSpeed(1, this)">1x</button>
+<button class="scroll-speed-btn h-8 px-2 rounded font-label-md text-label-md text-on-surface-variant hover:text-on-surface" onclick="setScrollSpeed(1.5, this)">1.5x</button>
+<button class="scroll-speed-btn h-8 px-2 rounded font-label-md text-label-md text-on-surface-variant hover:text-on-surface" onclick="setScrollSpeed(2, this)">2x</button>
+</div>
+</div>
+<!-- Visual Metronome Quick Switch -->
+<button class="h-11 px-3 rounded-lg bg-surface-container-lowest text-on-surface flex items-center gap-1.5 active:scale-95 transition-all shadow-sm" id="metroToggleBtn" onclick="toggleMetronome()">
+<span class="material-symbols-outlined text-[20px] text-primary" id="metroIcon">file_map_stack</span>
+<span class="font-label-md text-label-md font-bold">70 bpm</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Performing Praise Team Context Bar -->
+<div class="px-margin py-space-xs">
+<div class="bg-surface-container-low rounded-xl px-margin py-space-xs flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="flex -space-x-2 overflow-hidden">
+<img class="inline-block h-6 w-6 rounded-full object-cover" data-alt="Close up face of a young male acoustic guitarist with a warm stage lighting background in soft focus" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdC2XSGLzLDpHxDeK7bRjWeKUb-QjoAu1BAYkTWU0SzbMGhkOJmPw8AAgfTCb64dyVC2WOuYHX9YI1w26TF7xDdJQkHFAyxM9Zp_WKsTCPKhRUOqJVMgsjA51szgK7rCUHAedNElpEZGOROP2ydoitE5vYRcoiFX-uay5VgKNnxCtsipF38wv67Kx7DpihflDnxpT8L6u8yK2aNFVn0gvIgYECoqO0UaXlp2aNu7Eb4xBnQfRo-Z1u"/>
+<img class="inline-block h-6 w-6 rounded-full object-cover" data-alt="Portrait of a female worship vocal singer smiling on a dim church stage with purple atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUOiRahbcOrX8EYYzPixhqn5mUiComQBF2dMRtSDpCxMzBX4oT5LyUJSHKVylE-5sRR6kokMCb2ifAWFhnjSHLTwWPg-sbs0FoUmZSW3TL2T787X1GyM3T9XkPrV8Uu57xuntTJaWbTqVEDAqlLk2y2l7LAp4Vdy-n9eYKLl145ewoN6jIVN76sVVuL7xEMQxoRg-zp3k3QMZm0gsGXp_WmAGrW6u9KHGo78MljW2nar92Peqxt0A5"/>
+<img class="inline-block h-6 w-6 rounded-full object-cover" data-alt="Portrait of a young male drummer sitting behind an acrylic shield with stage lights reflecting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBF-2xD8_4fGykAMpbabmPHdOM_HTiI_irJEyXuMIHNZ0sdS4R-oynRqPvsZo1S8C98EAJRuAKzxtMWAeVtF7a0vTAq2HeI5WBMReGu6NfCCw1Ffj3T-jWXw4lPlYx_NldLal6gXf7kpAjNGU8CR2OK1jxLcZeu0-XHjIg4RTFYriPZcVJgkaIVsnowwHedAsKF98cks4KiYBZ7rWVLnp62lZ5-E9oDE07IhLw1hSvCN8MdOmZbO2v0"/>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Banda Principal (5 no palco)</span>
+</div>
+<span class="font-label-sm text-label-sm uppercase font-bold text-primary px-2 py-0.5 rounded bg-primary-container/20">Sem Intervalo</span>
+</div>
+</div>
+<!-- Stage Chord Sheet (High Contrast Canvas) -->
+<div class="px-margin mt-space-sm flex flex-col gap-space-md select-none font-mono" id="chordSheet">
+<!-- Section: INTRO -->
+<div class="rounded-xl bg-surface-container p-margin shadow-sm">
+<div class="flex items-center justify-between pb-2 mb-2">
+<span class="px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md uppercase tracking-wider font-extrabold">
+          [ INTRO ]
+        </span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-sans">2x com Teclado + Pad suave</span>
+</div>
+<!-- Chords Flow -->
+<div class="flex items-center gap-6 py-2 px-1 text-headline-md font-headline-md">
+<span class="chord-token text-primary font-black tracking-wide">G</span>
+<span class="text-outline-variant font-light">|</span>
+<span class="chord-token text-primary font-black tracking-wide">C</span>
+<span class="text-outline-variant font-light">|</span>
+<span class="chord-token text-primary font-black tracking-wide">G</span>
+<span class="text-outline-variant font-light">|</span>
+<span class="chord-token text-primary font-black tracking-wide">C</span>
+</div>
+</div>
+<!-- Section: VERSO 1 -->
+<div class="rounded-xl bg-surface-container p-margin shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between pb-1">
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-primary font-label-md text-label-md uppercase tracking-wider font-extrabold">
+          [ VERSO 1 ]
+        </span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-sans">Voz Principal + Violão</span>
+</div>
+<!-- Line 1 -->
+<div class="flex flex-col leading-tight pt-1">
+<div class="font-headline-sm text-headline-sm text-primary font-black tracking-wide flex">
+<span class="chord-token w-1/2">G</span>
+<span class="chord-token w-1/2">C</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface font-sans font-medium tracking-normal mt-0.5">
+          Te amo Deus, Tua graça nunca falha
+        </p>
+</div>
+<!-- Line 2 -->
+<div class="flex flex-col leading-tight pt-2">
+<div class="font-headline-sm text-headline-sm text-primary font-black tracking-wide flex flex-wrap">
+<span class="chord-token w-1/4">D/F#</span>
+<span class="chord-token w-1/4">Em</span>
+<span class="chord-token w-1/4">C</span>
+<span class="chord-token w-1/4">D</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface font-sans font-medium tracking-normal mt-0.5">
+          Todos os dias, eu estou em Tuas mãos
+        </p>
+</div>
+<!-- Line 3 -->
+<div class="flex flex-col leading-tight pt-2">
+<div class="font-headline-sm text-headline-sm text-primary font-black tracking-wide flex">
+<span class="chord-token w-1/2">Em</span>
+<span class="chord-token w-1/2">C</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface font-sans font-medium tracking-normal mt-0.5">
+          Desde quando acordo, até eu me deitar
+        </p>
+</div>
+<!-- Line 4 -->
+<div class="flex flex-col leading-tight pt-2">
+<div class="font-headline-sm text-headline-sm text-primary font-black tracking-wide flex flex-wrap">
+<span class="chord-token w-1/3">D/F#</span>
+<span class="chord-token w-1/3">G</span>
+<span class="chord-token w-1/3">C</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface font-sans font-medium tracking-normal mt-0.5">
+          Eu cantarei da Tua bondade ó Deus
+        </p>
+</div>
+</div>
+<!-- Section: REFRÃO (Highlighted Stage Card) -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-high p-margin shadow-md flex flex-col gap-space-sm">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary rounded-l-xl"></div>
+<div class="flex items-center justify-between pb-1 pl-1">
+<div class="flex items-center gap-1.5">
+<span class="px-2.5 py-0.5 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md uppercase tracking-wider font-extrabold">
+            [ REFRÃO ]
+          </span>
+<span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-sans font-bold">Banda Completa (Forte)</span>
+</div>
+<!-- Chorus Line 1 -->
+<div class="flex flex-col leading-tight pt-1 pl-1">
+<div class="font-headline-md text-headline-md text-primary font-black tracking-wider flex">
+<span class="chord-token w-1/2">C</span>
+<span class="chord-token w-1/2">G</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface font-sans font-bold tracking-normal mt-0.5">
+          Tua bondade me seguirá
+        </p>
+</div>
+<!-- Chorus Line 2 -->
+<div class="flex flex-col leading-tight pt-2 pl-1">
+<div class="font-headline-md text-headline-md text-primary font-black tracking-wider flex">
+<span class="chord-token w-1/2">D</span>
+<span class="chord-token w-1/2">Em</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface font-sans font-bold tracking-normal mt-0.5">
+          Me seguirá, Senhor
+        </p>
+</div>
+<!-- Chorus Line 3 -->
+<div class="flex flex-col leading-tight pt-2 pl-1">
+<div class="font-headline-md text-headline-md text-primary font-black tracking-wider flex">
+<span class="chord-token w-1/2">C</span>
+<span class="chord-token w-1/2">G</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface font-sans font-bold tracking-normal mt-0.5">
+          Tua bondade me seguirá
+        </p>
+</div>
+<!-- Chorus Line 4 -->
+<div class="flex flex-col leading-tight pt-2 pl-1">
+<div class="font-headline-md text-headline-md text-primary font-black tracking-wider flex flex-wrap">
+<span class="chord-token w-1/3">D</span>
+<span class="chord-token w-1/3">Em</span>
+<span class="chord-token w-1/3">C</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface font-sans font-bold tracking-normal mt-0.5">
+          Me seguirá, Senhor
+        </p>
+</div>
+</div>
+<!-- Section: PONTE (Bridge) -->
+<div class="rounded-xl bg-surface-container p-margin shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between pb-1">
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-tertiary font-label-md text-label-md uppercase tracking-wider font-extrabold">
+          [ PONTE ]
+        </span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-sans">Crescendo Dinâmico</span>
+</div>
+<div class="flex flex-col leading-tight pt-1">
+<div class="font-headline-sm text-headline-sm text-primary font-black tracking-wide flex">
+<span class="chord-token w-1/2">G/B</span>
+<span class="chord-token w-1/2">C</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface font-sans font-medium tracking-normal mt-0.5">
+          Tua presença é o meu sustento
+        </p>
+</div>
+<div class="flex flex-col leading-tight pt-2">
+<div class="font-headline-sm text-headline-sm text-primary font-black tracking-wide flex">
+<span class="chord-token w-1/2">D</span>
+<span class="chord-token w-1/2">Em</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface font-sans font-medium tracking-normal mt-0.5">
+          Eu me rendo a Ti, Te dou meu coração
+        </p>
+</div>
+</div>
+<!-- Section: FINALIZAÇÃO -->
+<div class="rounded-xl bg-surface-container-low p-margin shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase text-secondary font-bold">[ FINAL ]</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold mt-0.5">G • C • G (Sustenta Pad)</span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">music_note</span>
+<span class="font-body-sm text-body-sm">Corte seco no G</span>
+</div>
+</div>
+</div>
+<!-- Quick Feedback Toast Banner for Musicians -->
+<div class="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 max-w-xs px-4 py-2 rounded-full bg-surface-container-highest text-on-surface font-body-sm text-body-sm shadow-xl flex items-center gap-2 opacity-0 pointer-events-none transition-opacity duration-300" id="quickToast">
+<span class="material-symbols-outlined text-primary text-[18px]">info</span>
+<span id="toastMsg">Tela Mantida Ativa</span>
+</div>
+<!-- Persistent Floating Stage Setlist Footer Bar -->
+<div class="fixed bottom-0 left-0 right-0 z-50 bg-surface-container-high/95 backdrop-blur-xl px-margin py-2.5 pb-safe shadow-[0_-4px_16px_rgba(0,0,0,0.5)]">
+<div class="max-w-md mx-auto flex items-center justify-between gap-space-sm">
+<!-- Previous Song Action -->
+<button class="flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg text-on-surface hover:bg-surface-container active:scale-95 transition-all text-left min-w-0 flex-1" onclick="navigateSong('prev')">
+<span class="material-symbols-outlined text-[20px] text-secondary flex-shrink-0">chevron_left</span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm uppercase text-on-surface-variant leading-none">Anterior (2)</span>
+<span class="font-label-md text-label-md text-on-surface truncate font-bold mt-0.5">A Ele a Glória</span>
+</div>
+</button>
+<!-- Center Stage Quick Menu Pin -->
+<button aria-label="Ver Setlist Completo" class="w-10 h-10 rounded-xl bg-surface-container-lowest flex items-center justify-center text-primary active:scale-90 transition-all flex-shrink-0 shadow-sm" onclick="showQuickSetlistModal()">
+<span class="material-symbols-outlined text-[22px]">queue_music</span>
+</button>
+<!-- Next Song Action -->
+<button class="flex items-center justify-end gap-1.5 py-1.5 px-2.5 rounded-lg text-on-surface hover:bg-surface-container active:scale-95 transition-all text-right min-w-0 flex-1" onclick="navigateSong('next')">
+<div class="flex flex-col min-w-0 text-right">
+<span class="font-label-sm text-label-sm uppercase text-primary leading-none">Próxima (4)</span>
+<span class="font-label-md text-label-md text-primary font-bold truncate mt-0.5">Ruja o Leão</span>
+</div>
+<span class="material-symbols-outlined text-[20px] text-primary flex-shrink-0">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+  // Transposition Engine State
+  const chromaticScale = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+  let currentKeyIndex = 7; // G is index 7
+
+  function transpose(step) {
+    currentKeyIndex = (currentKeyIndex + step + 12) % 12;
+    const newKey = chromaticScale[currentKeyIndex];
+    
+    const keyDisplay = document.getElementById('currentKeyDisplay');
+    const tagDisplay = document.getElementById('transposedKeyTag');
+    if (keyDisplay) keyDisplay.textContent = newKey;
+    if (tagDisplay) tagDisplay.textContent = 'Tom: ' + newKey;
+
+    showToast('Tom transposto para ' + newKey);
+  }
+
+  // Metronome Visual Engine (70 BPM = ~857ms interval)
+  let isMetronomeActive = true;
+  let metroInterval = null;
+  const bpm = 70;
+  const intervalMs = (60 / bpm) * 1000;
+
+  function runMetronome() {
+    const dot = document.getElementById('beatDot');
+    const box = document.getElementById('metronomeBox');
+    if (!dot || !box) return;
+
+    let beat = 0;
+    metroInterval = setInterval(() => {
+      beat = (beat + 1) % 4;
+      // Accent beat 1
+      if (beat === 1) {
+        dot.className = 'w-2 h-2 rounded-full bg-primary scale-125 transition-all duration-75';
+        box.classList.add('bg-surface-container-highest');
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-secondary transition-all duration-75';
+        box.classList.remove('bg-surface-container-highest');
+      }
+
+      setTimeout(() => {
+        dot.className = 'w-2 h-2 rounded-full bg-outline-variant transition-all duration-150';
+      }, 140);
+    }, intervalMs);
+  }
+
+  function toggleMetronome() {
+    isMetronomeActive = !isMetronomeActive;
+    const metroBtn = document.getElementById('metroToggleBtn');
+    const metroIcon = document.getElementById('metroIcon');
+
+    if (isMetronomeActive) {
+      runMetronome();
+      if (metroBtn) metroBtn.classList.replace('text-on-surface-variant', 'text-on-surface');
+      if (metroIcon) metroIcon.classList.add('text-primary');
+      showToast('Metrônomo: 70 BPM Ativo');
+    } else {
+      clearInterval(metroInterval);
+      const dot = document.getElementById('beatDot');
+      if (dot) dot.className = 'w-2 h-2 rounded-full bg-outline-variant';
+      if (metroBtn) metroBtn.classList.replace('text-on-surface', 'text-on-surface-variant');
+      if (metroIcon) metroIcon.classList.remove('text-primary');
+      showToast('Metrônomo Pausado');
+    }
+  }
+
+  // Auto-scroll Controller
+  let isScrolling = false;
+  let scrollInterval = null;
+  let scrollSpeedFactor = 1;
+
+  function toggleAutoScroll() {
+    isScrolling = !isScrolling;
+    const btnText = document.getElementById('scrollPlayText');
+    const btnIcon = document.getElementById('scrollPlayIcon');
+    const btn = document.getElementById('scrollPlayBtn');
+
+    if (isScrolling) {
+      if (btnText) btnText.textContent = 'Pausar';
+      if (btnIcon) btnIcon.textContent = 'pause';
+      if (btn) btn.classList.replace('bg-primary-container', 'bg-tertiary-container');
+
+      scrollInterval = setInterval(() => {
+        window.scrollBy({ top: 1 * scrollSpeedFactor, behavior: 'smooth' });
+      }, 40);
+      showToast('Rolagem automática iniciada');
+    } else {
+      if (btnText) btnText.textContent = 'Rolar';
+      if (btnIcon) btnIcon.textContent = 'play_arrow';
+      if (btn) btn.classList.replace('bg-tertiary-container', 'bg-primary-container');
+      clearInterval(scrollInterval);
+      showToast('Rolagem pausada');
+    }
+  }
+
+  function setScrollSpeed(factor, targetBtn) {
+    scrollSpeedFactor = factor;
+    document.querySelectorAll('.scroll-speed-btn').forEach(b => {
+      b.className = 'scroll-speed-btn h-8 px-2 rounded font-label-md text-label-md text-on-surface-variant hover:text-on-surface';
+    });
+    if (targetBtn) {
+      targetBtn.className = 'scroll-speed-btn h-8 px-2 rounded font-label-md text-label-md bg-surface-container-high text-primary font-bold';
+    }
+    showToast('Velocidade de rolagem: ' + factor + 'x');
+  }
+
+  // Stage Wake Lock Simulation
+  let wakeLockActive = false;
+  function toggleScreenLock() {
+    wakeLockActive = !wakeLockActive;
+    const icon = document.getElementById('wakeLockIcon');
+    const label = document.getElementById('wakeLockLabel');
+    const btn = document.getElementById('wakeLockBtn');
+
+    if (wakeLockActive) {
+      if (icon) {
+        icon.textContent = 'lock';
+        icon.classList.add('text-primary');
+      }
+      if (label) {
+        label.textContent = 'Sempre Ativa';
+        label.classList.add('text-primary');
+      }
+      if (btn) btn.classList.add('bg-primary-container/20');
+      showToast('Tela Travada: Não apagará no palco');
+    } else {
+      if (icon) {
+        icon.textContent = 'lock_open';
+        icon.classList.remove('text-primary');
+      }
+      if (label) {
+        label.textContent = 'Tela Ativa';
+        label.classList.remove('text-primary');
+      }
+      if (btn) btn.classList.remove('bg-primary-container/20');
+      showToast('Economia de tela restaurada');
+    }
+  }
+
+  // Toast Notification Helper
+  let toastTimer = null;
+  function showToast(msg) {
+    const toast = document.getElementById('quickToast');
+    const text = document.getElementById('toastMsg');
+    if (!toast || !text) return;
+
+    text.textContent = msg;
+    toast.style.opacity = '1';
+
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.style.opacity = '0';
+    }, 1800);
+  }
+
+  function navigateSong(direction) {
+    if (direction === 'next') {
+      showToast('Carregando: Ruja o Leão...');
+    } else {
+      showToast('Retornando para: A Ele a Glória...');
+    }
+  }
+
+  function showQuickSetlistModal() {
+    showToast('Setlist: 5 canções escaladas hoje');
+  }
+
+  // Initialize Metronome on Stage load
+  runMetronome();
+</script></main></body></html>

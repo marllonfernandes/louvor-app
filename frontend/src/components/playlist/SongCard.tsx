@@ -1,30 +1,35 @@
 import React from 'react';
-import { ChevronRight, Pencil, Music2, FileText, Play } from 'lucide-react';
 import { Song } from '../../types';
 import { getYoutubeThumbnail } from '../../utils/youtube';
-import { YoutubeIcon } from '../ui/YoutubeIcon';
 
 interface SongCardProps {
   song: Song;
   isLeader: boolean;
   onSelectSong: (song: Song) => void;
   onEditSong: (song: Song) => void;
+  onOpenStageSong?: (song: Song) => void;
 }
 
-export const SongCard: React.FC<SongCardProps> = ({ song, isLeader, onSelectSong, onEditSong }) => {
+export const SongCard: React.FC<SongCardProps> = ({
+  song,
+  isLeader,
+  onSelectSong,
+  onEditSong,
+  onOpenStageSong
+}) => {
   const thumbnailUrl = song.url ? getYoutubeThumbnail(song.url, 'hq') : null;
 
   return (
-    <div
+    <article
       onClick={() => onSelectSong(song)}
-      className="bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-slate-700/80 hover:border-blue-500/40 rounded-2xl p-3 shadow-xs space-y-2.5 transition-all text-left cursor-pointer active:scale-[0.98] select-none group"
+      className="song-card bg-surface-container hover:bg-surface-container-high rounded-2xl p-3.5 flex flex-col gap-3 shadow-md relative overflow-hidden border border-outline-variant/15 transition-all text-left cursor-pointer active:scale-[0.99] select-none group"
     >
-      {/* Topo do card com capa e dados principais */}
-      <div className="flex items-center gap-3">
-        {/* Capa / Thumbnail do YouTube ou Ícone Musical com Play Hover Spell */}
-        <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-700/70 flex-shrink-0 flex items-center justify-center shadow-inner group-hover:border-blue-500/50 transition-colors">
-          {thumbnailUrl ? (
-            <>
+      {/* Topo do Card */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Thumbnail / Capa com overlay de equalizador */}
+          <div className="w-12 h-12 rounded-xl bg-surface-container-highest flex-shrink-0 overflow-hidden relative shadow-inner border border-outline-variant/20 flex items-center justify-center">
+            {thumbnailUrl ? (
               <img
                 src={thumbnailUrl}
                 alt={song.title}
@@ -34,91 +39,117 @@ export const SongCard: React.FC<SongCardProps> = ({ song, isLeader, onSelectSong
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
               />
-              {/* Play Spell Overlay */}
-              <div className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <div className="w-7 h-7 rounded-full bg-white/90 text-blue-600 flex items-center justify-center shadow-md scale-75 group-hover:scale-100 transition-transform">
-                  <Play size={13} className="fill-blue-600 translate-x-0.5" />
-                </div>
-              </div>
-              <div className="absolute bottom-1 right-1 bg-slate-950/80 rounded-md p-0.5">
-                <YoutubeIcon size={10} className="text-rose-500" />
-              </div>
-            </>
-          ) : (
-            <div className="text-blue-600 dark:text-blue-400/80">
-              <Music2 size={22} />
+            ) : null}
+            <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/80 via-transparent to-transparent flex items-end justify-center pb-0.5">
+              <span className="material-symbols-outlined text-primary text-[14px]">graphic_eq</span>
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Informações da Música */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-extrabold text-slate-900 dark:text-slate-100 text-sm sm:text-base group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors truncate">
+          <div className="flex flex-col min-w-0">
+            <h3 className="font-headline-md text-headline-md text-on-surface truncate leading-tight font-bold group-hover:text-primary transition-colors">
               {song.title}
             </h3>
-            {song.category && (
-              <span className="text-[10px] bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 font-semibold">
-                {song.category}
-              </span>
-            )}
-            {song.group && (
-              <span className="text-[10px] bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-500/30 font-semibold flex items-center gap-1">
-                📁 {song.group}
-              </span>
-            )}
+            <span className="font-body-sm text-body-sm text-on-surface-variant truncate mt-0.5">
+              {song.artist || 'Ministério de Louvor'}
+            </span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{song.artist}</p>
         </div>
 
-        {/* Badge do Tom estilizado (Two-tone / Musical) e Botão de Editar */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-blue-500/10 to-indigo-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/25 text-xs font-black shadow-2xs">
-            <span className="text-[10px] uppercase text-blue-500 font-extrabold">Tom</span>
-            <span className="text-xs font-black">{song.key}</span>
+        {isLeader && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditSong(song);
+            }}
+            className="w-8 h-8 rounded-xl bg-surface-container-low hover:bg-surface-variant flex items-center justify-center text-on-surface-variant hover:text-on-surface active:scale-90 transition-all flex-shrink-0 border border-outline-variant/20"
+            title="Editar Música"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[17px]">edit</span>
+          </button>
+        )}
+      </div>
+
+      {/* Musical Metrics Row (3 colunas estilo Sanctuary Slate) */}
+      <div className="grid grid-cols-3 gap-2 bg-surface-container-lowest p-2 rounded-xl text-center border border-outline-variant/10">
+        <div className="flex flex-col items-center justify-center">
+          <span className="font-label-sm text-label-sm uppercase text-outline">Tom Igreja</span>
+          <span className="font-headline-sm text-headline-sm text-primary font-black">
+            {song.key || 'G'}
           </span>
+        </div>
 
-          {isLeader && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEditSong(song);
-              }}
-              className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/80 active:scale-90 transition-all bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60 cursor-pointer"
-              title="Editar Música"
-            >
-              <Pencil size={15} />
-            </button>
+        <div className="flex flex-col items-center justify-center">
+          <span className="font-label-sm text-label-sm uppercase text-outline">Andamento</span>
+          <span className="font-headline-sm text-headline-sm text-secondary font-bold">
+            {song.bpm ? `${song.bpm} ` : '-- '}
+            <span className="font-label-sm text-label-sm text-on-surface-variant font-normal">BPM</span>
+          </span>
+        </div>
+
+        <div className="flex flex-col items-center justify-center">
+          <span className="font-label-sm text-label-sm uppercase text-outline">Compasso</span>
+          <span className="font-headline-sm text-headline-sm text-secondary font-bold">4/4</span>
+        </div>
+      </div>
+
+      {/* Tags e Links */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-1.5 items-center">
+          {song.category && (
+            <span className="bg-surface-container-high text-primary px-2.5 py-0.5 rounded-full font-label-md text-label-md font-bold">
+              {song.category}
+            </span>
+          )}
+          {song.group && (
+            <span className="bg-surface-container-high text-tertiary px-2.5 py-0.5 rounded-full font-label-md text-label-md font-bold">
+              📁 {song.group}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="material-symbols-outlined text-secondary text-[16px]" title="Cifra Disponível">
+            description
+          </span>
+          {song.url && (
+            <span className="material-symbols-outlined text-primary text-[16px]" title="Vídeo Vinculado">
+              play_circle
+            </span>
           )}
         </div>
       </div>
 
-      {/* Linha inferior de Metadados e Indicador de Clique */}
-      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-700/50">
-        <div className="flex items-center gap-2 flex-wrap">
-          {song.bpm && (
-            <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-950 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-800">
-              ⚡ {song.bpm} BPM
-            </span>
-          )}
-          {song.cifraUrl && (
-            <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 flex items-center gap-1">
-              <FileText size={11} />
-              Cifra
-            </span>
-          )}
-          {song.notes && (
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[130px] sm:max-w-[200px]" title={song.notes}>
-              💬 {song.notes}
-            </span>
-          )}
-        </div>
+      {/* Quick Action Ergonomic Row */}
+      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-outline-variant/10">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onOpenStageSong) {
+              onOpenStageSong(song);
+            } else {
+              onSelectSong(song);
+            }
+          }}
+          className="btn-open-cifra bg-surface-container-high hover:bg-surface-variant text-on-surface py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-95 transition-all font-label-md text-label-md font-bold border border-outline-variant/20"
+          type="button"
+        >
+          <span className="material-symbols-outlined text-[18px] text-primary">auto_stories</span>
+          <span>Cifra ao Vivo</span>
+        </button>
 
-        <div className="flex items-center gap-0.5 text-blue-600 dark:text-blue-400 font-bold text-xs group-hover:translate-x-0.5 transition-transform">
-          <span>Ver detalhes</span>
-          <ChevronRight size={14} />
-        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectSong(song);
+          }}
+          className="btn-details bg-primary-container text-on-primary-container hover:bg-primary-container/90 py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-95 transition-all font-label-md text-label-md font-bold shadow-sm"
+          type="button"
+        >
+          <span className="material-symbols-outlined text-[18px]">tune</span>
+          <span>Detalhes / Tom</span>
+        </button>
       </div>
-    </div>
+    </article>
   );
 };

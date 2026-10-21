@@ -211,7 +211,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
     return (
       <div
         key={`${song.id}-${globalIndex}`}
-        className={`bg-white/95 dark:bg-slate-950/85 border ${cardBorderClass} rounded-2xl p-3.5 space-y-3 shadow-xs transition-all`}
+        className={`bg-surface-container border ${cardBorderClass} rounded-2xl p-3.5 space-y-3 shadow-sm transition-all`}
       >
         {/* Topo do Card: Capa/Avatar da Música com Ordem + Título/Artista + Pill de Tom */}
         <div
@@ -496,8 +496,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         subtitle={`Escala: ${event.team || 'Escala Avulsa'}`}
       >
         <div className="space-y-3.5 text-left">
-          {/* Cabeçalho Compacto: Tipo do Culto & Informações Rápidas */}
-          <div className="flex items-center justify-between gap-2 bg-slate-950 p-2 rounded-2xl border border-slate-800">
+          {/* Cabeçalho Compacto: Tipo do Culto, Data/Hora, Status do Usuário & Ações */}
+          <div className="flex items-center justify-between gap-2 bg-surface-container p-2.5 rounded-2xl border border-outline-variant/20 shadow-sm">
             <div className="flex items-center gap-2 flex-wrap">
               {event.type && (
                 <span className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border flex items-center gap-1.5 shadow-sm ${typeDef.badgeClass}`}>
@@ -505,10 +505,24 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   <span>{typeDef.label}</span>
                 </span>
               )}
-              <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                <Calendar size={12} className="text-blue-600 dark:text-blue-400" />
+              <span className="text-[11px] font-semibold text-on-surface-variant flex items-center gap-1">
+                <Calendar size={12} className="text-primary" />
                 {formatDateBR(event.date)} às {event.time}
               </span>
+
+              {/* Status de Presença do Usuário (se já respondido) */}
+              {isCurrentUserScheduled && currentUserStatus === 'accepted' && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                  <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                  <span>Você vai</span>
+                </span>
+              )}
+              {isCurrentUserScheduled && currentUserStatus === 'declined' && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/30 text-[10px] font-bold">
+                  <span className="material-symbols-outlined text-[13px]">cancel</span>
+                  <span>Não vai</span>
+                </span>
+              )}
             </div>
 
             {isLeader && (
@@ -518,7 +532,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   onClose();
                   onEditEvent(event);
                 }}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-700 dark:text-blue-400 hover:bg-blue-500/25 border border-blue-500/30 text-xs font-bold transition-all active:scale-95"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-surface-container-high hover:bg-surface-variant text-primary border border-outline-variant/30 text-xs font-bold transition-all active:scale-95 cursor-pointer shrink-0"
                 title="Editar este evento"
               >
                 <Edit3 size={12} />
@@ -527,45 +541,56 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             )}
           </div>
 
-          {/* Seletor Rápido de Presença para o Usuário Logado (se escalado) */}
-          {isCurrentUserScheduled && scheduledUserKey && (
-            <div className="bg-blue-50/70 dark:bg-gradient-to-r dark:from-blue-950/40 dark:to-slate-950/70 p-2.5 rounded-2xl border border-blue-200 dark:border-blue-500/30 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <Users size={13} className="text-blue-600 dark:text-blue-400" />
-                  Sua confirmação de presença:
-                </span>
-                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
-                  currentUserStatus === 'accepted' ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30' :
-                  currentUserStatus === 'declined' ? 'bg-rose-500/20 text-rose-800 dark:text-rose-300 border border-rose-500/30' :
-                  'bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30'
-                }`}>
-                  {currentUserStatus === 'accepted' ? 'Confirmado' : currentUserStatus === 'declined' ? 'Não vai' : 'Pendente'}
-                </span>
+          {/* Banner de Ação Rápida (Aparece APENAS quando a presença ainda estiver PENDENTE) */}
+          {isCurrentUserScheduled && scheduledUserKey && currentUserStatus === 'pending' && (
+            <div className="bg-surface-container border border-amber-500/30 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-sm">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
+                  <span className="material-symbols-outlined text-[18px]">event_upcoming</span>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-on-surface truncate">Você está escalado neste culto</p>
+                  <p className="text-[11px] text-on-surface-variant truncate">Confirme se poderá ministrar</p>
+                </div>
               </div>
-              <PresenceSelector
-                status={currentUserStatus || 'pending'}
-                onChange={(newStatus) => handleStatusChangeClick(scheduledUserKey, newStatus)}
-                size="sm"
-              />
+
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleStatusChangeClick(scheduledUserKey, 'accepted')}
+                  className="h-8 px-3 rounded-xl bg-primary-container text-on-primary-container font-label-md text-xs font-bold shadow-sm active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[15px]">check</span>
+                  <span>Confirmar</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleStatusChangeClick(scheduledUserKey, 'declined')}
+                  className="h-8 px-2.5 rounded-xl bg-surface-container-high hover:bg-rose-500/10 text-on-surface-variant hover:text-rose-400 border border-outline-variant/30 font-label-md text-xs font-bold active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                  title="Não poderei ir (justificar ausência)"
+                >
+                  <span className="material-symbols-outlined text-[15px]">close</span>
+                  <span>Não vou</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Abas de Navegação (Músicas, Escala, Detalhes) estilo Segmented Control iOS */}
-          <div className="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-2xl border border-slate-800/80 shadow-inner">
+          {/* Abas de Navegação (Músicas, Escala, Detalhes) estilo Sanctuary Slate */}
+          <div className="grid grid-cols-3 gap-1 bg-surface-container-lowest p-1 rounded-2xl border border-outline-variant/20 shadow-inner">
             <button
               type="button"
               onClick={() => setActiveTab('repertoire')}
-              className={`py-2 px-1 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
+              className={`py-2 px-1 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer ${
                 activeTab === 'repertoire'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/30 ring-1 ring-blue-400/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                  ? 'bg-primary-container text-on-primary-container shadow-md'
+                  : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
               <Music size={13} className="shrink-0" />
               <span className="truncate">Músicas</span>
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold shrink-0 ${
-                activeTab === 'repertoire' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                activeTab === 'repertoire' ? 'bg-on-primary-container/20 text-on-primary-container' : 'bg-surface-container-high text-on-surface-variant'
               }`}>
                 {itemsWithSongs.length}
               </span>
@@ -574,16 +599,16 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('team')}
-              className={`py-2 px-1 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
+              className={`py-2 px-1 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer ${
                 activeTab === 'team'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/30 ring-1 ring-blue-400/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                  ? 'bg-primary-container text-on-primary-container shadow-md'
+                  : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
               <Users size={13} className="shrink-0" />
               <span className="truncate">Escala</span>
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold shrink-0 ${
-                activeTab === 'team' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                activeTab === 'team' ? 'bg-on-primary-container/20 text-on-primary-container' : 'bg-surface-container-high text-on-surface-variant'
               }`}>
                 {confirmedCount}/{confirmedEntries.length}
               </span>
@@ -592,10 +617,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('details')}
-              className={`py-2 px-1 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
+              className={`py-2 px-1 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer ${
                 activeTab === 'details'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/30 ring-1 ring-blue-400/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                  ? 'bg-primary-container text-on-primary-container shadow-md'
+                  : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
               <Calendar size={13} className="shrink-0" />
@@ -612,28 +637,28 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 ).length;
 
                 return (
-                  <div className="bg-slate-50/90 dark:bg-slate-950/90 p-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 space-y-2.5 shadow-xs">
+                  <div className="bg-surface-container p-3.5 rounded-2xl border border-outline-variant/20 space-y-2.5 shadow-sm">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5">
-                        <Music size={14} className="text-blue-600 dark:text-blue-400" />
-                        <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                        <Music size={14} className="text-primary" />
+                        <span className="text-xs font-extrabold text-on-surface tracking-tight">
                           Repertório do Culto ({itemsWithSongs.length})
                         </span>
                       </div>
                       {itemsWithSongs.length > 0 && (
-                        <span className="text-[11px] font-black text-blue-700 dark:text-blue-300 bg-blue-500/15 px-2.5 py-0.5 rounded-full border border-blue-500/25">
+                        <span className="text-[11px] font-black text-primary bg-primary-container/20 px-2.5 py-0.5 rounded-full border border-primary/30">
                           {songsWithVocalCount}/{itemsWithSongs.length} com vocal
                         </span>
                       )}
                     </div>
 
                     {itemsWithSongs.length > 0 && (
-                      <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-800/90 overflow-hidden">
+                      <div className="h-1.5 w-full rounded-full bg-surface-container-highest overflow-hidden">
                         <div
                           style={{
                             width: `${(songsWithVocalCount / Math.max(1, itemsWithSongs.length)) * 100}%`
                           }}
-                          className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                          className="h-full bg-primary-container rounded-full transition-all duration-500"
                         />
                       </div>
                     )}
