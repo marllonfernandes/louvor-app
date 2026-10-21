@@ -1,4 +1,5 @@
-import { WorshipEvent, EventSongItem, Member, Song, SongVocalAssignment } from '../types';
+import { WorshipEvent, EventSongItem, Member, Song, SongVocalAssignment, ConfirmationStatus } from '../types';
+import { isSamePersonName } from './avatar';
 
 export interface BlockPreset {
   id: string;
@@ -233,4 +234,53 @@ export function sortMembersWithVocalsFirst(members: Member[]): { vocals: Member[
 
   return { vocals, others };
 }
+
+const STATUS_PRIORITY: Record<ConfirmationStatus, number> = {
+  accepted: 3,
+  declined: 2,
+  pending: 1
+};
+
+/**
+ * Remove duplicatas de integrantes no mapa de confirmações causadas por pequenas
+ * variações no nome (ex: "Marllon" vs "Marllon Fernandes"), preservando o status
+ * de maior prioridade (accepted > declined > pending) e o nome mais completo/específico.
+ */
+export function deduplicateConfirmed(
+  confirmed?: Record<string, ConfirmationStatus> | null
+): Record<string, ConfirmationStatus> {
+  if (!confirmed) return {};
+  const entries = Object.entries(confirmed);
+  if (entries.length <= 1) return { ...confirmed };
+
+  const result: Record<string, ConfirmationStatus> = {};
+
+  for (const [name, status] of entries) {
+    if (!name || !name.trim()) continue;
+    const trimmedName = name.trim();
+    const existingKey = Object.keys(result).find(k => isSamePersonName(k, trimmedName));
+
+    if (!existingKey) {
+      result[trimmedName] = status;
+    } else {
+      const existingStatus = result[existingKey];
+      const existingWeight = STATUS_PRIORITY[existingStatus] || 0;
+      const currentWeight = STATUS_PRIORITY[status] || 0;
+
+      // Mantém o status com maior relevância/prioridade
+      const bestStatus = currentWeight > existingWeight ? status : existingStatus;
+
+      // Escolhe o nome mais detalhado/completo
+      const bestName = trimmedName.length >= existingKey.length ? trimmedName : existingKey;
+
+      if (bestName !== existingKey) {
+        delete result[existingKey];
+      }
+      result[bestName] = bestStatus;
+    }
+  }
+
+  return result;
+}
+
 

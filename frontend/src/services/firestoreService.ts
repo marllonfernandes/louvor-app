@@ -5,15 +5,22 @@ import {
   setDoc, 
   deleteDoc, 
   updateDoc,
+  deleteField,
   query,
   where,
   getDocs
 } from 'firebase/firestore';
 import { db, isFirestoreAvailable } from '../config/firebase';
-import { WorshipEvent, Song, Member, Team, ConfirmationStatus, AdoptionSong, TeamNotice } from '../types';
+import { WorshipEvent, Song, Member, Team, ConfirmationStatus, AdoptionSong, TeamNotice, ChurchSettings } from '../types';
 import { INITIAL_EVENTS, INITIAL_SONGS, INITIAL_MEMBERS, INITIAL_TEAMS, INITIAL_ADOPTION_SONGS, INITIAL_NOTICES } from './mockData';
 import { isValidAvatarUrl, isSamePersonName } from '../utils/avatar';
+import { deduplicateConfirmed } from '../utils/worshipEvent';
 import { appLogger } from '../utils/logger';
+
+export const DEFAULT_CHURCH_SETTINGS: ChurchSettings = {
+  churchName: 'Igreja Unida',
+  ministryName: 'Ministério de Louvor',
+};
 
 const STORAGE_KEYS = {
   EVENTS: 'louvor_app_events',
@@ -22,6 +29,7 @@ const STORAGE_KEYS = {
   MEMBERS: 'louvor_app_members',
   TEAMS: 'louvor_app_teams',
   NOTICES: 'louvor_app_notices',
+  SETTINGS: 'louvor_app_church_settings',
 };
 
 // Listeners locais para sincronização reativa quando em modo LocalStorage
@@ -32,7 +40,8 @@ const localListeners = {
   adoptionSongs: new Set<Listener<AdoptionSong[]>>(),
   members: new Set<Listener<Member[]>>(),
   teams: new Set<Listener<Team[]>>(),
-  notices: new Set<Listener<TeamNotice[]>>()
+  notices: new Set<Listener<TeamNotice[]>>(),
+  settings: new Set<Listener<ChurchSettings>>()
 };
 
 // Funções utilitárias de LocalStorage
@@ -112,7 +121,13 @@ export function subscribeToEvents(callback: (events: WorshipEvent[]) => void): (
 
 export async function saveEvent(event: Omit<WorshipEvent, 'id'> & { id?: string }): Promise<string> {
   const id = event.id || `ev_${Date.now()}`;
-  const newEvent: WorshipEvent = { ...event, id, createdAt: event.createdAt || Date.now() };
+  const sanitizedConfirmed = deduplicateConfirmed(event.confirmed);
+  const newEvent: WorshipEvent = { 
+    ...event, 
+    confirmed: sanitizedConfirmed,
+    id, 
+    createdAt: event.createdAt || Date.now() 
+  };
   const cleaned = cleanForFirestore(newEvent);
 
   if (isFirestoreAvailable && db) {
@@ -144,50 +159,82 @@ export async function saveBatchEvents(eventsList: (Omit<WorshipEvent, 'id'> & { 
 }
 
 export async function updateEventStatus(eventId: string, memberName: string, status: ConfirmationStatus, justification?: string): Promise<void> {
+  const list = getLocal<WorshipEvent[]>(STORAGE_KEYS.EVENTS, INITIAL_EVENTS);
+  const currentEvent = list.find(e => e.id === eventId);
+
+  // Identifica todas as chaves existentes no evento que correspondam à mesma pessoa (ex: "Marllon" e "Marllon Fernandes")
+  const existingMatches: string[] = [];
+  if (currentEvent?.confirmed) {
+    Object.keys(currentEvent.confirmed).forEach(k => {
+      if (isSamePersonName(k, memberName)) {
+        existingMatches.push(k);
+      }
+    });
+  }
+
+  // Define a chave destino: se a nova chave já existe, usa ela; senão usa a chave já cadastrada no evento ou memberName
+  const targetKey = existingMatches.includes(memberName)
+    ? memberName
+    : (existingMatches[0] || memberName);
+
+  // Quaisquer outras chaves duplicadas para essa mesma pessoa são obsoletas e devem ser removidas
+  const staleKeys = existingMatches.filter(k => k !== targetKey);
+
   if (isFirestoreAvailable && db) {
     try {
       const ref = doc(db, 'events', eventId);
       const updates: Record<string, any> = {
-        [`confirmed.${memberName}`]: status
+        [`confirmed.${targetKey}`]: status
       };
+
+      // Remove chaves duplicadas no Firestore para evitar redundâncias na escala
+      for (const stale of staleKeys) {
+        updates[`confirmed.${stale}`] = deleteField();
+        updates[`justifications.${stale}`] = deleteField();
+      }
       
       if (justification !== undefined) {
         if (justification) {
-          updates[`justifications.${memberName}`] = justification;
+          updates[`justifications.${targetKey}`] = justification;
         } else {
-          updates[`justifications.${memberName}`] = null; // Removed when not provided or status changes
+          updates[`justifications.${targetKey}`] = null; // Removido quando não informado
         }
       }
 
       await updateDoc(ref, updates);
-      appLogger.info('FIRESTORE', `Presença de ${memberName} atualizada para ${status} no evento ${eventId}`);
+      appLogger.info('FIRESTORE', `Presença de ${targetKey} atualizada para ${status} no evento ${eventId}`);
     } catch (e: any) {
       appLogger.error('FIRESTORE', 'Erro ao atualizar presença no Firestore', e);
       throw e;
     }
   }
 
-  const list = getLocal<WorshipEvent[]>(STORAGE_KEYS.EVENTS, INITIAL_EVENTS);
   const updated = list.map(ev => {
     if (ev.id === eventId) {
       const newConfirmed = {
-        ...(ev.confirmed || {}),
-        [memberName]: status
+        ...(ev.confirmed || {})
       };
+      for (const stale of staleKeys) {
+        delete newConfirmed[stale];
+      }
+      newConfirmed[targetKey] = status;
       
       const newJustifications = {
         ...(ev.justifications || {})
       };
+      for (const stale of staleKeys) {
+        delete newJustifications[stale];
+      }
       
       if (justification) {
-        newJustifications[memberName] = justification;
+        newJustifications[targetKey] = justification;
       } else if (justification === '') {
-        delete newJustifications[memberName];
+        delete newJustifications[targetKey];
       }
 
       return {
         ...ev,
-        confirmed: newConfirmed,
+        confirmed: deduplicateConfirmed(newConfirmed),
         justifications: newJustifications
       };
     }
@@ -822,6 +869,65 @@ export async function togglePinNotice(noticeId: string, currentPinned?: boolean)
       throw e;
     }
   }
+}
+
+// ----------------- CONFIGURAÇÕES DA IGREJA (CHURCH SETTINGS) -----------------
+
+export function subscribeToChurchSettings(callback: (settings: ChurchSettings) => void): () => void {
+  if (isFirestoreAvailable && db) {
+    try {
+      const docRef = doc(db, 'settings', 'church');
+      const unsubscribe = onSnapshot(docRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data() as ChurchSettings;
+          const merged: ChurchSettings = {
+            ...DEFAULT_CHURCH_SETTINGS,
+            ...data
+          };
+          setLocal(STORAGE_KEYS.SETTINGS, merged);
+          callback(merged);
+        } else {
+          const current = getLocal<ChurchSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_CHURCH_SETTINGS);
+          callback(current);
+        }
+      }, (error) => {
+        appLogger.warn('FIRESTORE', `Erro ao sincronizar configurações da igreja: ${error.message}`, error);
+        callback(getLocal<ChurchSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_CHURCH_SETTINGS));
+      });
+      return unsubscribe;
+    } catch (err) {
+      appLogger.warn('FIRESTORE', 'Erro ao registrar listener de configurações da igreja', err);
+    }
+  }
+
+  localListeners.settings.add(callback);
+  callback(getLocal<ChurchSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_CHURCH_SETTINGS));
+  return () => {
+    localListeners.settings.delete(callback);
+  };
+}
+
+export async function saveChurchSettings(settings: Partial<ChurchSettings>): Promise<void> {
+  const current = getLocal<ChurchSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_CHURCH_SETTINGS);
+  const updated: ChurchSettings = {
+    ...current,
+    ...settings,
+    updatedAt: Date.now()
+  };
+  const cleaned = cleanForFirestore(updated);
+
+  if (isFirestoreAvailable && db) {
+    try {
+      await setDoc(doc(db, 'settings', 'church'), cleaned, { merge: true });
+      appLogger.info('FIRESTORE', 'Configurações da igreja salvas com sucesso');
+    } catch (e: any) {
+      appLogger.error('FIRESTORE', 'Erro no Firestore ao salvar configurações da igreja', e);
+      throw e;
+    }
+  }
+
+  setLocal(STORAGE_KEYS.SETTINGS, updated);
+  localListeners.settings.forEach(l => l(updated));
 }
 
 // ----------------- SEMEADOR INICIAL DO FIRESTORE (SEED) -----------------

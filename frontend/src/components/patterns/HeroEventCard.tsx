@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Calendar, 
   Clock, 
@@ -16,7 +16,7 @@ import { WorshipEvent, ConfirmationStatus, Song, Member } from '../../types';
 import { Badge } from '../ui/Badge';
 import { MemberAvatar } from '../ui/MemberAvatar';
 import { getEventTypeDefinition } from '../../utils/eventType';
-import { getEventSongItems, resolveEventSong } from '../../utils/worshipEvent';
+import { getEventSongItems, resolveEventSong, deduplicateConfirmed } from '../../utils/worshipEvent';
 import { isSamePersonName, resolveMemberData } from '../../utils/avatar';
 import { ConfettiSpell } from './ConfettiSpell';
 
@@ -41,7 +41,11 @@ export const HeroEventCard: React.FC<HeroEventCardProps> = ({
 }) => {
   const [spellActive, setSpellActive] = useState(false);
 
-  const confirmedEntries = Object.entries(event.confirmed || {});
+  const deduplicatedConfirmed = useMemo(
+    () => deduplicateConfirmed(event.confirmed || {}),
+    [event.confirmed]
+  );
+  const confirmedEntries = Object.entries(deduplicatedConfirmed);
   const acceptedCount = confirmedEntries.filter(([_, s]) => s === 'accepted').length;
   const pendingCount = confirmedEntries.filter(([_, s]) => s === 'pending').length;
 

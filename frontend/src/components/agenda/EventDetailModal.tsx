@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Calendar, 
   Clock, 
@@ -42,7 +42,8 @@ import {
   removeMinisterFromSong,
   toggleSongMinisterAction,
   formatDateBR,
-  resolveEventSong
+  resolveEventSong,
+  deduplicateConfirmed
 } from '../../utils/worshipEvent';
 
 interface EventDetailModalProps {
@@ -107,9 +108,13 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
     new Set([...blocksOrder.filter(b => presentBlocks.includes(b)), ...presentBlocks])
   );
 
-  const confirmedEntries = Object.entries(event.confirmed || {});
-  const confirmedMemberNames = Object.keys(event.confirmed || {});
-  const scheduledMembers = members.filter(m => confirmedMemberNames.includes(m.name));
+  const deduplicatedConfirmed = useMemo(
+    () => deduplicateConfirmed(event.confirmed || {}),
+    [event.confirmed]
+  );
+  const confirmedEntries = useMemo(() => Object.entries(deduplicatedConfirmed), [deduplicatedConfirmed]);
+  const confirmedMemberNames = useMemo(() => Object.keys(deduplicatedConfirmed), [deduplicatedConfirmed]);
+  const scheduledMembers = members.filter(m => confirmedMemberNames.some(name => isSamePersonName(name, m.name)));
   const selectableMembers = scheduledMembers.length > 0 ? scheduledMembers : members;
   const sortedSelectable = sortMembersWithVocalsFirst(selectableMembers);
 
@@ -485,7 +490,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const declinedCount = confirmedEntries.filter(([_, st]) => st === 'declined').length;
   const scheduledUserKey = confirmedMemberNames.find(name => isSamePersonName(name, userProfile?.name));
   const isCurrentUserScheduled = Boolean(scheduledUserKey);
-  const currentUserStatus = scheduledUserKey ? event.confirmed?.[scheduledUserKey] : undefined;
+  const currentUserStatus = scheduledUserKey ? deduplicatedConfirmed[scheduledUserKey] : undefined;
 
   return (
     <>

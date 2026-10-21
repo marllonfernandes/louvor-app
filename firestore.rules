@@ -129,5 +129,13 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAuthenticated();
     }
+
+    // =========================================================================
+    // COLEÇÃO: SETTINGS (Configurações Gerais da Igreja / Ministério)
+    // =========================================================================
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAuthenticated();
+    }
   }
 }

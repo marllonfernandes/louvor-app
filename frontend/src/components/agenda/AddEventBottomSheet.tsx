@@ -38,7 +38,8 @@ import {
   BLOCK_PRESETS, 
   COMMON_BLOCKS, 
   sortMembersWithVocalsFirst,
-  resolveEventSong
+  resolveEventSong,
+  deduplicateConfirmed
 } from '../../utils/worshipEvent';
 import { CEIA_SUGGESTED_HYMNS, findHarpaHymnByNumber } from '../../utils/harpaCrista';
 
@@ -368,11 +369,12 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
     e.preventDefault();
     if (!title.trim() || !date || !time) return;
 
-    // Monta o mapa de confirmações
+    // Monta o mapa de confirmações com deduplicação
     const finalConfirmed: Record<string, ConfirmationStatus> = {};
     selectedMembers.forEach(m => {
       finalConfirmed[m] = memberStatuses[m] || 'pending';
     });
+    const sanitizedConfirmed = deduplicateConfirmed(finalConfirmed);
 
     const finalSongIds = songItems.map(i => i.songId);
 
@@ -384,7 +386,7 @@ export const AddEventBottomSheet: React.FC<AddEventBottomSheetProps> = ({
       time,
       location: location.trim(),
       team: selectedTeam || 'Escala Avulsa',
-      confirmed: finalConfirmed,
+      confirmed: sanitizedConfirmed,
       songIds: finalSongIds,
       songItems: songItems,
       songBlocksOrder: songBlocksOrder,

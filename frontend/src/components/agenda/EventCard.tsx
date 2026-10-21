@@ -1,7 +1,7 @@
 import React from 'react';
 import { WorshipEvent, ConfirmationStatus, Song, Member } from '../../types';
 import { getEventTypeDefinition } from '../../utils/eventType';
-import { getEventBlocksOrder, getEventSongItems, resolveEventSong } from '../../utils/worshipEvent';
+import { getEventBlocksOrder, getEventSongItems, resolveEventSong, deduplicateConfirmed } from '../../utils/worshipEvent';
 
 interface EventCardProps {
   event: WorshipEvent;
@@ -20,7 +20,8 @@ export const EventCard: React.FC<EventCardProps> = ({
   onShareWhatsApp,
   isPast = false
 }) => {
-  const confirmedEntries = Object.entries(event.confirmed || {});
+  const deduplicatedConfirmed = deduplicateConfirmed(event.confirmed || {});
+  const confirmedEntries = Object.entries(deduplicatedConfirmed);
   const totalCount = confirmedEntries.length;
   const acceptedCount = confirmedEntries.filter(([_, s]) => s === 'accepted').length;
 

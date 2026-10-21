@@ -9,13 +9,15 @@ interface HeaderProps {
   onOpenSettings: () => void;
   onOpenNotifications: () => void;
   unreadNotificationsCount?: number;
+  churchName?: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   activeTab = 'inicio',
   onOpenSettings,
   onOpenNotifications,
-  unreadNotificationsCount = 0
+  unreadNotificationsCount = 0,
+  churchName = 'Igreja Unida'
 }) => {
   const { userProfile, currentUser } = useAuth();
   const profileAvatar = userProfile?.avatar || currentUser?.photoURL;
@@ -52,7 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </div>
           <span className="font-body-sm text-body-sm text-on-surface-variant truncate">
-            Igreja Central • {currentTabName}
+            {churchName || 'Igreja Unida'} • {currentTabName}
           </span>
         </div>
       </div>

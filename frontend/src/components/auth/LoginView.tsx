@@ -320,12 +320,12 @@ export function LoginView() {
                     </div>
 
                     {/* Divisor Visual */}
-                    <div className="relative flex items-center justify-center">
-                      <div className="border-t border-slate-800 w-full" />
-                      <span className="bg-slate-900/90 px-3 text-[11px] font-medium text-slate-500 uppercase tracking-wider">
-                        ou com e-mail
+                    <div className="relative my-2 flex items-center">
+                      <div className="flex-1 border-t border-slate-800/80" />
+                      <span className="shrink-0 px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                        {mode === 'register' ? 'ou cadastre-se com e-mail' : 'ou faça login com e-mail'}
                       </span>
-                      <div className="border-t border-slate-800 w-full" />
+                      <div className="flex-1 border-t border-slate-800/80" />
                     </div>
                   </>
                 )}

@@ -23,17 +23,22 @@ import { useAuth } from '../../context/AuthContext';
 import { MemberAvatar } from '../ui/MemberAvatar';
 import { appLogger, LogEntry } from '../../utils/logger';
 import { isFirestoreAvailable } from '../../config/firebase';
+import { ChurchSettings } from '../../types';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onShowToast: (title: string, description?: string, type?: 'success' | 'error' | 'info') => void;
+  churchSettings?: ChurchSettings;
+  onSaveChurchSettings?: (settings: Partial<ChurchSettings>) => Promise<void>;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
-  onShowToast
+  onShowToast,
+  churchSettings,
+  onSaveChurchSettings
 }) => {
   const { theme, setTheme } = useTheme();
   const { userProfile, currentUser, logout } = useAuth();
@@ -46,6 +51,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set());
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  const isLeaderOrAdmin = ['Admin', 'Editor'].includes(userProfile?.systemRole || '') ||
+    Boolean(userProfile?.roles?.includes('Líder')) ||
+    Boolean(userProfile?.role?.toLowerCase().includes('líder'));
+
+  const [churchNameInput, setChurchNameInput] = useState(churchSettings?.churchName || 'Igreja Unida');
+  const [isSavingChurch, setIsSavingChurch] = useState(false);
+
+  useEffect(() => {
+    if (churchSettings?.churchName) {
+      setChurchNameInput(churchSettings.churchName);
+    }
+  }, [churchSettings?.churchName]);
+
+  const handleSaveChurchName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = churchNameInput.trim();
+    if (!trimmed || !onSaveChurchSettings) return;
+    try {
+      setIsSavingChurch(true);
+      await onSaveChurchSettings({
+        churchName: trimmed,
+        updatedBy: userProfile?.name || currentUser?.displayName || 'Liderança'
+      });
+      onShowToast('Nome Atualizado', `A igreja foi alterada para "${trimmed}"!`, 'success');
+    } catch {
+      onShowToast('Erro', 'Não foi possível salvar o nome da igreja.', 'error');
+    } finally {
+      setIsSavingChurch(false);
+    }
+  };
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -149,6 +185,45 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
           </div>
         )}
+
+        {/* Dados da Igreja / Congregação */}
+        <div className="bg-surface-container border border-outline-variant/20 rounded-2xl p-4 space-y-3 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+              <span className="material-symbols-outlined text-[19px]">church</span>
+            </div>
+            <div>
+              <h4 className="font-headline-sm text-sm font-bold text-on-surface">Dados da Igreja</h4>
+              <p className="font-body-sm text-xs text-on-surface-variant">Nome exibido no topo do aplicativo e relatórios</p>
+            </div>
+          </div>
+
+          {isLeaderOrAdmin && onSaveChurchSettings ? (
+            <form onSubmit={handleSaveChurchName} className="flex gap-2 pt-1">
+              <input
+                type="text"
+                value={churchNameInput}
+                onChange={(e) => setChurchNameInput(e.target.value)}
+                placeholder="Ex: Igreja Unida, Igreja Central..."
+                required
+                className="flex-1 bg-surface-container-high border border-outline-variant/30 rounded-xl px-3 py-2 text-xs font-bold text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+              />
+              <button
+                type="submit"
+                disabled={isSavingChurch || !churchNameInput.trim() || churchNameInput.trim() === churchSettings?.churchName}
+                className="px-3.5 py-2 rounded-xl bg-primary text-on-primary hover:bg-primary/90 text-xs font-bold transition-all disabled:opacity-50 disabled:pointer-events-none active:scale-95 shadow-sm"
+              >
+                {isSavingChurch ? 'Salvando...' : 'Salvar'}
+              </button>
+            </form>
+          ) : (
+            <div className="pt-1">
+              <div className="bg-surface-container-high border border-outline-variant/20 rounded-xl px-3.5 py-2.5 text-xs font-bold text-on-surface">
+                {churchSettings?.churchName || 'Igreja Unida'}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Escolha do Tema (Light / Dark) */}
         <div className="bg-surface-container border border-outline-variant/20 rounded-2xl p-4 space-y-3 shadow-sm">

@@ -160,6 +160,13 @@ export interface TeamNotice {
   highlightIcon?: string;
 }
 
+export interface ChurchSettings {
+  churchName: string;
+  ministryName?: string;
+  updatedAt?: number;
+  updatedBy?: string;
+}
+
 export interface SyncStatus {
   isOnline: boolean;
   isFirestoreConnected: boolean;

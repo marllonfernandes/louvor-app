@@ -43,7 +43,10 @@ import {
   subscribeToNotices,
   saveNotice,
   deleteNotice,
-  togglePinNotice
+  togglePinNotice,
+  subscribeToChurchSettings,
+  saveChurchSettings,
+  DEFAULT_CHURCH_SETTINGS
 } from './services/firestoreService';
 import {
   subscribeToNotifications,
@@ -53,7 +56,7 @@ import {
 } from './services/notificationService';
 import { isSamePersonName } from './utils/avatar';
 import { createShareNoticeWhatsAppLink } from './utils/whatsapp';
-import { WorshipEvent, Song, Member, Team, TabType, ConfirmationStatus, AdoptionSong, AppNotification, TeamNotice } from './types';
+import { WorshipEvent, Song, Member, Team, TabType, ConfirmationStatus, AdoptionSong, AppNotification, TeamNotice, ChurchSettings } from './types';
 
 export function AppContent() {
   const { currentUser, userProfile, loading } = useAuth();
@@ -64,6 +67,7 @@ export function AppContent() {
   const [members, setMembers] = useState<Member[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [notices, setNotices] = useState<TeamNotice[]>([]);
+  const [churchSettings, setChurchSettings] = useState<ChurchSettings>(DEFAULT_CHURCH_SETTINGS);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -92,6 +96,7 @@ export function AppContent() {
     const unsubMembers = subscribeToMembers(data => setMembers(data));
     const unsubTeams = subscribeToTeams(data => setTeams(data));
     const unsubNotices = subscribeToNotices(data => setNotices(data));
+    const unsubChurchSettings = subscribeToChurchSettings(data => setChurchSettings(data));
     const unsubNotifications = subscribeToNotifications(data => setNotifications(data));
 
     return () => {
@@ -101,6 +106,7 @@ export function AppContent() {
       unsubMembers();
       unsubTeams();
       unsubNotices();
+      unsubChurchSettings();
       unsubNotifications();
     };
   }, [currentUser]);
@@ -505,6 +511,7 @@ export function AppContent() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         unreadNotificationsCount={unreadNotificationsCount}
+        churchName={churchSettings.churchName}
       />
 
       {/* Conteúdo com Scroll Nativo Confinado e Fluido */}
@@ -632,6 +639,10 @@ export function AppContent() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         onShowToast={addToast}
+        churchSettings={churchSettings}
+        onSaveChurchSettings={async (settings) => {
+          await saveChurchSettings(settings);
+        }}
       />
 
       <ReloadPrompt />

@@ -6,8 +6,10 @@ import {
   getSongMinisters,
   formatSongMinistersWhatsApp,
   formatDateBR,
-  resolveEventSong
+  resolveEventSong,
+  deduplicateConfirmed
 } from './worshipEvent';
+import { isSamePersonName } from './avatar';
 
 function formatEventSongLineWhatsApp(it: EventSongItem & { song: Song }, prefix = '-'): string {
   const s = it.song;
@@ -83,8 +85,9 @@ export function createMemberReminderLink(member: Member, event: WorshipEvent, so
  * Suporta organização em blocos (ex: Abertura, Ceia, Batismo) e identificação do vocal/ministrante
  */
 export function generateEventShareText(event: WorshipEvent, songs: Song[] = [], members: Member[] = []): string {
-  // Apenas integrantes com presença confirmada
-  const confirmedList = Object.entries(event.confirmed || {}).filter(([_, status]) => status === 'accepted');
+  // Apenas integrantes com presença confirmada (deduplicados)
+  const deduplicated = deduplicateConfirmed(event.confirmed || {});
+  const confirmedList = Object.entries(deduplicated).filter(([_, status]) => status === 'accepted');
   const typeDef = getEventTypeDefinition(event.type);
   
   let membersText = '';
@@ -92,7 +95,7 @@ export function generateEventShareText(event: WorshipEvent, songs: Song[] = [], 
     membersText = '_(Nenhum integrante confirmado ainda)_';
   } else {
     membersText = confirmedList.map(([name]) => {
-      const memberObj = members.find(m => m.name === name);
+      const memberObj = members.find(m => isSamePersonName(m.name, name));
       const roleStr = memberObj ? ` (${memberObj.role})` : '';
       return `✅ *${name}*${roleStr}`;
     }).join('\n');

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { WorshipEvent, Song, Member, ConfirmationStatus, TabType, TeamNotice, NoticeCategory } from '../../types';
 import { useAuth } from '../../context/AuthContext';
-import { resolveEventSong, getEventSongItems } from '../../utils/worshipEvent';
+import { resolveEventSong, getEventSongItems, deduplicateConfirmed } from '../../utils/worshipEvent';
 import { isSamePersonName, resolveMemberData } from '../../utils/avatar';
 import { createShareNoticeWhatsAppLink } from '../../utils/whatsapp';
 import { MemberAvatar } from '../ui/MemberAvatar';
@@ -102,16 +102,24 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   const upcomingEvent = sortedUpcomingEvents[0] || events[0] || null;
 
-  // Escalação e status do usuário
+  // Escalação e status do usuário (com deduplicação de nomes)
+  const upcomingConfirmed = useMemo(
+    () => deduplicateConfirmed(upcomingEvent?.confirmed || {}),
+    [upcomingEvent?.confirmed]
+  );
+
   const userScheduledEntry = upcomingEvent?.confirmed
-    ? Object.entries(upcomingEvent.confirmed).find(([name]) => isSamePersonName(name, userName))
+    ? Object.entries(upcomingConfirmed).find(([name]) => isSamePersonName(name, userName))
     : null;
 
   const isUserScheduled = Boolean(userScheduledEntry);
   const userStatus = userScheduledEntry ? userScheduledEntry[1] : null;
 
-  // Músicos escalados no próximo culto
-  const scheduledMembers = upcomingEvent?.confirmed ? Object.keys(upcomingEvent.confirmed) : [];
+  // Nome exato que está registrado na escala para evitar criar chaves duplicadas
+  const targetScheduledName = userScheduledEntry ? userScheduledEntry[0] : userName;
+
+  // Músicos escalados no próximo culto (deduplicados)
+  const scheduledMembers = Object.keys(upcomingConfirmed);
 
   // Músicas do próximo culto
   const eventSongs = upcomingEvent
@@ -208,7 +216,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     </div>
                   ) : (
                     <button
-                      onClick={() => onStatusChange(upcomingEvent.id, userName, 'accepted')}
+                      onClick={() => onStatusChange(upcomingEvent.id, targetScheduledName, 'accepted')}
                       className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md font-bold shadow-sm active:scale-95 transition-transform flex-shrink-0"
                     >
                       <span className="material-symbols-outlined text-[14px]">check</span>
@@ -593,7 +601,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
           onClose={() => setJustificationModalEvent(null)}
           memberName={userName}
           onConfirm={(reason) => {
-            onStatusChange(justificationModalEvent.id, userName, 'declined', reason);
+            const targetMemberName = justificationModalEvent.confirmed
+              ? Object.keys(justificationModalEvent.confirmed).find(k => isSamePersonName(k, userName)) || userName
+              : userName;
+            onStatusChange(justificationModalEvent.id, targetMemberName, 'declined', reason);
             setJustificationModalEvent(null);
           }}
         />
