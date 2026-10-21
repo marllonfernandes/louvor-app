@@ -18,6 +18,7 @@ import {
 } from '../types';
 import { isSamePersonName } from '../utils/avatar';
 import { formatDateBR, getEventSongItems, getSongMinisters } from '../utils/worshipEvent';
+import { appLogger } from '../utils/logger';
 
 const FALLBACK_VAPID_PUBLIC_KEY =
   'BCNy8yL_dyk1D-lCduCPAv5pm70BM_XDjjEQx8clv8RfZrVedAmvXNOnqbvAhmhb6qWN_j2wBNRWNWX5Bmtf9PA';
@@ -85,7 +86,7 @@ export async function getActiveServiceWorkerRegistration(): Promise<ServiceWorke
     await navigator.serviceWorker.ready;
     return reg || (await navigator.serviceWorker.ready);
   } catch (err) {
-    console.warn('[Push] Erro ao obter ServiceWorkerRegistration:', err);
+    appLogger.warn('NOTIFICACOES', 'Erro ao obter ServiceWorkerRegistration', err);
     return null;
   }
 }
@@ -264,7 +265,7 @@ async function saveSubscriptionForUser(
         { merge: true }
       );
     } catch (e) {
-      console.warn(`[Push] Não foi possível salvar assinatura no doc ${docId}:`, e);
+      appLogger.warn('NOTIFICACOES', `Não foi possível salvar assinatura push no doc ${docId}`, e);
     }
   }
 }
@@ -309,7 +310,7 @@ export async function sendPushToSubscriptions(
       return { sentCount: data.sentCount || 0 };
     }
   } catch (err) {
-    console.warn('[Push] Erro ao chamar /api/push/send:', err);
+    appLogger.warn('NOTIFICACOES', 'Erro ao chamar /api/push/send', err);
   }
 
   return { sentCount: 0 };
@@ -364,7 +365,7 @@ export async function createAppNotification(
     try {
       await setDoc(doc(db, 'notifications', id), newNotif);
     } catch (e) {
-      console.warn('[Notifications] Erro ao gravar notificação no Firestore:', e);
+      appLogger.warn('NOTIFICACOES', 'Erro ao gravar notificação no Firestore', e);
     }
   }
 

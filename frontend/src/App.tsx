@@ -15,6 +15,7 @@ import { AppLoadingSkeleton } from './components/ui/Skeleton';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginView } from './components/auth/LoginView';
 import { ReloadPrompt } from './components/pwa/ReloadPrompt';
+import { appLogger } from './utils/logger';
 import { 
   subscribeToEvents, 
   saveEvent, 
@@ -156,7 +157,7 @@ export function AppContent() {
 
       // Dispara notificação no celular dos membros escalados (mesmo com app fechado) + Sininho
       notifyEventSaved(previousEvent, savedEventObj, members, userProfile?.name).catch(err =>
-        console.warn('[Push] Falha ao notificar mudança no evento:', err)
+        appLogger.warn('NOTIFICACOES', 'Falha ao notificar mudança no evento', err)
       );
     } catch (err) {
       addToast('Erro', 'Não foi possível salvar o evento.', 'error');
@@ -185,7 +186,7 @@ export function AppContent() {
       const targetEvent = events.find(e => e.id === eventId);
       if (targetEvent) {
         notifyPresenceChanged(targetEvent, memberName, status, justification, members).catch(err =>
-          console.warn('[Push] Falha ao notificar mudança de presença:', err)
+          appLogger.warn('NOTIFICACOES', 'Falha ao notificar mudança de presença', err)
         );
       }
     } catch (err) {

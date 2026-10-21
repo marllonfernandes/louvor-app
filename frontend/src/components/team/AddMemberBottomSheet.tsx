@@ -14,6 +14,7 @@ import {
 import { MemberAvatar } from '../ui/MemberAvatar';
 import { formatPhoneNumberForWhatsApp } from '../../utils/whatsapp';
 import { generateInviteToken } from '../../services/firestoreService';
+import { appLogger } from '../../utils/logger';
 
 interface AddMemberBottomSheetProps {
   isOpen: boolean;
@@ -102,7 +103,7 @@ export const AddMemberBottomSheet: React.FC<AddMemberBottomSheetProps> = ({
       const compressed = await compressImageToDataUrl(file, 180, 0.82);
       setAvatar(compressed);
     } catch (err) {
-      console.error('Erro ao comprimir foto:', err);
+      appLogger.error('SISTEMA', 'Erro ao comprimir foto de membro', err);
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }

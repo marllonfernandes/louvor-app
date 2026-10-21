@@ -64,7 +64,7 @@ function logFirestoreConnectionOnce(collectionName: string, docCount: number) {
     appLogger.info('FIRESTORE', `Conexão em tempo real ativa! (${collectionName}: ${docCount} documentos recebidos)`);
   }
 }
-function cleanForFirestore<T>(obj: T): T {
+export function cleanForFirestore<T>(obj: T): T {
   if (obj === null || obj === undefined || typeof obj !== 'object') {
     return obj;
   }

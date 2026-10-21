@@ -5,6 +5,7 @@ import { Calendar, Wand2, Clock, Check, CheckCheck } from 'lucide-react';
 import { WorshipEvent } from '../../types';
 import { generateEventsForMonth } from '../../utils/agendaGenerator';
 import { getEventTypeDefinition } from '../../utils/eventType';
+import { appLogger } from '../../utils/logger';
 
 interface GenerateMonthModalProps {
   isOpen: boolean;
@@ -97,7 +98,7 @@ export const GenerateMonthModal: React.FC<GenerateMonthModalProps> = ({
       await onGenerate(eventsToCreate);
       onClose();
     } catch (error) {
-      console.error('Erro ao gerar eventos:', error);
+      appLogger.error('SISTEMA', 'Erro ao gerar eventos do mês', error);
       alert('Erro ao gerar os eventos. Tente novamente.');
     } finally {
       setIsGenerating(false);

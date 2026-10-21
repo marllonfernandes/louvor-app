@@ -16,6 +16,7 @@ import { auth, googleProvider, db, isFirestoreAvailable } from '../config/fireba
 import { User } from '../types';
 import { isValidAvatarUrl, isSamePersonName } from '../utils/avatar';
 import { appLogger } from '../utils/logger';
+import { cleanForFirestore } from '../services/firestoreService';
 
 const INVITE_STORAGE_KEY = 'louvor_pending_invite_token';
 
@@ -103,33 +104,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const usersRef = collection(db, 'users');
           const emailQuery = user.email ? query(usersRef, where('email', '==', user.email)) : null;
 
-          const pendingToken = getPendingInviteToken();
+          const rawPendingToken = getPendingInviteToken();
+          const pendingToken = rawPendingToken ? rawPendingToken.trim() : null;
+          appLogger.info('AUTH', `Processando login de ${user.email || user.uid}. Token pendente: ${pendingToken || 'nenhum'}`);
           
           if (pendingToken) {
-            // Processa o token de convite preservado (inclusive após redirecionamento no iOS Safari)
-            const tokenQuery = query(usersRef, where('inviteToken', '==', pendingToken));
-            const tokenSnap = await getDocs(tokenQuery);
-            if (!tokenSnap.empty) {
-              const inviteDoc = tokenSnap.docs[0];
-              const inviteData = inviteDoc.data();
-              
+            let matchedInviteData: any = null;
+            let matchedDocRef: any = null;
+
+            // 1. Tenta query direta no Firestore por inviteToken
+            try {
+              const tokenQuery = query(usersRef, where('inviteToken', '==', pendingToken));
+              const tokenSnap = await getDocs(tokenQuery);
+              if (!tokenSnap.empty) {
+                matchedDocRef = tokenSnap.docs[0].ref;
+                matchedInviteData = tokenSnap.docs[0].data();
+                appLogger.info('AUTH', 'Convite localizado por query direta no Firestore', { name: matchedInviteData.name });
+              }
+            } catch (queryErr) {
+              appLogger.warn('AUTH', 'Query direta por inviteToken falhou no Firestore, tentando busca ampla...', queryErr);
+            }
+
+            // 2. Busca ampla caso a query com where seja afetada por índices ou sensibilidade de caixa
+            if (!matchedInviteData) {
+              try {
+                const allUsersSnap = await getDocs(usersRef);
+                const foundDoc = allUsersSnap.docs.find(d => {
+                  const data = d.data();
+                  const t = (data.inviteToken || '').toString().trim().toLowerCase();
+                  return t === pendingToken.toLowerCase();
+                });
+                if (foundDoc) {
+                  matchedDocRef = foundDoc.ref;
+                  matchedInviteData = foundDoc.data();
+                  appLogger.info('AUTH', 'Convite localizado por busca ampla no Firestore', { name: matchedInviteData.name });
+                }
+              } catch (broadErr) {
+                appLogger.warn('AUTH', 'Busca ampla de convites no Firestore falhou', broadErr);
+              }
+            }
+
+            // 3. Fallback: verifica se o convite foi gerado em modo LocalStorage
+            if (!matchedInviteData) {
+              try {
+                const localMembers = JSON.parse(localStorage.getItem('louvor_app_members') || '[]');
+                const localFound = localMembers.find((m: any) => 
+                  (m.inviteToken || '').toString().trim().toLowerCase() === pendingToken.toLowerCase()
+                );
+                if (localFound) {
+                  matchedInviteData = localFound;
+                  appLogger.info('AUTH', 'Convite localizado nos membros salvos no LocalStorage', { name: localFound.name });
+                }
+              } catch (localErr) {
+                appLogger.warn('AUTH', 'Erro ao checar LocalStorage para convite', localErr);
+              }
+            }
+
+            // Se o convite foi encontrado em qualquer uma das fontes, criamos o perfil do membro
+            if (matchedInviteData) {
               const newUserProfile: User = {
                 id: user.uid,
                 uid: user.uid,
-                name: inviteData.name || user.displayName || 'Sem Nome',
-                email: user.email || inviteData.email || '',
-                phone: inviteData.phone || '',
-                role: inviteData.role || 'Membro',
-                roles: inviteData.roles || [],
-                systemRole: inviteData.systemRole === 'Member' ? 'Viewer' : (inviteData.systemRole || 'Viewer'),
+                name: matchedInviteData.name || user.displayName || 'Sem Nome',
+                email: user.email || matchedInviteData.email || '',
+                phone: matchedInviteData.phone || '',
+                role: matchedInviteData.role || 'Membro',
+                roles: matchedInviteData.roles || (matchedInviteData.role ? [matchedInviteData.role] : ['Vocal']),
+                systemRole: matchedInviteData.systemRole === 'Member' ? 'Viewer' : (matchedInviteData.systemRole || 'Viewer'),
                 active: true,
-                avatar: user.photoURL || inviteData.avatar || undefined
+                avatar: user.photoURL || matchedInviteData.avatar || undefined
               };
               
-              await setDoc(userDocRef, newUserProfile);
-              if (inviteDoc.id !== user.uid) {
+              const cleanedProfile = cleanForFirestore(newUserProfile);
+              try {
+                await setDoc(userDocRef, cleanedProfile);
+                appLogger.info('AUTH', `Perfil do membro criado com sucesso via inviteToken para ${newUserProfile.name}`);
+              } catch (setDocErr) {
+                appLogger.error('AUTH', 'Falha ao gravar perfil do membro convidado no Firestore', setDocErr);
+                throw setDocErr;
+              }
+
+              if (matchedDocRef && matchedDocRef.id !== user.uid) {
                 try {
-                  await deleteDoc(inviteDoc.ref);
+                  await deleteDoc(matchedDocRef);
                 } catch {
                   // Ignora se não puder deletar
                 }
@@ -137,6 +194,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               
               clearPendingInviteToken();
               window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+              appLogger.warn('AUTH', `Token de convite "${pendingToken}" não encontrado em nenhuma fonte cadastrada.`);
             }
           }
 
@@ -164,7 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 avatar: user.photoURL || inviteData.avatar || undefined
               };
               
-              await setDoc(userDocRef, newUserProfile);
+              await setDoc(userDocRef, cleanForFirestore(newUserProfile));
               if (inviteDoc.id !== user.uid) {
                 try {
                   await deleteDoc(inviteDoc.ref);
@@ -203,7 +262,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                       avatar: user.photoURL || inviteData.avatar || undefined
                     };
 
-                    await setDoc(userDocRef, newUserProfile);
+                    await setDoc(userDocRef, cleanForFirestore(newUserProfile));
                     if (inviteDoc.id !== user.uid) {
                       try {
                         await deleteDoc(inviteDoc.ref);
@@ -335,37 +394,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async () => {
     setError(null);
+    setLoading(true);
     if (!auth) {
+      setLoading(false);
       setError('Autenticação não configurada.');
+      appLogger.error('AUTH', 'Tentativa de login com Google mas Firebase Auth não está inicializado');
       return;
     }
     
     // Garante que o inviteToken presente na URL seja preservado em storage antes de qualquer redirecionamento (essencial no iPhone)
-    getPendingInviteToken();
+    const token = getPendingInviteToken();
+    appLogger.info('AUTH', 'Iniciando signInWithPopup com Google...', { inviteToken: token });
 
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      appLogger.info('AUTH', `Login com Google via Popup concluído com sucesso (${result.user.email})`);
     } catch (err: any) {
       // 1. Usuário fechou a janela ou cancelou a operação: não exibe erro alarmante
       if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
         appLogger.info('AUTH', 'Login cancelado pelo usuário');
+        setLoading(false);
         return;
       }
 
       // 2. Se o popup falhou ou foi bloqueado (comum no iOS Safari / Webviews / PWA), usa redirecionamento
-      appLogger.info('AUTH', 'Popup indisponível ou bloqueado, utilizando login com redirecionamento (iOS / Mobile)', err?.code);
+      appLogger.warn('AUTH', `Popup bloqueado ou indisponível (${err?.code}). Tentando login por redirecionamento...`, err);
       try {
         await signInWithRedirect(auth, googleProvider);
         return;
       } catch (redirectErr: any) {
         appLogger.error('AUTH', 'Falha no redirecionamento de login', redirectErr);
         setError(formatAuthError(redirectErr));
+        setLoading(false);
       }
     }
   };
 
   const linkMemberWithPhoneOrCode = async (phoneOrCode: string): Promise<boolean> => {
-    if (!pendingLinkingUser || !db) return false;
+    if (!pendingLinkingUser || !db) {
+      appLogger.error('AUTH', 'Tentativa de vincular sem usuário pendente ou sem Firestore disponível');
+      return false;
+    }
     const clean = phoneOrCode.trim();
     if (!clean) {
       setError('Por favor, informe seu celular ou o código de convite.');
@@ -374,17 +443,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setLoading(true);
     setError(null);
+    appLogger.info('AUTH', `Tentando vincular conta ${pendingLinkingUser.email} com celular/código: "${clean}"`);
+
     try {
       const usersRef = collection(db, 'users');
       const allUsersSnap = await getDocs(usersRef);
       const cleanDigits = clean.replace(/\D/g, '');
 
+      let matchedInviteData: any = null;
+      let matchedDocRef: any = null;
+
+      // 1. Busca em todos os documentos do Firestore
       const matchedDoc = allUsersSnap.docs.find(d => {
         const data = d.data();
         if (data.uid && data.uid !== pendingLinkingUser.uid) return false;
 
         // Bate por inviteToken
-        if (data.inviteToken && data.inviteToken.toLowerCase() === clean.toLowerCase()) {
+        if (data.inviteToken && data.inviteToken.trim().toLowerCase() === clean.toLowerCase()) {
           return true;
         }
 
@@ -404,32 +479,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       });
 
-      if (!matchedDoc) {
-        setError('Nenhum cadastro encontrado com este celular ou código. Verifique com seu líder o número exato cadastrado.');
+      if (matchedDoc) {
+        matchedDocRef = matchedDoc.ref;
+        matchedInviteData = matchedDoc.data();
+        appLogger.info('AUTH', 'Membro localizado no Firestore para vinculação', { name: matchedInviteData.name });
+      } else {
+        // 2. Fallback: busca em membros salvos no LocalStorage (modo local/offline)
+        try {
+          const localMembers = JSON.parse(localStorage.getItem('louvor_app_members') || '[]');
+          const localMatch = localMembers.find((m: any) => {
+            if (m.inviteToken && m.inviteToken.trim().toLowerCase() === clean.toLowerCase()) {
+              return true;
+            }
+            if (cleanDigits.length >= 8 && m.phone) {
+              const memberDigits = m.phone.replace(/\D/g, '');
+              if (
+                memberDigits &&
+                (memberDigits === cleanDigits ||
+                  memberDigits.endsWith(cleanDigits) ||
+                  cleanDigits.endsWith(memberDigits))
+              ) {
+                return true;
+              }
+            }
+            return false;
+          });
+
+          if (localMatch) {
+            matchedInviteData = localMatch;
+            appLogger.info('AUTH', 'Membro localizado no LocalStorage para vinculação', { name: localMatch.name });
+          }
+        } catch (localErr) {
+          appLogger.warn('AUTH', 'Falha ao buscar membro no LocalStorage', localErr);
+        }
+      }
+
+      if (!matchedInviteData) {
+        const errorMsg = 'Nenhum cadastro encontrado com este celular ou código. Verifique com seu líder o número exato cadastrado.';
+        appLogger.warn('AUTH', `Falha na vinculação: nenhum membro compatível com "${clean}"`);
+        setError(errorMsg);
         setLoading(false);
         return false;
       }
 
-      const inviteData = matchedDoc.data();
       const userDocRef = doc(db, 'users', pendingLinkingUser.uid);
 
       const newUserProfile: User = {
         id: pendingLinkingUser.uid,
         uid: pendingLinkingUser.uid,
-        name: inviteData.name || pendingLinkingUser.displayName || 'Sem Nome',
-        email: pendingLinkingUser.email || inviteData.email || '',
-        phone: inviteData.phone || clean,
-        role: inviteData.role || 'Membro',
-        roles: inviteData.roles || [],
-        systemRole: inviteData.systemRole === 'Member' ? 'Viewer' : (inviteData.systemRole || 'Viewer'),
+        name: matchedInviteData.name || pendingLinkingUser.displayName || 'Sem Nome',
+        email: pendingLinkingUser.email || matchedInviteData.email || '',
+        phone: matchedInviteData.phone || clean,
+        role: matchedInviteData.role || 'Membro',
+        roles: matchedInviteData.roles || (matchedInviteData.role ? [matchedInviteData.role] : ['Vocal']),
+        systemRole: matchedInviteData.systemRole === 'Member' ? 'Viewer' : (matchedInviteData.systemRole || 'Viewer'),
         active: true,
-        avatar: pendingLinkingUser.photoURL || inviteData.avatar || undefined
+        avatar: pendingLinkingUser.photoURL || matchedInviteData.avatar || undefined
       };
 
-      await setDoc(userDocRef, newUserProfile);
-      if (matchedDoc.id !== pendingLinkingUser.uid) {
+      await setDoc(userDocRef, cleanForFirestore(newUserProfile));
+      appLogger.info('AUTH', `Conta vinculada com sucesso! Perfil criado para ${newUserProfile.name}`);
+
+      if (matchedDocRef && matchedDocRef.id !== pendingLinkingUser.uid) {
         try {
-          await deleteDoc(matchedDoc.ref);
+          await deleteDoc(matchedDocRef);
         } catch {}
       }
 

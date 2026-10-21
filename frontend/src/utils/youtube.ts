@@ -1,6 +1,7 @@
 /**
  * Utilitários para extrair, buscar dados e embutir vídeos e playlists do YouTube
  */
+import { appLogger } from './logger';
 
 export interface YoutubeDetails {
   videoId: string;
@@ -226,7 +227,7 @@ export async function fetchYoutubeDetails(url: string): Promise<YoutubeDetails |
       };
     }
   } catch (err) {
-    console.warn('Não foi possível obter dados completos via oEmbed:', err);
+    appLogger.warn('SISTEMA', 'Não foi possível obter dados completos via oEmbed', err);
   }
 
   return {
@@ -346,7 +347,7 @@ export async function fetchYoutubePlaylist(urlOrId: string): Promise<YoutubePlay
       }
     }
   } catch (err) {
-    console.warn('Erro ao carregar playlist no fallback RSS:', err);
+    appLogger.warn('SISTEMA', 'Erro ao carregar playlist no fallback RSS', err);
   }
 
   return null;

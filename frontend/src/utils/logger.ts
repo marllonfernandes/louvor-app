@@ -1,5 +1,5 @@
 export type LogLevel = 'info' | 'warn' | 'error';
-export type LogCategory = 'AUTH' | 'FIRESTORE' | 'SISTEMA' | 'PWA' | 'REDE';
+export type LogCategory = 'AUTH' | 'FIRESTORE' | 'SISTEMA' | 'PWA' | 'REDE' | 'NOTIFICACOES';
 
 export interface LogEntry {
   id: string;
@@ -107,20 +107,36 @@ class AppLogger {
     this.persistLogs();
     this.notify();
 
-    // No ambiente de desenvolvimento (DEV), exibe no console para inspeção direta
-    if (import.meta.env.DEV) {
-      const prefix = `[${category}]`;
-      if (level === 'error') {
+    // Determina se deve exibir logs detalhados no console do navegador:
+    // Ativo apenas em ambiente de desenvolvimento (DEV) ou se o modo de depuração for ativado explicitamente
+    const isDev = Boolean(import.meta.env.DEV);
+    const isDebugForced = typeof window !== 'undefined' && (
+      window.localStorage?.getItem('debug_louvor_app') === 'true' ||
+      Boolean((window as any).__DEBUG_LOUVOR__)
+    );
+    const shouldLogVerbose = isDev || isDebugForced;
+
+    const prefix = `[${category}]`;
+    if (level === 'error') {
+      // Erros críticos são reportados no console
+      if (shouldLogVerbose) {
         console.error(prefix, message, rawDetail ?? '');
-      } else if (level === 'warn') {
+      } else {
+        // Em produção: log conciso sem despejar objetos internos ou tokens
+        const errDetail = rawDetail instanceof Error ? `(${rawDetail.message})` : '';
+        console.error(prefix, message, errDetail);
+      }
+    } else if (shouldLogVerbose) {
+      if (level === 'warn') {
         console.warn(prefix, message, rawDetail ?? '');
       } else {
         console.log(prefix, message, rawDetail ?? '');
       }
     }
     // Em produção (PROD):
-    // Não exibe console.log/info para preservar privacidade e não expor infraestrutura.
-    // Para erros graves em produção, mantemos um aviso resumido no console se necessário, mas os detalhes ficam salvos no buffer de diagnóstico seguro.
+    // Logs de nível 'info' e 'warn' (como leituras de banco, documentos recebidos, etc.)
+    // são omitidos do console por privacidade e segurança.
+    // Todos permanecem acessíveis na interface em Configurações > Diagnóstico & Logs.
   }
 
   public info(category: LogCategory, message: string, detail?: unknown) {

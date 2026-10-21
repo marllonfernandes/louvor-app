@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     esbuild: {
-      pure: isProd ? ['console.log', 'console.debug'] : [],
+      pure: isProd ? ['console.debug'] : [],
       drop: isProd ? ['debugger'] : []
     },
     plugins: [
