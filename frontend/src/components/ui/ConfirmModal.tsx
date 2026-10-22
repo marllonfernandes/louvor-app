@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from './Button';
 import { AlertTriangle, Trash2 } from 'lucide-react';
 
@@ -53,7 +54,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
     </div>
   );
 
-  return (
+  const content = (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-fade-in">
       <div 
         className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity" 
@@ -81,4 +82,6 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(content, document.body);
 };

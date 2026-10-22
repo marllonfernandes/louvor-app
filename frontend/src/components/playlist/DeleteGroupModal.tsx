@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Trash2, FolderX, X, AlertTriangle } from 'lucide-react';
 import { Button } from '../ui/Button';
 
@@ -19,7 +20,7 @@ export const DeleteGroupModal: React.FC<DeleteGroupModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  return (
+  const content = (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-fade-in">
       <div 
         className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity" 
@@ -105,4 +106,6 @@ export const DeleteGroupModal: React.FC<DeleteGroupModalProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(content, document.body);
 };

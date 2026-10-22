@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface BottomSheetProps {
@@ -33,7 +34,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  const content = (
     <div className="fixed inset-0 z-[60] flex items-stretch sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
       {/* Backdrop com blur nativo */}
       <div 
@@ -41,12 +42,11 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         onClick={onClose}
       />
 
-      {/* Conteúdo da Gaveta / Modal: Tela cheia no Mobile (com Safe Area do iPhone) e Cartão Centralizado no Desktop */}
+      {/* Conteúdo da Gaveta / Modal: Tela cheia no Mobile (com Safe Area do iPhone e Android) e Cartão Centralizado no Desktop */}
       <div 
         className={`relative w-full sm:max-w-lg bg-slate-900 border-none sm:border border-slate-800 rounded-none sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col z-10 animate-slide-up h-[100dvh] sm:h-auto ${maxHeight ? `sm:${maxHeight}` : 'sm:max-h-[90vh]'}`}
         style={{
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+          paddingTop: 'env(safe-area-inset-top, 0px)'
         }}
       >
         {/* Cabeçalho Fixo do BottomSheet com botão Fechar sempre visível e touch target acessível no iOS */}
@@ -66,17 +66,29 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         </div>
 
         {/* Corpo do conteúdo com scroll fluido */}
-        <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain flex-1 min-h-0">
+        <div 
+          className="p-4 sm:p-5 overflow-y-auto overscroll-contain flex-1 min-h-0"
+          style={{
+            paddingBottom: footer ? undefined : 'max(1.75rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))'
+          }}
+        >
           {children}
         </div>
 
-        {/* Rodapé Fixo quando fornecido */}
+        {/* Rodapé Fixo quando fornecido com safe area e espaçamento inferior reforçado para Android/iOS */}
         {footer && (
-          <div className="px-4 sm:px-5 py-3 sm:py-3.5 border-t border-slate-800/80 bg-slate-900/98 backdrop-blur shrink-0 z-20">
+          <div 
+            className="px-4 sm:px-5 pt-3.5 border-t border-slate-800/80 bg-slate-900/98 backdrop-blur shrink-0 z-20"
+            style={{
+              paddingBottom: 'max(1.75rem, calc(env(safe-area-inset-bottom, 0px) + 0.875rem))'
+            }}
+          >
             {footer}
           </div>
         )}
       </div>
     </div>
   );
+
+  return createPortal(content, document.body);
 };
